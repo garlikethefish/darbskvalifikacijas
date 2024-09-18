@@ -1,0 +1,94 @@
+<<<<<<< HEAD
+h1 {
+    margin-top: 0px;
+    text-align: center;
+    
+}
+p {
+    width: 500px;
+    
+}
+body
+{
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    
+    font-family: Arial, sans-serif;
+    background-color: rgb(86, 100, 97);
+}
+.title{
+    padding-top: 10px;
+    font-size: 40px;
+    color:aliceblue;
+}
+div{
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+header{
+    background-color: rgb(57, 71, 68);
+}
+a{
+    color:aliceblue;
+}
+.links{
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+.link{
+    margin-left: 30px;
+    margin-right: 30px;
+}
+footer{
+    background-color: rgb(57, 71, 68);
+=======
+h1 {
+    margin-top: 0px;
+    text-align: center;
+    
+}
+p {
+    width: 500px;
+    
+}
+body
+{
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    
+    font-family: Arial, sans-serif;
+    background-color: rgb(86, 100, 97);
+}
+.title{
+    padding-top: 10px;
+    font-size: 40px;
+    color:aliceblue;
+}
+div{
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+header{
+    background-color: rgb(57, 71, 68);
+}
+a{
+    color:aliceblue;
+}
+.links{
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+.link{
+    margin-left: 30px;
+    margin-right: 30px;
+}
+footer{
+    background-color: rgb(57, 71, 68);
+>>>>>>> c6422fd5cf126d76316cb439588ee605c7e7cc0a
+}
