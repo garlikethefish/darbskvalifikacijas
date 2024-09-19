@@ -1,8 +1,4 @@
-h1 {
-    margin-top: 0px;
-    text-align: center;
-    
-}
+
 .flex-container {
     display: flex;
     flex-wrap: nowrap;
@@ -13,6 +9,13 @@ h1 {
 p {
     width: 500px;
     
+}
+aside{
+    padding: 25px;
+    text-align: center;
+}
+.social-media{
+    text-align: center;
 }
 .series-container .hover-button {
     position: absolute;
@@ -72,7 +75,6 @@ p {
     left: 0;
     right: 0;
     bottom: 0; /* Position the caption at the bottom */
-    padding: 10px 15px; /* Padding for the text */
     color: white;
     font-size: 14px; /* Smaller text for the caption */
     opacity: 0; /* Hide the caption by default */
@@ -87,14 +89,21 @@ p {
 }
 body
 {
-    margin-top: 0px;
-    margin-left: 0px;
-    margin-right: 0px;
+    color:aliceblue;
+    margin: 0px;
     font-family: Arial, sans-serif;
     background-color: rgb(86, 100, 97);
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+p{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 .title{
-    padding-top: 10px;
+    padding-top: 30px;
     font-size: 40px;
     color:aliceblue;
 }
@@ -106,8 +115,34 @@ div{
 header{
     background-color: rgb(57, 71, 68);
 }
+h1{
+    padding-top: 30px;
+    margin-top: 0px;
+    text-align: center;
+}
+.donate{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 20%;
+    animation: rotation 2s infinite linear;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+@keyframes rotation {
+    0% {
+      scale: 0.8
+    }
+    50% {
+      scale:1
+    }
+    100% {
+        scale:0.8
+      }
+  }
 a{
     color:aliceblue;
+    padding-bottom: 15px;
 }
 .links{
     text-align: center;
@@ -119,5 +154,10 @@ a{
     margin-right: 30px;
 }
 footer{
+    bottom: 0;
+    padding-bottom: 15px;
+    padding-top: 20px;
+    width:100%;
     background-color: rgb(57, 71, 68);
+    min-height: 50px;
 }
