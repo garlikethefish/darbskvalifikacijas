@@ -1,4 +1,8 @@
-
+@media only screen and (max-width: 300px){
+    .flex-container:nth-child(1){
+        display:none;
+    }
+}
 .flex-container {
     display: flex;
     flex-wrap: nowrap;
@@ -152,6 +156,9 @@ a{
 .link{
     margin-left: 30px;
     margin-right: 30px;
+}
+.link:hover{
+    color: rgb(226, 187, 59);
 }
 footer{
     bottom: 0;
