@@ -1,26 +1,22 @@
-@media only screen and (max-width: 300px){
-    .flex-container:nth-child(1){
-        display:none;
-    }
+body
+{
+    color:aliceblue;
+    margin: 0px;
+    font-family: 'Segoe UI', Tahoma;
+    background-color: rgb(86, 100, 97);
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
 }
+
 .flex-container {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     background-color: rgb(57, 71, 68);
     align-items: center;
     justify-content: center;
 }
-p {
-    width: 500px;
-    
-}
-aside{
-    padding: 25px;
-    text-align: center;
-}
-.social-media{
-    text-align: center;
-}
+
 .series-container .hover-button {
     position: absolute;
     top: 10px;
@@ -32,12 +28,9 @@ aside{
     border: none;
     border-radius: 15px; /* Rounded button */
     cursor: pointer;
-    opacity: 0; /* Hidden by default */
+    opacity: 1;
     transition: opacity 0.3s ease; /* Smooth transition */
     z-index: 2; /* Ensure it's on top of everything */
-}
-.series-container:hover .hover-button {
-    opacity: 1; /* Show the button on hover */
 }
 .card{
     color:aliceblue;
@@ -64,8 +57,6 @@ aside{
     overflow: hidden;
 }
 .series-container img {
-    width: 100%;
-    height: 40%; /* Adjust to keep image proportions */
     display: block;
     filter: brightness(50%);
     transition: filter 0.3s ease; /* Smooth transition */
@@ -91,25 +82,57 @@ aside{
 .series-container:hover .caption-text {
     opacity: 1; /* Show the caption on hover */
 }
-body
-{
-    color:aliceblue;
-    margin: 0px;
-    font-family: Arial, sans-serif;
-    background-color: rgb(86, 100, 97);
-    min-height: 100vh;
+
+.big-button{
     display: grid;
-    grid-template-rows: auto 1fr auto;
+  place-items: center;
+  width: 200px;
+  height: 110px;
+  margin: 15px;
+}
+.donate{
+    border: none;
+    cursor: pointer;
+    appearance: none;
+    background-color: inherit;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    animation: rotation 2s infinite linear;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.donate:hover{
+    animation: none;
+}
+
+
+.center{
+    display: grid;
+  place-items: center;
+}
+a:link { 
+    text-decoration: none; 
+} 
+aside{
+    padding: 25px;
+    text-align: center;
+}
+.social-media{
+    text-align: center;
 }
 p{
     display: block;
     margin-left: auto;
     margin-right: auto;
+    width: 500px;
 }
 .title{
     padding-top: 30px;
     font-size: 40px;
     color:aliceblue;
+    background-color: rgb(57, 71, 68);
+    margin: 0;
 }
 div{
     display: table;
@@ -124,34 +147,20 @@ h1{
     margin-top: 0px;
     text-align: center;
 }
-.donate{
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 20%;
-    animation: rotation 2s infinite linear;
-    padding-top: 10px;
-    padding-bottom: 10px;
-}
-@keyframes rotation {
-    0% {
-      scale: 0.8
-    }
-    50% {
-      scale:1
-    }
-    100% {
-        scale:0.8
-      }
-  }
 a{
     color:aliceblue;
     padding-bottom: 15px;
+}
+a.donate-link {
+    display: inline-block;  
+    text-decoration: none;  
 }
 .links{
     text-align: center;
     display: flex;
     justify-content: center;
+    padding-top: 30px;
+    background-color: rgb(57, 71, 68);
 }
 .link{
     margin-left: 30px;
@@ -160,11 +169,150 @@ a{
 .link:hover{
     color: rgb(226, 187, 59);
 }
+.cats{
+    display: flex;
+    justify-content: center; 
+    align-items: center;  
+    
+}
+.cats img{
+    padding-top: 20px;
+    padding-bottom: 20px;
+    max-width: 50%;
+    min-width: 40%;
+    margin-right: 20px;
+    padding-left: 150px;
+    border-radius: 50%;  
+}
+.cats p{
+    margin: 0;
+}
+.wide-text{
+    width: 1000px;
+    text-align: left;
+    line-height: 35px;
+}
+.wide-text-centered{
+    width: 1000px;
+    text-align: center;
+    line-height: 35px;
+}
+.rounded-image{
+    border-radius: 15%;
+}
+.section-header{
+    margin: 0;
+    padding-top: 20px;
+    padding-bottom: 50px;
+    background: rgb(70,83,80);
+background: linear-gradient(180deg, rgba(70,83,80,1) 33%, rgba(57,71,68,1) 100%);
+}
+.features-caption{
+    padding-bottom: 30px;
+}
+.tagline{
+    background: rgb(86,100,97);
+}
+aside{
+    padding-top: 120px;
+    padding-bottom: 50px;
+    background: rgb(57,71,68);
+background: linear-gradient(180deg, rgba(57,71,68,1) 23%, rgba(70,83,80,1) 44%);
+}
 footer{
     bottom: 0;
     padding-bottom: 15px;
     padding-top: 20px;
     width:100%;
-    background-color: rgb(57, 71, 68);
+    background: rgb(44,54,51);
     min-height: 50px;
+}
+@keyframes reveal{
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+@keyframes rotation {
+0% {
+    scale: 1
+}
+50% {
+    scale:0.8
+}
+100% {
+    scale:1
+    }
+}
+
+@media (max-width: 500px) {
+    .series-container {
+        width: 100%; 
+        margin: 5px 0;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .tagline {
+        font-size: 16px;
+    }
+
+    .links {
+        flex-direction: column; /* Stack links vertically */
+    }
+
+    .link {
+        margin: 5px 0; /* Adjust margin for vertical stacking */
+    }
+
+    .card {
+        font-size: 18px; /* Smaller font size for cards */
+        line-height: 22px; /* Reduced line height */
+    }
+
+    .donate {
+        width: 150px; /* Adjust donate button size */
+    }
+
+    .features-caption {
+        font-size: 14px; /* Smaller features caption */
+    }
+
+    .social-media p {
+        font-size: 14px; /* Smaller social media text */
+    }
+    .big-button {
+        width: 100%;
+        height: 50px;
+        font-size: 16px;
+    }
+
+    .link {
+        margin: 5px 0;
+    }
+    .title {
+        font-size: 24px;
+    }
+
+    .wide-text, .wide-text-centered {
+        width: 90%;
+        font-size: 14px;
+    }
+
+    .rounded-image {
+        width: 80%;
+    }
+
+    .cats p {
+        font-size: 14px;
+        margin: 10px 0;
+    }
+
+    h1.center {
+        font-size: 18px;
+    }
 }
