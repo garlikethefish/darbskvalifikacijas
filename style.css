@@ -48,6 +48,62 @@ body
     z-index: 1; 
     pointer-events: none; 
     }
+.modal-button{
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7); 
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.3s ease; 
+    z-index: 2;
+}
+
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 4; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgb(0,0,0); 
+    background-color: rgba(0,0,0,0.4); 
+  }
+  
+
+  .modal-content {
+    background-color: rgb(126, 134, 133);
+    color: black;
+    margin: 15% auto; 
+    padding: 20px;
+    border: 1px solid #a9b6a8;
+    width: 40%; 
+    height: auto;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  
+
+  .close {
+    color: #000000;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+  
+  .close:hover,
+  .close:focus {
+    color: rgb(59, 59, 59);
+    text-decoration: none;
+    cursor: pointer;
+}
 .series-container{
     position: relative;
     display: inline-block;
@@ -228,7 +284,6 @@ background: linear-gradient(180deg, rgba(70,83,80,1) 33%, rgba(57,71,68,1) 100%)
 .dropdown {
     display:flex;
     width: auto;
-    table-layout: auto;
     position: relative;
 }
 
@@ -404,4 +459,8 @@ footer{
         display: block;
         width: 100%;
     }
+    .modal-content {
+        width: 80%; /* Could be more or less, depending on screen size */
+        font-size: 8px;
+      }
 }
