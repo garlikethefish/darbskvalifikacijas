@@ -9,7 +9,10 @@
 <body>
 
     <header>
-        <h1 class="title">TV Show Reviews</h1>
+        <div class="title-container">
+            <h1 class="title">TV Show Reviews</h1>
+            <button id="theme-toggle" class="theme-toggle">🌙</button>
+        </div>
         <nav class="nav-links">
             <a class="link" href="main.html">Home</a>
             <a class="link" href="reviews.html">Reviews</a>
@@ -25,7 +28,11 @@
             <a class="link" href="contact.html">Contact</a>
             <a class="link" href="donate.html">Donate</a>
         </nav>
-        
+        <div class="hamburger-menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
     </header>
     <main>
         
@@ -49,8 +56,8 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal1">More</button>
+                <div id="modal1" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
                         <h1>Batman: The Animated Series</h1>
@@ -70,16 +77,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal2">More</button>
+                <div id="modal2" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>Seinfield</h1>
+                        <p>The show about nothing is a sitcom landmark, with comic Jerry and his three sardonic friends finding laughs in both the mundane and the ridiculous.</p>
+                        <p>Seasons: 9</p>
+                        <p>Episodes: 180</p>
+                        <p>Created by: Larry David, Jerry Seinfeld</p>
+                        <p>Released: 1989</p>
                     </div>
                 </div>
                 
@@ -92,16 +99,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal3">More</button>
+                <div id="modal3" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>Star Trek: Deep Space Nine</h1>
+                        <p>In this "Star Trek" spin-off, Commander Sisko leads the multi-species crew of Deep Space Nine, a Federation space station with a complex mission.</p>
+                        <p>Seasons: 7</p>
+                        <p>Episodes: 176</p>
+                        <p>Created by: Rick Berman, Michael Piller</p>
+                        <p>Released: 1993</p>
                     </div>
                 </div>
                 
@@ -115,16 +122,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal4">More</button>
+                <div id="modal4" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>House, M.D.</h1>
+                        <p>Hugh Laurie stars as Dr. Gregory House, an ornery physician who loathes his patients but is a genius at treating mysterious ailments.</p>
+                        <p>Seasons: 8</p>
+                        <p>Episodes: 177</p>
+                        <p>Created by: David Shore</p>
+                        <p>Released: 2004</p>
                     </div>
                 </div>
             </div>
@@ -136,16 +143,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal5">More</button>
+                <div id="modal5" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>Cunk On Earth</h1>
+                        <p>Philomena Cunk is here to show how far humanity has come — or not — in this witty mockumentary tracing the history of civilization.</p>
+                        <p>Seasons: 1</p>
+                        <p>Episodes: 5</p>
+                        <p>Created by: Charlie Brooker</p>
+                        <p>Released: 2022</p>
                     </div>
                 </div>
             </div>
@@ -157,16 +164,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal6">More</button>
+                <div id="modal6" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>Adventure Time</h1>
+                        <p>Young Finn and his shape-shifting dog buddy, Jake, go on a series of surreal adventures as they journey through the postapocalyptic Land of Ooo.</p>
+                        <p>Seasons: 10</p>
+                        <p>Episodes: 283</p>
+                        <p>Created by: Pendleton Ward</p>
+                        <p>Released: 2010</p>
                     </div>
                 </div>
             </div>
@@ -179,16 +186,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal7">More</button>
+                <div id="modal7" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>Dexter</h1>
+                        <p>By day, mild-mannered Dexter is a blood-splatter analyst for the Miami police. But at night, he is a serial killer who only targets other murderers.</p>
+                        <p>Seasons: 8</p>
+                        <p>Episodes: 96</p>
+                        <p>Developed By: James Manos Jr.</p>
+                        <p>Released: 2006</p>
                     </div>
                 </div>
             </div>
@@ -200,16 +207,16 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal8">More</button>
+                <div id="modal8" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h1>Batman: The Animated Series</h1>
-                        <p>The Caped Crusader struggles to overcome his demons while battling Gotham's most notorious villains, including the Joker, Penguin and Harley Quinn.</p>
-                        <p>Seasons: 2</p>
-                        <p>Episodes: 85</p>
-                        <p>Created by: Eric Radomski, Bruce W. Timm</p>
-                        <p>Released: 1992</p>
+                        <h1>Breaking Bad</h1>
+                        <p>A high school chemistry teacher dying of cancer teams with a former student to secure his family's future by manufacturing and selling crystal meth.</p>
+                        <p>Seasons: 5</p>
+                        <p>Episodes: 62</p>
+                        <p>Created by: Vince Gilligan</p>
+                        <p>Released: 2008</p>
                     </div>
                 </div>
             </div>
@@ -221,8 +228,8 @@
                 <a href="reviews.html">
                     <button class="hover-button">Review</button>
                 </a>
-                <button id="modal-button" class="modal-button">More</button>
-                <div id="modals" class="modal">
+                <button class="modal-button" data-target="modal9">More</button>
+                <div id="modal9" class="modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
                         <h1>Sherlock</h1>
