@@ -4,7 +4,7 @@
   import Footer from './components/Footer.vue'
   export default {
   name: 'App',
-  components: {
+  components: { // registers the components so that they can be used in the script
     Title,
     NavBar,
     Footer

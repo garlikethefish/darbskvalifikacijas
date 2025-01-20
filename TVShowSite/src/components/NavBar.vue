@@ -1,18 +1,19 @@
 <template>
     <nav class="nav-links">
-            <a class="link" href="main.html">Home</a>
-            <a class="link" href="reviews.html">Reviews</a>
+            <router-link class="link" to="/">Home</router-link>
+            <router-link class="link" to="reviews">Reviews</router-link>
             <div class="dropdown">
-                <a class="link dropdown-btn" href="updates.html">Updates</a>
+                <router-link class="link dropdown-btn" to="updates">Updates</router-link>
                 <div class="dropdown-content">
                     <a href="site_updates/update_02_10_2024.html">02-10-2024</a>
                     <a href="site_updates/update_18_09_2024.html">18-09-2024</a>
                     <a href="site_updates/update_26_09_2024.html">26-09-2024</a>
                 </div>
             </div>
-            <a class="link" href="about.html">About</a>
-            <a class="link" href="contact.html">Contact</a>
-            <a class="link" href="donate.html">Donate</a>
+            <router-link class="link" to="about">About</router-link>
+            <router-link class="link" to="contact">Contact</router-link>
+            <router-link class="link" to="donate">Donate</router-link>
+            <router-link class="link" to="premium">Premium</router-link>
         </nav>
 </template>
 <style>
@@ -28,11 +29,11 @@
         margin-top: 30px;
     }
     .link{
-        margin-left: 30px;
-        margin-right: 30px;
+        margin-left: 8px;
+        margin-right: 8px;
     }
     .link:hover{
-        color: rgb(226, 187, 59);
+        color: var(--light-bg-color);
     }
     .dropdown-content {
         display: none;
@@ -54,7 +55,7 @@
     }
 
     .dropdown-content a:hover {
-        background-color: #f1f1f1;
+        background-color: #dbdbdb;
         display: block;
     }
 

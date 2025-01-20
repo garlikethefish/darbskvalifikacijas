@@ -7,7 +7,7 @@
     </footer>
 </template>
 
-<style>
+<style scoped>
     footer{
         bottom: 0;
         padding-bottom: 15px;

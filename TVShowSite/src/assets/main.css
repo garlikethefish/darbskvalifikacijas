@@ -1,9 +1,10 @@
 :root {
-    --background-color: rgb(86, 100, 97);
-    --light-bg-color: rgba(70,83,80,1);
-    --medium-bg-color: rgb(57, 71, 68);
-    --dark-bg-color: rgb(44,54,51);
-    --text-color: aliceblue;
+    --background-color: rgb(15,41,11);
+    --light-bg-color: rgba(	163, 234, 136);
+    --medium-bg-color: rgb(15,41,11);
+    --dark-bg-color: rgb(	15, 31, 6);
+    --accent-color: rgb(67, 202, 146);
+    --text-color: rgb(237, 251, 230);
 }
 
 .light-mode {
@@ -11,6 +12,7 @@
     --light-bg-color: rgb(157, 190, 177);
     --medium-bg-color: rgb(133, 163, 153);
     --dark-bg-color: rgb(108, 136, 127);
+    --accent-color: rgb(60, 220, 154);
     --text-color: #000000;
 }
 
@@ -28,7 +30,7 @@ body
 .flex-container {
     display: flex;
     flex-wrap: wrap;
-    background-color: var(--medium-bg-color);
+    background-color: var(--dark-bg-color);
     align-items: center;
     justify-content: center;
 }
@@ -214,10 +216,7 @@ ul{
 li{
     padding-top: 10px;
 }
-aside{
-    padding: 25px;
-    text-align: center;
-}
+
 .social-media{
     text-align: center;
 }
@@ -247,7 +246,7 @@ h1{
     text-align: center;
     font-size: 40px;
     color: var(--text-color);
-    background-color: var(--medium-bg-color);
+    background-color: var(--dark-bg-color);
     margin: 0;
     flex: 1;
     text-align: center; 
@@ -265,7 +264,7 @@ h1{
 }
 
 header{
-    background-color: var(--medium-bg-color);
+    background-color: var(--dark-bg-color);
 }
 
 a{
@@ -321,13 +320,7 @@ a.donate-link {
 .rounded-image{
     border-radius: 15%;
 }
-.section-header{
-    margin: 0;
-    padding-top: 20px;
-    padding-bottom: 50px;
-    background: var(--dark-bg-color);
-background: linear-gradient(180deg, var(--light-bg-color) 33%, var(--medium-bg-color) 100%);
-}
+
 .features-caption{
     padding-bottom: 30px;
 }
@@ -374,12 +367,7 @@ background: linear-gradient(180deg, var(--light-bg-color) 33%, var(--medium-bg-c
     display: inline-block;
 }
 
-aside{
-    padding-top: 120px;
-    padding-bottom: 50px;
-    background: var(--medium-bg-color);
-    background: linear-gradient(180deg, var(--medium-bg-color) 23%, var(--light-bg-color) 44%);
-}
+
 footer{
     bottom: 0;
     padding-bottom: 15px;

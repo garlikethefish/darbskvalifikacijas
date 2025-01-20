@@ -1,47 +1,46 @@
 <template>
     <div class="title-container">
-        <h1 class="title">PlotTwizts</h1>
+        <img class="title" @click="title" :src="'./src/assets/logo_long.png'" />
         <button id="theme-toggle" class="theme-toggle">🌙</button>
     </div>
 </template>
 
-<style>
-    div{
-        display: table;
-        width: 100%;
-        table-layout: fixed;
+<script>
+    export default {
+    methods: {
+        title() {
+        this.$router.push('/');
     }
-    h1{
-        color: var(--text-color);
-        padding-top: 30px;
-        margin-top: 0px;
-        text-align: center;
-    }
-    
-    .title-container{
-        display: flex; 
-        align-items: center;
-        justify-content: space-between;
-    }
-    .title{
-        padding-top: 30px;
-        text-align: center;
-        font-size: 40px;
-        color: var(--text-color);
-        background-color: var(--medium-bg-color);
-        margin: 0;
-        flex: 1;
-        text-align: center; 
-        margin-left: 80px;
-    }
-    .theme-toggle {
-        cursor: pointer; 
-        font-size: 34px; 
-        background: none; 
-        border: none; 
-        padding: 0; 
-        display: inline;
-        outline: none; 
-        margin-right: 20px;
-    }
+  }
+};
+</script>
+
+<style scoped>
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;  
+}
+.title {
+    cursor: pointer;
+    max-width: 400px;
+    height: auto;
+    margin: 0 auto;
+    padding-bottom: 20px;
+}
+
+
+.theme-toggle {
+    cursor: pointer; 
+    font-size: 34px; 
+    background: none; 
+    border: none; 
+    padding: 0; 
+    display: inline;
+    outline: none; 
+    position: absolute; 
+    right: 20px; 
+}
 </style>
