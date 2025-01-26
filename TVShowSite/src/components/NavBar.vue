@@ -33,7 +33,7 @@
         margin-right: 8px;
     }
     .link:hover{
-        color: var(--light-bg-color);
+        color: var(--accent-color);
     }
     .dropdown-content {
         display: none;

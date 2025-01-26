@@ -8,6 +8,6 @@
         padding-top: 50px;
         padding-bottom: 50px;
         text-align: center;
-        background: var(--medium-bg-color);
+        background: linear-gradient(to right,rgb(34, 59, 75),var(--medium-bg-color));
     }
 </style>

@@ -35,6 +35,7 @@ components: {
         <SeriesContainer></SeriesContainer>
         <div class="break"></div>
       </div>
+      <SectionHeader>{{ "" }}</SectionHeader> <!-- blank text -->
       <Aside></Aside>
     </div>
 </template>
