@@ -1,6 +1,6 @@
 <template>
     <aside>
-        <h2>For more info, contact us at: info@plottwizts.com</h2>
+        <h2><slot>For more info, contact us at: info@plottwizts.com</slot></h2>
     </aside>
 </template>
 <style>

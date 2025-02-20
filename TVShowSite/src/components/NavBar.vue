@@ -1,27 +1,16 @@
 <template>
     <nav class="nav-links">
+        <span v-if="isLoggedIn">
             <router-link class="link" to="/">Home</router-link>
-            <router-link class="link" to="reviews">Reviews</router-link>
-            <div class="dropdown">
-                <router-link class="link dropdown-btn" to="updates">Updates</router-link>
-                <div class="dropdown-content">
-                    <a href="site_updates/update_02_10_2024.html">02-10-2024</a>
-                    <a href="site_updates/update_18_09_2024.html">18-09-2024</a>
-                    <a href="site_updates/update_26_09_2024.html">26-09-2024</a>
-                </div>
-            </div>
-            <router-link class="link" to="about">About</router-link>
-            <router-link class="link" to="contact">Contact</router-link>
-            <router-link class="link" to="donate">Donate</router-link>
-            <router-link class="link" to="premium">Premium</router-link>
+        </span>
+        <router-link class="link" to="reviews">Reviews</router-link>
+        <router-link class="link" to="updates">Updates</router-link>
+        <router-link class="link" to="about">About</router-link>
+        <router-link class="link" to="contact">Contact</router-link>
+        <router-link class="link" to="premium">Premium</router-link>
         </nav>
 </template>
 <style>
-    div{
-        display: table;
-        width: 100%;
-        table-layout: fixed;
-    }
     .nav-links {
         display: flex;
         justify-content: center; 
@@ -70,6 +59,7 @@
 </style>
 <script>
 export default {
-  name: "NavBar"
+  
+  
 }
 </script>

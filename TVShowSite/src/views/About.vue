@@ -1,3 +1,9 @@
+<script>
+export default {
+name: 'About',
+};
+</script>
+
 <template>
     <div id="app">
       <div class="center">
@@ -8,10 +14,3 @@
       </div>
     </div>
 </template>
-  
-<script>
-export default {
-name: 'About',
-};
-</script>
-  

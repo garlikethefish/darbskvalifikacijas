@@ -5,14 +5,14 @@ import SectionHeader from '@/components/SectionHeader.vue';
 import SeriesContainer from '@/components/SeriesContainer.vue';
 import Aside from '@/components/Aside.vue';
 export default {
-name: 'Home',
-components: {
-  DailyQuote,
-  Caption,
-  SectionHeader,
-  SeriesContainer,
-  Aside
-}
+  name: 'Home',
+  components: {
+    DailyQuote,
+    Caption,
+    SectionHeader,
+    SeriesContainer,
+    Aside
+  }
 };
 </script>
 <template>
@@ -41,6 +41,6 @@ components: {
 </template>
 <style>
 .break {
-  margin-bottom: 40px; /* Adjust this to control the space before the first SeriesContainer */
+  margin-bottom: 40px;
 }
 </style>

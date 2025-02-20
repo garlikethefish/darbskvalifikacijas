@@ -328,7 +328,7 @@ a.donate-link {
 .tagline{
     background: var(--background-color);
 }
-
+/* unnecessary currently, but might be useful in the future
 .dropdown {
     display:flex;
     width: auto;
@@ -366,7 +366,7 @@ a.donate-link {
 .dropdown-btn {
     text-decoration: none;
     display: inline-block;
-}
+} */
 
 
 footer{
@@ -409,15 +409,17 @@ footer{
         font-size: 22px; 
     }
     
-    .donate img {
-        width: 70%; 
-        height: 70%;
+    .login-button{
+        display: none;
+    }
+    .theme-toggle{
+        display: none;
     }
     .nav-links {
         display: none;
         flex-direction: column;
         position: absolute;
-        top: 60px;
+        top: 210px;
         width: 100%;
         background: var(--dark-bg-color);
     }
@@ -498,7 +500,7 @@ footer{
     h1.center {
         font-size: 24px;
     }
-    
+    /* unnecessary currently, but might be useful in the future
     .dropdown-content {
         display: none;
         position: relative; 
@@ -517,7 +519,7 @@ footer{
         border-bottom: 1px solid #ccc;
         display: block;
         width: 100%;
-    }
+    } */
     .modal{
         top: 0%;
     }
