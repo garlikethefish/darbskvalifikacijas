@@ -6,37 +6,56 @@
         </div>
         <div class="right-section">
             <img class="login-button" @click="login" :src="'./src/assets/login.png'"/>
-            <button @click="theme" id="theme-toggle" class="theme-toggle"><img id="theme-icon" class="theme-toggle" :src="themeIcon"/></button>
+            <button @click="toggleTheme" id="theme-toggle" class="theme-toggle"><img id="theme-icon" class="theme-toggle" :src="themeIcon"/></button>
         </div>
     </div>
 </template>
 
 <script>
-    export default {
-    data() {
-        return {
-            isLightMode: false
-        };
+export default {
+  data() {
+    return {
+      isLightMode: false, // Default theme
+    };
+  },
+  computed: {
+    themeIcon() {
+      return this.isLightMode ? './src/assets/sun.png' : './src/assets/moon.png';
+    }
+  },
+  methods: {
+    title() {
+      this.$router.push('/');
     },
-    computed: {
-        themeIcon() {
-            return this.isLightMode ? './src/assets/sun.png' : './src/assets/moon.png';
-        }
+    login() {
+      this.$router.push('login');
     },
-    methods: {
-        title() {
-        this.$router.push('/');
+    toggleTheme() {
+      this.isLightMode = !this.isLightMode;
+      const theme = this.isLightMode ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
     },
-        login() {
-        this.$router.push('login');
+    getMediaPreference() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        return savedTheme;
+      }
+      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return prefersDarkMode ? 'dark' : 'light';
     },
-    theme() {
-            this.isLightMode = !this.isLightMode;
-        }
-    
+    setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      this.isLightMode = theme === 'light';
+    }
+  },
+  mounted() {
+    const initUserTheme = this.getMediaPreference();
+    this.setTheme(initUserTheme);
   }
 };
 </script>
+
 
 <style scoped>
 .login-button {

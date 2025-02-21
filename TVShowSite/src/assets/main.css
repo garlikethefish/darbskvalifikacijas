@@ -7,15 +7,26 @@
     --accent-color: rgb(112, 233, 116);
     --text-color: rgb(232, 253, 222);
 }
+[data-theme="dark"] {
+    --background-color:rgb(44, 41, 49);
+    --light-bg-color:  rgb(97, 97, 97);
+    --medium-bg-color:rgb(25, 61, 39); 
+    --dark-bg-color:rgb(30, 28, 39);
+    --section-dark-color:rgb(18, 20, 20);
+    --accent-color: rgb(112, 233, 116);
+    --text-color: rgb(232, 253, 222);
+    --gradient-start: rgb(34, 59, 75);
+}
 
-
-.light-mode {
-    --background-color: rgb(245, 245, 245); /* Neutral Gray */
-    --light-bg-color: rgb(200, 230, 201); /* Light Green */
-    --medium-bg-color: rgb(76, 175, 80); /* Primary Green */
-    --dark-bg-color: rgb(56, 142, 60); /* Dark Green */
-    --accent-color: rgb(255, 152, 0); /* Accent Orange */
-    --text-color: rgb(33, 33, 33); /* Dark Gray */
+[data-theme="light"] {
+    --background-color:rgb(181, 178, 187);
+    --light-bg-color:  rgb(235, 235, 235);
+    --medium-bg-color:rgb(130, 146, 136); 
+    --dark-bg-color:rgb(166, 163, 177);
+    --section-dark-color:rgb(141, 153, 153);
+    --accent-color: rgb(16, 104, 19);
+    --text-color: rgb(0, 0, 0);
+    --gradient-start: rgb(213, 222, 228);
 }
 body
 {

@@ -8,7 +8,7 @@
     div{
         padding-top: 5%;
         padding-bottom: 5%;
-        background: linear-gradient(to right,rgb(34, 59, 75),var(--medium-bg-color));
+        background: linear-gradient(to right,var(--gradient-start),var(--medium-bg-color));
     }
     h1{
         font-style: italic;

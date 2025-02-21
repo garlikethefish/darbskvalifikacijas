@@ -103,7 +103,7 @@ background: var(--dark-bg-color);
 }
 
 .form {
-background: linear-gradient(to right,rgb(34, 59, 75),var(--medium-bg-color));
+background: linear-gradient(to right,var(--gradient-start),var(--medium-bg-color));
 padding: 90px;
 border-radius: 8px;
 width: 400px;
@@ -131,7 +131,7 @@ padding: 8px;
 margin-bottom: 10px;
 border: 1px solid #ccc;
 border-radius: 4px;
-background: var(--text-color);
+background: rgb(232, 253, 222);
 }
 
 .form-actions {
