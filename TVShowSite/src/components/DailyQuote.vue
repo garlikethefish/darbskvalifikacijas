@@ -1,7 +1,7 @@
 <template>
-    <div>
-        <h1>"I didn’t poison you, Tobias. I wouldn’t do that to the food."</h1>
-        <h2>Hannibal: Season 1, Episode 8</h2>
+    <div v-if="quote"> <!-- v-if so that doesnt display elements before quote data loaded-->
+        <h1 >“{{ quote.quote }}”</h1>
+        <h2>{{ quote.show_title }}: Season {{ quote.season }}, Episode {{ quote.episode }}</h2>
     </div>
 </template>
 <style scoped>
@@ -19,3 +19,20 @@
         font-style: italic;
     }
 </style>
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      quote: null
+    };
+  },
+  mounted() {
+    axios.get('http://localhost:3000/api/daily-quote')
+      .then(res => {
+        this.quote = res.data;
+      });
+  }
+};
+</script>

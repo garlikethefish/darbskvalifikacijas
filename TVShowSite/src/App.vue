@@ -1,4 +1,5 @@
 <script>
+
   import NavBar from './components/NavBar.vue'
   import HamburgerMenu from './components/HamburgerMenu.vue'
   import Title from './components/Title.vue'
@@ -10,7 +11,7 @@
     NavBar,
     HamburgerMenu,
     Footer
-  },
+  }
 };
 </script>
 

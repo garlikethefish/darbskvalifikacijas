@@ -1,4 +1,5 @@
 <script>
+import axios from 'axios';
 import Caption from '@/components/Caption.vue';
 import DailyQuote from '@/components/DailyQuote.vue';
 import SectionHeader from '@/components/SectionHeader.vue';
