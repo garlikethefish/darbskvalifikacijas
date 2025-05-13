@@ -9,7 +9,7 @@ components: {
 </script>
 <template>
     <div id="app">
-        <h1>work in progress</h1>
+        <h1 id="first-title">work in progress</h1>
         <ReviewPost></ReviewPost>
         <ReviewPost></ReviewPost>
         <ReviewPost></ReviewPost>

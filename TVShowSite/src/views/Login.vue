@@ -2,53 +2,50 @@
 <div class="app">
     <SectionHeader>{{ "" }}</SectionHeader>
     <div class="form-container">
-    <!-- Login Form -->
-    <div class="form" v-if="currentForm === 'login'">
-        <h2>Login</h2>
-        <form @submit.prevent="login">
-        <div class="form-group">
-            <label for="login-email">Email</label>
-            <input type="email" id="login-email" v-model="loginForm.email" required />
-        </div>
-        <div class="form-group">
-            <label for="login-password">Password</label>
-            <input type="password" id="login-password" v-model="loginForm.password" required />
-        </div>
-        <div class="form-actions">
-            <button type="submit">Login</button>
-            <a href="#" @click.prevent="forgotPassword">Forgot Password?</a>
-            <button @click="switchForm('register')">Don't have an account? Register</button>
-        </div>
-        </form>
-        
-    </div>
-
-    <!-- Register Form -->
-    <div class="form" v-if="currentForm === 'register'">
-        <h2>Register</h2>
-        <form @submit.prevent="register">
+        <div class="form" v-if="currentForm === 'login'">
+            <h2>Login</h2>
+            <form @submit.prevent="login">
             <div class="form-group">
-            <label for="register-username">Username</label>
-            <input type="text" id="register-username" v-model="registerForm.username" required />
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" v-model="loginForm.email" required />
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" v-model="loginForm.password" required />
+            </div>
+            <div class="form-actions">
+                <button type="submit">Login</button>
+                <a href="#" @click.prevent="forgotPassword">Forgot Password?</a>
+                <button @click="switchForm('register')">Go to Register</button>
+            </div>
+            </form>
         </div>
-        <div class="form-group">
-            <label for="register-email">Email</label>
-            <input type="email" id="register-email" v-model="registerForm.email" required />
+
+        <div class="form" v-if="currentForm === 'register'">
+            <h2>Register</h2>
+            <form @submit.prevent="register">
+                <div class="form-group">
+                <label for="register-username">Username</label>
+                <input type="text" id="register-username" v-model="registerForm.username" required />
+            </div>
+            <div class="form-group">
+                <label for="register-email">Email</label>
+                <input type="email" id="register-email" v-model="registerForm.email" required />
+            </div>
+            <div class="form-group">
+                <label for="register-password">Password</label>
+                <input type="password" id="register-password" v-model="registerForm.password" required />
+            </div>
+            <div class="form-group">
+                <label for="register-confirm-password">Confirm Password</label>
+                <input type="password" id="register-confirm-password" v-model="registerForm.confirmPassword" required />
+            </div>
+            <div class="form-actions">
+                <button type="submit">Register</button>
+                <button @click.prevent="switchForm('login')">Go to Login</button>
+            </div>
+            </form>
         </div>
-        <div class="form-group">
-            <label for="register-password">Password</label>
-            <input type="password" id="register-password" v-model="registerForm.password" required />
-        </div>
-        <div class="form-group">
-            <label for="register-confirm-password">Confirm Password</label>
-            <input type="password" id="register-confirm-password" v-model="registerForm.confirmPassword" required />
-        </div>
-        <div class="form-actions">
-            <button type="submit">Register</button>
-            <button @click.prevent="switchForm('login')">Already have an account? Login</button>
-        </div>
-        </form>
-    </div>
     </div>
     <SectionHeader>{{ "" }}</SectionHeader>
 </div>
@@ -77,19 +74,58 @@ data() {
     };
 },
 methods: {
-    switchForm(form) {
+  switchForm(form) {
     this.currentForm = form;
-    },
-    login() {
-    console.log('Login with:', this.loginForm);
-    },
-    register() {
-    console.log('Register with:', this.registerForm);
-    },
-    forgotPassword() {
-    console.log('Forgot password');
-    },
-},
+  },
+
+  async login() {
+    try {
+      const response = await fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.loginForm),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      console.log('Login successful:', data);
+      // Optional: store token or redirect
+    } catch (err) {
+      console.error('Login failed:', err.message);
+      alert(`Login failed: ${err.message}`);
+    }
+  },
+
+  async register() {
+    if (this.registerForm.password !== this.registerForm.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3000/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: this.registerForm.username,
+          email: this.registerForm.email,
+          password: this.registerForm.password,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      console.log('Registration successful:', data);
+      alert('Registered! You can now log in.');
+      this.switchForm('login');
+    } catch (err) {
+      console.error('Registration failed:', err.message);
+      alert(`Registration failed: ${err.message}`);
+    }
+  },
+
+  forgotPassword() {
+    alert('Not implemented yet.');
+  },
+}
 };
 </script>
 

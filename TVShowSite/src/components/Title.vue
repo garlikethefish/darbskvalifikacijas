@@ -2,7 +2,7 @@
     <div class="title-container">
         <div></div>
         <div class="logo-section">
-            <img class="title" @click="title" :src="'./src/assets/logo_long.png'" />
+            <img class="title" @click="title" :src="logoSrc" />
         </div>
         <div class="right-section">
             <img class="login-button" @click="login" :src="'./src/assets/login.png'"/>
@@ -21,7 +21,12 @@ export default {
   computed: {
     themeIcon() {
       return this.isLightMode ? './src/assets/sun.png' : './src/assets/moon.png';
-    }
+    },
+    logoSrc() {
+    return this.isLightMode
+      ? './src/assets/logo_long_dark.png' // if is light mode then darker logo should be used for contrast
+      : './src/assets/logo_long.png';
+  }
   },
   methods: {
     title() {

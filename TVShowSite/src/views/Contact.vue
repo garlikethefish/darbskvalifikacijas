@@ -6,7 +6,7 @@ name: 'Contact',
 
 <template>
     <div id="app">
-        <h1>contact us!</h1>
+        <h1 id="first-title">contact us!</h1>
         
         <div class="cats">
             <img :src="'./src/assets/cats.png'">

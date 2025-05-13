@@ -1,7 +1,7 @@
 <template>
     <div v-if="quote"> <!-- v-if so that doesnt display elements before quote data loaded-->
         <h1 >“{{ quote.quote }}”</h1>
-        <h2>{{ quote.show_title }}: Season {{ quote.season }}, Episode {{ quote.episode }}</h2>
+        <h2>{{ quote.series_title }}: Season {{ quote.season }}, Episode {{ quote.episode }}</h2>
     </div>
 </template>
 <style scoped>

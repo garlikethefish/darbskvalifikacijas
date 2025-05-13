@@ -1,6 +1,6 @@
 <template>
     <div class="update-post">
-        <h1 class="update-post-header"><slot>DEFAULT UPDATE</slot></h1>
+        <h1 class="update-post-header" id="first-title"><slot>DEFAULT UPDATE</slot></h1>
         <div class="post-content">
             <p><slot name="content">default post content</slot></p>
         </div>
