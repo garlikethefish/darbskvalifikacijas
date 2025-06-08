@@ -15,6 +15,28 @@ const db = mysql.createConnection({
   database: 'plottwizts'
 });
 
+function getConnection() {
+  return mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'plottwizts'
+  });
+}
+function requireAuth(req, res, next) {
+  const userId = req.headers.authorization; 
+
+  if (!userId || isNaN(userId)) {
+    return res.status(401).json({ message: 'Login required' });
+  }
+
+  req.userId = parseInt(userId); 
+  next();
+}
+
+
+
+
 // Change quote on refresh
 app.get('/api/daily-quote', (req, res) => {
   db.query('SELECT * FROM quotes ORDER BY RAND() LIMIT 1', (err, results) => {
@@ -184,7 +206,126 @@ app.post('/api/reviews', (req, res) => {
     }
   );
 });
+app.post('/api/reviews/:id/react', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { is_like } = req.body;
+  const userId = req.userId;
 
+  try {
+    // Fetch review by id
+    const [reviewRows] = await db.promise().query('SELECT * FROM reviews WHERE id = ?', [id]);
+    if (reviewRows.length === 0) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+    const review = reviewRows[0];
+
+    // Parse JSON arrays safely
+    let likedBy, dislikedBy;
+    try {
+      likedBy = JSON.parse(review.liked_by || '[]');
+      dislikedBy = JSON.parse(review.disliked_by || '[]');
+    } catch {
+      likedBy = [];
+      dislikedBy = [];
+    }
+
+    const hasLiked = likedBy.includes(userId);
+    const hasDisliked = dislikedBy.includes(userId);
+
+    // Return conflict if user tries to react the same way twice
+    if (is_like && hasLiked) {
+      return res.status(409).json({ message: 'Already liked' });
+    }
+    if (!is_like && hasDisliked) {
+      return res.status(409).json({ message: 'Already disliked' });
+    }
+
+    // Update arrays depending on reaction
+    if (is_like) {
+      if (hasDisliked) {
+        dislikedBy = dislikedBy.filter(uid => uid !== userId);
+      }
+      likedBy.push(userId);
+    } else {
+      if (hasLiked) {
+        likedBy = likedBy.filter(uid => uid !== userId);
+      }
+      dislikedBy.push(userId);
+    }
+
+    // Remove duplicates (just in case)
+    likedBy = [...new Set(likedBy)];
+    dislikedBy = [...new Set(dislikedBy)];
+
+    // Update review counts and JSON columns
+    const newLikes = likedBy.length;
+    const newDislikes = dislikedBy.length;
+
+    await db.promise().query(
+      `UPDATE reviews SET liked_by = ?, disliked_by = ?, likes = ?, dislikes = ? WHERE id = ?`,
+      [JSON.stringify(likedBy), JSON.stringify(dislikedBy), newLikes, newDislikes, id]
+    );
+
+    return res.json({ message: 'Reaction updated', likes: newLikes, dislikes: newDislikes });
+
+  } catch (error) {
+    console.error('Error updating reaction:', error);
+    return res.status(500).json({ message: 'Failed to update reaction' });
+  }
+});
+
+
+app.post('/api/reviews/:id/comments', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const { comment_text } = req.body;
+  const userId = req.userId;
+
+  if (!comment_text || comment_text.trim().length === 0) {
+    return res.status(400).json({ message: 'Empty comment not allowed' });
+  }
+
+  const conn = getConnection();
+
+  conn.query(
+    `INSERT INTO comments (user_id, review_id, episode_id, comment_text) VALUES (?, ?, ?, ?)`,
+    [userId, id, 0, comment_text],
+    (err) => {
+      if (err) {
+        conn.end();
+        return res.status(500).json({ message: 'Failed to add comment' });
+      }
+
+      conn.query(
+        `UPDATE reviews SET comment_count = comment_count + 1 WHERE id = ?`,
+        [id],
+        (err2) => {
+          conn.end();
+          if (err2) return res.status(500).json({ message: 'Failed to update comment count' });
+          res.json({ message: 'Comment added' });
+        }
+      );
+    }
+  );
+});
+
+app.get('/api/reviews/:id/comments', (req, res) => {
+  const { id } = req.params;
+  const conn = getConnection();
+
+  conn.query(
+    `SELECT c.id, c.comment_text, c.created_at, u.username
+     FROM comments c
+     JOIN users u ON c.user_id = u.id
+     WHERE c.review_id = ?
+     ORDER BY c.created_at ASC`,
+    [id],
+    (err, results) => {
+      conn.end();
+      if (err) return res.status(500).json({ message: 'Failed to load comments' });
+      res.json(results);
+    }
+  );
+});
 
 
 
