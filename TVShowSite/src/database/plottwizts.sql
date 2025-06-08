@@ -62,6 +62,7 @@ CREATE TABLE `episodes` (
   `episode_number` int NOT NULL,
   `title` varchar(200) NOT NULL,
   `air_date` date DEFAULT NULL,
+  `picture` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -72,7 +73,7 @@ CREATE TABLE `episodes` (
 
 LOCK TABLES `episodes` WRITE;
 /*!40000 ALTER TABLE `episodes` DISABLE KEYS */;
-INSERT INTO `episodes` VALUES (1,1,1,1,'Apéritif','2013-04-04'),(2,1,1,2,'Amuse-Bouche','2013-04-11'),(3,1,1,3,'Potage','2013-04-18'),(4,1,1,4,'Œuf','2013-04-24'),(5,1,1,5,'Coquilles','2013-04-25'),(6,1,1,6,'Entrée','2013-05-02'),(7,1,1,7,'Sorbet','2013-05-09'),(8,1,1,8,'Fromage','2013-05-16'),(9,1,1,9,'Trou Normand','2013-05-23'),(10,1,1,10,'Buffet Froid','2013-05-30'),(11,1,1,11,'Rôti','2013-06-06'),(12,1,1,12,'Relevés','2013-06-13'),(13,1,1,13,'Savoureux','2013-06-20'),(14,2,1,1,'The Man Trap','1966-09-08'),(15,2,1,2,'Charlie X','1966-09-15'),(16,2,1,3,'Where No Man Has Gone Before','1966-09-22');
+INSERT INTO `episodes` VALUES (1,1,1,1,'Apéritif','2013-04-04','hannibal_01.jpg'),(2,1,1,2,'Amuse-Bouche','2013-04-11','hannibal_01.jpg'),(3,1,1,3,'Potage','2013-04-18','hannibal_01.jpg'),(4,1,1,4,'Œuf','2013-04-24','hannibal_01.jpg'),(5,1,1,5,'Coquilles','2013-04-25','hannibal_01.jpg'),(6,1,1,6,'Entrée','2013-05-02','hannibal_01.jpg'),(7,1,1,7,'Sorbet','2013-05-09','hannibal_01.jpg'),(8,1,1,8,'Fromage','2013-05-16','hannibal_01.jpg'),(9,1,1,9,'Trou Normand','2013-05-23','hannibal_01.jpg'),(10,1,1,10,'Buffet Froid','2013-05-30','hannibal_01.jpg'),(11,1,1,11,'Rôti','2013-06-06','hannibal_01.jpg'),(12,1,1,12,'Relevés','2013-06-13','hannibal_01.jpg'),(13,1,1,13,'Savoureux','2013-06-20','hannibal_01.jpg'),(14,2,1,1,'The Man Trap','1966-09-08','star-trek_01.jpg'),(15,2,1,2,'Charlie X','1966-09-15','star-trek_01.jpg'),(16,2,1,3,'Where No Man Has Gone Before','1966-09-22','star-trek_01.jpg'),(17,7,1,1,'Pilot','1999-01-10','the-sopranos_01.png');
 /*!40000 ALTER TABLE `episodes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -99,7 +100,7 @@ CREATE TABLE `quotes` (
 
 LOCK TABLES `quotes` WRITE;
 /*!40000 ALTER TABLE `quotes` DISABLE KEYS */;
-INSERT INTO `quotes` VALUES (1,'I am the danger.','Breaking Bad',1,6),(2,'Winter is coming.','Game of Thrones',3,22),(3,'How you doin\'?','Friends',4,1),(4,'Bazinga!','The Big Bang Theory',3,5),(5,'D\'oh!','The Simpsons',1,1),(6,'How much cheese is too much cheese?','It\'s Always Sunny in Philadelphia',4,2),(7,'Especially the lies.','Star Trek Deep Space Nine',2,3),(8,'Death to the opposition!','Star Trek Deep Space Nine',1,2),(9,'To think, after all this time, all our lunches together you still don\'t trust me. There\'s hope for you yet, doctor.','Star Trek Deep Space Nine',5,2),(10,'Father, you\'re dying. For once in your life, speak the truth.','Star Trek Deep Space Nine',7,4),(11,'Love and death are the great hinges on which all human sympathies turn.','Hannibal',8,6),(12,'Peter, is your social worker inside that horse?','Hannibal',7,4),(13,'What we do for ourselves, dies with us. What we do for others, lives beyond us','Hannibal',4,1),(14,'You righteous, reckless, twitchy, little man!','Hannibal',6,4),(15,'Don’t be afraid, start the tape','Interview With the Vampire',2,1),(16,'The wilderness that is our daughter.','Interview With the Vampire',1,2),(17,'Memory is a monster. We forget, it doesn’t.','Interview With the Vampire',1,1);
+INSERT INTO `quotes` VALUES (1,'I am the danger.','Breaking Bad',1,6),(2,'Winter is coming.','Game of Thrones',3,22),(3,'How you doin\'?','Friends',4,1),(4,'Bazinga!','The Big Bang Theory',3,5),(5,'D\'oh!','The Simpsons',1,1),(6,'How much cheese is too much cheese?','It\'s Always Sunny in Philadelphia',4,2),(7,'Especially the lies.','Star Trek Deep Space Nine',2,3),(8,'Death to the opposition!','Star Trek Deep Space Nine',1,2),(9,'To think, after all this time, all our lunches together you still don\'t trust me. There\'s hope for you yet, doctor.','Star Trek Deep Space Nine',5,2),(10,'Father, you\'re dying. For once in your life, speak the truth.','Star Trek Deep Space Nine',7,4),(11,'Love and death are the great hinges on which all human sympathies turn.','Hannibal',8,6),(12,'Peter, is your social worker inside that horse?','Hannibal',7,4),(13,'What we do for ourselves, dies with us. What we do for others, lives beyond us','Hannibal',4,1),(14,'You righteous, reckless, twitchy, little man!','Hannibal',6,4),(15,'Don’t be afraid, start the tape','Interview with the Vampire',2,1),(16,'The wilderness that is our daughter.','Interview with the Vampire',1,2),(17,'Memory is a monster. We forget, it doesn’t.','Interview with the Vampire',1,1);
 /*!40000 ALTER TABLE `quotes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -118,12 +119,18 @@ CREATE TABLE `reviews` (
   `review_text` text NOT NULL,
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `review_title` varchar(200) NOT NULL,
+  `likes` int DEFAULT '0',
+  `dislikes` int DEFAULT '0',
+  `comment_count` int DEFAULT '0',
+  `liked_by` json DEFAULT NULL,
+  `disliked_by` json DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id_for_idx` (`user_id`),
-  CONSTRAINT `episode_id_for` FOREIGN KEY (`id`) REFERENCES `episodes` (`id`) ON DELETE CASCADE,
+  KEY `episode_id_for` (`episode_id`),
+  CONSTRAINT `episode_id_for` FOREIGN KEY (`episode_id`) REFERENCES `episodes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `user_id_for` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `chk_rating_valid` CHECK ((`rating` between 1 and 5))
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -132,7 +139,7 @@ CREATE TABLE `reviews` (
 
 LOCK TABLES `reviews` WRITE;
 /*!40000 ALTER TABLE `reviews` DISABLE KEYS */;
-INSERT INTO `reviews` VALUES (1,1,1,4,'Great! Yupp','2023-02-01 00:00:00','Good'),(2,2,1,1,'Terrible, never watch this!!!','2022-01-01 00:00:00','Awfulll....');
+INSERT INTO `reviews` VALUES (1,1,1,4,'Great! Yupp','2023-02-01 00:00:00','Good',50,3,0,NULL,NULL),(2,2,1,1,'Terrible, never watch this!!!','2022-01-01 00:00:00','Awfulll....',2,45,0,NULL,NULL),(3,3,2,5,'This is the best thing iver veer seeen. My favourite show everrrr. All my daily refrences come from this. How could anyone hate this????? :(','2012-02-01 22:00:00','the best',3,5,0,NULL,NULL),(4,4,1,1,'Boringggg ahh hell','2014-04-12 22:00:00','Bored',0,442,0,NULL,NULL),(5,5,14,5,'Been waiting for this to come on here, loved it with this re-watch just as much as the first time i watched it. Recommend for anyone whos interested in classic Sci-Fi.','2022-12-12 22:00:00','Timeless.',14,2,0,NULL,NULL),(6,1,2,3,'First epsidoe was better. Not much else to add :/','2023-02-03 00:00:00','Eh...',1,22,0,NULL,NULL),(7,6,5,3,'Idk waht dis is','2025-02-03 00:00:00','They made me watch dis',0,1,0,NULL,NULL),(8,1,3,4,'Got better. Ate sum cheese 2day. that mightve influenced my deicsion.','2023-02-03 00:00:00','tis alright',3,1,0,NULL,NULL),(9,5,15,4,'I really loved the staging and scenery in this one. Kirk really gives his all in the performance. Hate the premise though, really very terrible. Spocks cool as a cucumber as always. :)','2023-12-12 22:00:00','A good one.',3,1,0,NULL,NULL),(10,2,17,4,'Very interesting insight into mob-life, if true of course. Great acting from the lead, can\'t wait for the rest!','2025-04-09 22:33:12','Great acting',5,2,0,NULL,NULL),(11,8,1,5,'loooved it','2025-06-02 20:07:41','grreat <3',0,0,0,NULL,NULL),(12,8,14,2,'ive seen better','2025-06-02 20:12:41','ehhh',0,0,0,NULL,NULL),(13,8,17,4,'so this was a great one. more shows liek this please!!!!','2025-06-02 20:13:37','suuuuperrrr',0,0,0,NULL,NULL),(14,8,2,5,'you really cant beat hannibal, theres a lot to love about this show - the cinematography, even the color palette is just amazing in this show. love love love it. <3','2025-06-02 20:16:36','even better',0,0,0,NULL,NULL),(15,8,17,3,'it was slightly worse on second thought, but fun nonethelesss. so thats a bout it yeah. for sure.','2025-06-02 20:17:32','yah i saw it again',0,0,0,NULL,NULL),(16,8,1,3,'asdfghfjkljhjgfds','2025-06-02 21:04:51','i really liked this',0,0,0,NULL,NULL),(17,9,17,4,'labs','2025-06-02 21:04:51','man patik',0,0,0,NULL,NULL),(60,9,17,5,'superigs','2025-06-03 17:54:58','superr',0,1,0,'[]','[12]'),(61,8,14,2,'nezinu nepatika','2025-06-03 17:55:55','nu taa',0,0,0,NULL,NULL),(62,10,14,5,'nez, varēja daudz labāk','2025-06-03 17:56:49','ehhh',0,0,0,NULL,NULL),(63,10,15,4,'šis bij daudz labāks nekā pirmā sērija, super gan','2025-06-03 17:57:30','oho labs',1,0,0,'[12]','[]'),(64,11,14,4,'man patika','2025-06-03 18:30:07','labs',0,1,0,'[]','[12]'),(65,12,17,5,':3','2025-06-08 21:09:46','waow',1,0,0,'[12]','[]'),(66,12,16,3,'luv dis show sm :3','2025-06-08 22:00:49','just like the title fr',1,0,0,'[12]','[]');
 /*!40000 ALTER TABLE `reviews` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -149,6 +156,7 @@ CREATE TABLE `series` (
   `description` text,
   `genre` varchar(100) DEFAULT NULL,
   `release_year` year DEFAULT NULL,
+  `series_picture` varchar(255) DEFAULT 'basic_series.png',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -159,7 +167,7 @@ CREATE TABLE `series` (
 
 LOCK TABLES `series` WRITE;
 /*!40000 ALTER TABLE `series` DISABLE KEYS */;
-INSERT INTO `series` VALUES (1,'Hannibal','Both a gift and a curse, Graham has the extraordinary ability to think like his prey—he sees what they see, feels what they feel. But while Graham is pursuing an especially troubling, cannibalistic murderer, Special Agent Jack Crawford teams him with a highly respected psychiatrist – a man with a taste for the criminal minded – Dr. Hannibal Lecter.','Drama, Crime',2013),(2,'Star Trek','Space. The Final Frontier. The U.S.S. Enterprise embarks on a five year mission to explore the galaxy. The Enterprise is under the command of Captain James T. Kirk with First Officer Mr. Spock, from the planet Vulcan. With a determined crew, the Enterprise encounters Klingons, Romulans, time paradoxes, tribbles and genetic supermen led by Khan Noonian Singh. Their mission is to explore strange new worlds, to seek new life and new civilizations, and to boldly go where no man has gone before.','Sci-Fi & Fantasy, Drama',1966),(3,'Vicious','Freddie and Stuart are an old couple who have been together for decades and bicker constantly. Their lives are turned upside down by their new upstairs neighbor Ash, who is sure to cause trouble in their mundane lives.','Comedy',2013),(4,'The Simpsons','Set in Springfield, the average American town, the show focuses on the antics and everyday adventures of the Simpson family; Homer, Marge, Bart, Lisa and Maggie, as well as a virtual cast of thousands. Since the beginning, the series has been a pop culture icon, attracting hundreds of celebrities to guest star. The show has also made name for itself in its fearless satirical take on politics, media and American life in general.','Family, Animation, Comedy',1989),(5,'Breaking Bad','Walter White, a New Mexico chemistry teacher, is diagnosed with Stage III cancer and given a prognosis of only two years left to live. He becomes filled with a sense of fearlessness and an unrelenting desire to secure his family\'s financial future at any cost as he enters the dangerous world of drugs and crime.','Drama, Crime',2008),(6,'Better Call Saul','Six years before Saul Goodman meets Walter White. We meet him when the man who will become Saul Goodman is known as Jimmy McGill, a small-time lawyer searching for his destiny, and, more immediately, hustling to make ends meet. Working alongside, and, often, against Jimmy, is “fixer” Mike Ehrmantraut. The series tracks Jimmy’s transformation into Saul Goodman, the man who puts “criminal” in “criminal lawyer\".','Crime, Drama',2015),(7,'The Sopranos','The story of New Jersey-based Italian-American mobster Tony Soprano and the difficulties he faces as he tries to balance the conflicting requirements of his home life and the criminal organization he heads. Those difficulties are often highlighted through his ongoing professional relationship with psychiatrist Jennifer Melfi. The show features Tony\'s family members and Mafia associates in prominent roles and story arcs, most notably his wife Carmela and his cousin and protégé Christopher Moltisanti.','Drama',1999);
+INSERT INTO `series` VALUES (1,'Hannibal','Both a gift and a curse, Graham has the extraordinary ability to think like his prey—he sees what they see, feels what they feel. But while Graham is pursuing an especially troubling, cannibalistic murderer, Special Agent Jack Crawford teams him with a highly respected psychiatrist – a man with a taste for the criminal minded – Dr. Hannibal Lecter.','Drama, Crime',2013,'hannibal.png'),(2,'Star Trek','Space. The Final Frontier. The U.S.S. Enterprise embarks on a five year mission to explore the galaxy. The Enterprise is under the command of Captain James T. Kirk with First Officer Mr. Spock, from the planet Vulcan. With a determined crew, the Enterprise encounters Klingons, Romulans, time paradoxes, tribbles and genetic supermen led by Khan Noonian Singh. Their mission is to explore strange new worlds, to seek new life and new civilizations, and to boldly go where no man has gone before.','Sci-Fi & Fantasy, Drama',1966,'star-trek.png'),(3,'Vicious','Freddie and Stuart are an old couple who have been together for decades and bicker constantly. Their lives are turned upside down by their new upstairs neighbor Ash, who is sure to cause trouble in their mundane lives.','Comedy',2013,'vicious.png'),(4,'The Simpsons','Set in Springfield, the average American town, the show focuses on the antics and everyday adventures of the Simpson family; Homer, Marge, Bart, Lisa and Maggie, as well as a virtual cast of thousands. Since the beginning, the series has been a pop culture icon, attracting hundreds of celebrities to guest star. The show has also made name for itself in its fearless satirical take on politics, media and American life in general.','Family, Animation, Comedy',1989,'the-simpsons.png'),(5,'Breaking Bad','Walter White, a New Mexico chemistry teacher, is diagnosed with Stage III cancer and given a prognosis of only two years left to live. He becomes filled with a sense of fearlessness and an unrelenting desire to secure his family\'s financial future at any cost as he enters the dangerous world of drugs and crime.','Drama, Crime',2008,'breaking-bad.png'),(6,'Better Call Saul','Six years before Saul Goodman meets Walter White. We meet him when the man who will become Saul Goodman is known as Jimmy McGill, a small-time lawyer searching for his destiny, and, more immediately, hustling to make ends meet. Working alongside, and, often, against Jimmy, is “fixer” Mike Ehrmantraut. The series tracks Jimmy’s transformation into Saul Goodman, the man who puts “criminal” in “criminal lawyer\".','Crime, Drama',2015,'better-call-saul.png'),(7,'The Sopranos','The story of New Jersey-based Italian-American mobster Tony Soprano and the difficulties he faces as he tries to balance the conflicting requirements of his home life and the criminal organization he heads. Those difficulties are often highlighted through his ongoing professional relationship with psychiatrist Jennifer Melfi. The show features Tony\'s family members and Mafia associates in prominent roles and story arcs, most notably his wife Carmela and his cousin and protégé Christopher Moltisanti.','Drama',1999,'the-sopranos.png'),(8,'Batman: The Animated Series','Vowing to avenge the murder of his parents, Bruce Wayne devotes his life to wiping out crime in Gotham City as the masked vigilante \"Batman\".','Action & Adventure, Animation, Drama, Mystery ',1992,'batman-tas.png'),(9,'Dexter','Dexter Morgan, a blood spatter pattern analyst for the Miami Metro Police also leads a secret life as a serial killer, hunting down criminals who have slipped through the cracks of justice.','Crime, Drama, Mystery',2006,'dexter.png'),(10,'Sherlock','A modern update finds the famous sleuth and his doctor partner solving crime in 21st century London.','Crime, Drama, Mystery ',2010,'sherlock.png'),(11,'House MD','Dr. Gregory House, a drug-addicted, unconventional, misanthropic medical genius, leads a team of diagnosticians at the fictional Princeton–Plainsboro Teaching Hospital in New Jersey.','Drama, Mystery, Comedy',2004,'house-md.png'),(12,'Seinfield','A stand-up comedian and his three offbeat friends weather the pitfalls and payoffs of life in New York City in the \'90s. It\'s a show about nothing.','Comedy',1989,'seinfield.png'),(13,'Interview with the Vampire','A vampire from New Orleans reunites with an ailing reporter to recount a life of bloodlust and toxic romance with the sinister Frenchman who turned him.','Drama, Sci-Fi & Fantasy ',2022,'iwtv.png');
 /*!40000 ALTER TABLE `series` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -176,10 +184,11 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('admin','user','guest') NOT NULL DEFAULT 'user',
+  `profile_picture` varchar(255) DEFAULT 'defaultpfp.jpg',
   PRIMARY KEY (`id`),
   UNIQUE KEY `username_UNIQUE` (`username`),
   UNIQUE KEY `email_UNIQUE` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -188,7 +197,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'burgers','burgers@gmail.com','$2b$10$KVCM1Q3jUdG1mzjWpKz4peKp1oTLY7lNw0mxdg/C1ILD2d.cZRUEa','user'),(2,'yahoo','mario@gmail.com','$2b$10$OtYnN4x7MKeiM9xJ.d7uw.YaUwWaz3EdeCOvMffsGju9iKCswZexq','user'),(3,'burr','brr@gmail.com','$2b$10$uoRKHfQBchKlAdBQOzXjbeMBEMqjxTEnjKZzmd4S5wLrZunypveNW','user'),(4,'darkz','darkz@inbox.lv','$2b$10$g9ZhH3wZwgt8lIOrKyqBgO7sjN47Oa5pF/GLDCcvMlq8CUDaX6O2q','user');
+INSERT INTO `users` VALUES (1,'burgers','burgers@gmail.com','$2b$10$KVCM1Q3jUdG1mzjWpKz4peKp1oTLY7lNw0mxdg/C1ILD2d.cZRUEa','user','pfp1.png'),(2,'yahoo','mario@gmail.com','$2b$10$OtYnN4x7MKeiM9xJ.d7uw.YaUwWaz3EdeCOvMffsGju9iKCswZexq','user','defaultpfp.jpg'),(3,'burr','brr@gmail.com','$2b$10$uoRKHfQBchKlAdBQOzXjbeMBEMqjxTEnjKZzmd4S5wLrZunypveNW','user','pfp2.png'),(4,'darkz','darkz@inbox.lv','$2b$10$g9ZhH3wZwgt8lIOrKyqBgO7sjN47Oa5pF/GLDCcvMlq8CUDaX6O2q','user','pfp3.png'),(5,'claps3','claps@claps.com','$2b$10$3AaR.08ik5xce3JjydqoHuzfRfi1ITjdfkNh8AAiydKIiGL5dn.l6','user','pfp4.png'),(6,'bestuser1234','best@inbox.lv','$2b$10$jFFAYngVcChdEQfOWSYCQuDY7hOnoWw8G34DgbaWB9NZp.Qp8F7tK','user','pfp5.png'),(7,'aasdd','asd@gamil.com','$2b$10$vnP21uiBTMUOYXfFg8lBYOXiroDsjbRqrtZBRJAz4QTFF47GG5FUC','user','defaultpfp.jpg'),(8,'pepsi_man','pepsi_man@gmail.com','$2b$10$aRUC42BHlCcQ3OadLEgVE.Ni2UjcqGyMuxkD5BFaZI09Hgsu00Fxe','user','defaultpfp.jpg'),(9,'parks','parks@gmail.com','$2b$10$6igqOJSpdrrVSjZFMuK/PuLgpI4SZ7m7fmQteX/9hJ8YadugBwnkG','user','defaultpfp.jpg'),(10,'ok','ok@inbox.lv','$2b$10$6SdaTmkOqMhfstwgeZUCdOG9UpO7pjjiJWI.Py7wDbrULChRYPRVG','user','defaultpfp.jpg'),(11,'labs','labs@gmail.com','$2b$10$gvzK2dOuRU2uF6VRiFY.oeWAtuudvyGXDBfRcVQ85DfxefWPaZCn6','user','defaultpfp.jpg'),(12,'abc123','abc@gmail.com','$2b$10$4YPOEJZr6BkP6bbGcIrxXuZ0HDCEJLJIwtKkq7tEqZ7HfdFO37Goa','user','defaultpfp.jpg');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -201,4 +210,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-05-13 21:39:46
+-- Dump completed on 2025-06-08 22:57:18
