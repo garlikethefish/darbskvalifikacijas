@@ -7,6 +7,7 @@ import Profile from '../views/Profile.vue';
 import Reviews from '../views/Reviews.vue';
 import Updates from '../views/Updates.vue';
 import Premium from '../views/Premium.vue';
+import CreateReview from '../views/CreateReview.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -55,6 +56,11 @@ const router = createRouter({
       path: '/premium',
       name: 'premium',
       component: Premium,
+    },
+    {
+      path: '/create-review',
+      name: 'create-review',
+      component: CreateReview,
     }
   ],
 });

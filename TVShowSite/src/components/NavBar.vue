@@ -1,8 +1,5 @@
 <template>
     <nav class="nav-links">
-        <span v-if="isLoggedIn">
-            <router-link class="link" to="/">Home</router-link>
-        </span>
         <router-link class="link" to="reviews">Reviews</router-link>
         <router-link class="link" to="updates">Updates</router-link>
         <router-link class="link" to="about">About</router-link>

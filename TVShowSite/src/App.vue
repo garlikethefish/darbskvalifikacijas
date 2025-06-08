@@ -1,5 +1,4 @@
 <script>
-
   import NavBar from './components/NavBar.vue'
   import HamburgerMenu from './components/HamburgerMenu.vue'
   import Title from './components/Title.vue'
@@ -15,21 +14,28 @@
 };
 </script>
 
-
 <template>
   <header>
     <Title></Title>
     <NavBar></NavBar>
     <HamburgerMenu></HamburgerMenu>
   </header>
-  <main>
-    <router-view/>
+  
+  <main class="layout-wrapper">
+    <router-view class="page-content"/>
   </main>
   <footer>
     <Footer></Footer>
   </footer>
-  
 </template>
 
-<style>
+<style scoped>
+.layout-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 50vh;
+}
+.page-content {
+  flex: 1;
+}
 </style>

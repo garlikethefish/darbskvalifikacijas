@@ -1,68 +1,133 @@
 <template>
-    <div class="review-container">
-        <div class="series-section">
-            <h1 class="series-title">Series Title</h1>
-            <img class="square-img" :src="'./src/assets/gator.png'">
-            <h2 class="season-episode">01x05</h2>
-            <p class="avg">average score</p>
-            <div class="rating">
-                <img class="star" :src="'./src/assets/star.png'">
-                <img class="star" :src="'./src/assets/star.png'">
-                <img class="star" :src="'./src/assets/star.png'">
-                <img class="star" :src="'./src/assets/star.png'">
-                <img class="star" :src="'./src/assets/star.png'">
-            </div>
-        </div>
-        <div class="right-container">
-            <div class="top-section">
-                <div class="rating">
-                    <img class="star" :src="'./src/assets/star.png'">
-                    <img class="star" :src="'./src/assets/star.png'">
-                    <img class="star" :src="'./src/assets/star.png'">
-                    <img class="star" :src="'./src/assets/star.png'">
-                    <img class="star" :src="'./src/assets/star.png'">
-                </div>
-                <div class="user-container">
-                    <div class="user">
-                        <h2>username</h2>
-                        <h3>23 reviews</h3>
-                    </div>
-                        <img class="pfp" :src="'./src/assets/pfp.png'">
-                </div>
-            </div>
-            <div class="content-section">
-                <h1>the best show ever</h1>
-                <p>"The Alligator Chronicles" is an"The Alligator Chronicles" is an exciting and educational show that delves into the mysterious and fascinating world of alligators. From the very first episode, viewers are transported to the swamps, rivers, and wetlands where these incredible creatures thrive. The show does a great job of blending adventure with scientific insight, offering an in-depth look at the life cycle, behavior, and environmental importance of alligators. Whether you are a wildlife enthusiast or simply curious about these apex predators, the show provides a captivating blend of both entertainment and education.
-
-The cinematography is one of the standout features of "The Alligator Chronicles." The breathtaking shots of alligators in their natural habitats are truly spectacular, showcasing not just the animals but the beautiful ecosystems they inhabit. From the murky waters to the sun-dappled swamps, the show does an excellent job of capturing the beauty and danger of the wild. The use of drones and underwater cameras allows viewers to see these reptiles from angles that are both thrilling and informative, providing an intimate look at their behavior.
-
-The narrative is skillfully crafted, featuring stories about individual alligators and their unique experiences. From tracking the life of a young hatchling to exploring the territorial battles of mature adults, the show offers a detailed, personal view of the creatures. The pacing of each episode keeps things dynamic, as the audience is constantly learning something new about the alligator’s survival tactics, hunting strategies, and interactions with other wildlife. The inclusion of expert commentary and interviews with biologists helps provide context and expert analysis, making the show both entertaining and scientifically sound.
-
-Another strength of the series is its exploration of conservation efforts. It highlights how alligators, once on the brink of extinction, have made a remarkable comeback thanks to dedicated efforts from wildlife agencies and scientists. The show emphasizes the importance of preserving these apex predators, not only for ecological balance but also for their cultural significance in various regions. It sheds light on the ongoing efforts to protect alligator habitats, reduce human-wildlife conflict, and ensure these remarkable creatures continue to thrive for generations to come.
-
-While the show is undeniably informative, it also carries a sense of adventure and suspense. The combination of stunning visuals, real-life footage, and captivating storytelling creates a truly immersive experience. Whether it’s watching an alligator hunt its prey or observing its survival instincts in action, "The Alligator Chronicles" captures the essence of the wild in a way that feels both educational and thrilling. For anyone interested in wildlife, nature, or simply looking for an enthralling watch, this show is definitely worth checking out. </p>
-            </div>
-            <div class="bottom-section">
-                <div class="date-container">
-                    <p class="date">23-04-2025</p>
-                </div>
-                
-                <img class="pfp" :src="'./src/assets/pfp.png'">
-                <p class="likes">834</p>
-                <img class="pfp" :src="'./src/assets/pfp.png'">
-                <p class="dislikes">200</p>
-                <img class="pfp" :src="'./src/assets/pfp.png'">
-                <p class="comments">12</p>
-            </div>
-        </div>
+  <div class="review-container">
+    <div class="series-section">
+      <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
+      <img class="square-img" :src="getEpisodePictureUrl(review.episode_picture)" alt="Episode image" />
+      <h2 class="season-episode">{{ formatSeasonEpisode(review) }}</h2>
+      <p class="avg">Average score: {{ Number(review.average_rating).toFixed(2) }} / 5</p>
+      <div class="rating">
+        <img
+          v-for="n in 5"
+          :key="n"
+          class="star-avg"
+          :src="n <= avgStars ? './src/assets/star.png' : './src/assets/star-empty.png'"
+          alt="average show star rating"
+        />
+      </div>
     </div>
+
+    <div class="right-container">
+      <div class="top-section">
+        <h2 class="series-title">{{ review.episode_title || 'Episode Title' }}</h2>
+        <div class="rating">
+          <img
+            v-for="n in 5"
+            :key="'user-star-' + n"
+            class="star"
+            :src="n <= review.rating ? './src/assets/star.png' : './src/assets/star-empty.png'"
+            alt="user rating star"
+          />
+        </div>
+
+        <div class="user-container">
+          <div class="user">
+            <h2>{{ review.username || 'username' }}</h2>
+            <h3>{{ review.user_review_count || 0 }} reviews</h3>
+          </div>
+          <img
+            class="pfp"
+            :src="getProfilePictureUrl(review.profile_picture)"
+            alt="User profile picture"
+          />
+        </div>
+      </div>
+
+      <div class="content-section">
+        <h1>{{ review.review_title }}</h1>
+        <p>{{ review.review_text }}</p>
+      </div>
+
+      <div class="bottom-section">
+        <div class="date-container">
+          <p class="date">{{ formatDate(review.date) }}</p>
+        </div>
+
+        <img class="small-icon" :src="'./src/assets/heart_icon.png'" alt="likes" />
+        <p class="likes">{{ review.likes }}</p>
+
+        <img class="small-icon" :src="'./src/assets/broken_hrt_icon.png'" alt="dislikes" />
+        <p class="dislikes">{{ review.dislikes }}</p>
+
+        <img class="small-icon" :src="'./src/assets/comment_icon.png'" alt="comments" />
+        <p class="comments">{{ review.comment_count }}</p>
+      </div>
+    </div>
+  </div>
 </template>
+
+<script>
+export default {
+  name: 'ReviewPost',
+  props: {
+    review: {
+      type: Object,
+      required: true
+    }
+  },
+  computed: {
+    averageRating() {
+      return Number(this.review.average_rating) || 0;
+    },
+    avgStars() {
+      return Math.round(this.averageRating);
+    }
+  },
+  methods: {
+    getProfilePictureUrl(filename) {
+      if (!filename) {
+        return new URL('../assets/defaultpfp.jpg', import.meta.url).href;
+      }
+      return new URL(`../assets/user_pfp/${filename}`, import.meta.url).href;
+    },
+    getEpisodePictureUrl(filename) {
+      if (!filename) {
+        return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
+      }
+      return new URL(`../assets/series_season_images/${filename}`, import.meta.url).href;
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    },
+    formatSeasonEpisode(review) {
+      const season = (review.season_number || 0).toString().padStart(2, '0');
+      const episode = (review.episode_number || 0).toString().padStart(2, '0');
+      return `${season}x${episode}`;
+    }
+  }
+};
+</script>
+
+
+
 <style>
 .pfp{
     width: 80px;
     height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
     margin: 10px;
     margin-right: 40px;
+}
+.small-icon{
+    width: 60px;
+    height: 60px;
+    margin: 10px;
 }
 .square-img{
     width: 200px;
@@ -71,9 +136,11 @@ While the show is undeniably informative, it also carries a sense of adventure a
     
 }
 .star{
-    /* use greyscale filter for no star */
     max-width: 50px;
-    max-width: 50px;
+    height: auto;
+}
+.star-avg{
+    max-width: 30px;
     height: auto;
 }
 .rating{
@@ -92,6 +159,9 @@ While the show is undeniably informative, it also carries a sense of adventure a
     align-items: center;
     margin:5px;
     width: auto;
+}
+.user h3, h2{
+  margin: 2px;
 }
 .user-container{
     display: flex;

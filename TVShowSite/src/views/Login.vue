@@ -53,6 +53,7 @@
 
 <script>
 import SectionHeader from '@/components/SectionHeader.vue';
+import { nextTick } from 'vue';
 
 export default {
     components: {
@@ -85,10 +86,20 @@ methods: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(this.loginForm),
       });
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
-      console.log('Login successful:', data);
-      // Optional: store token or redirect
+
+      localStorage.setItem('auth', JSON.stringify({
+          loggedIn: true,
+          user: data.user
+        }));
+      // go back to home page
+      this.$router.push('/').then(() => {
+        nextTick(() => { // wait until loaded home page
+          location.reload(); // force refresh so that login buttons refresh
+        });
+      });
     } catch (err) {
       console.error('Login failed:', err.message);
       alert(`Login failed: ${err.message}`);
@@ -146,6 +157,7 @@ width: 400px;
 }
 
 h2 {
+  
 text-align: center;
 font-size: 32px;
 color:var(--text-color)
@@ -156,12 +168,14 @@ margin-bottom: 10px;
 }
 
 label {
+font-size: large;
 display: block;
 margin-bottom: 5px;
 color: var(--text-color);
 }
 
 input {
+font-size: large;
 width: 100%;
 padding: 8px;
 margin-bottom: 10px;

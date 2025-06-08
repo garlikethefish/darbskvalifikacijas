@@ -29,7 +29,7 @@ export default {
     };
   },
   mounted() {
-    axios.get('http://localhost:3000/api/daily-quote')
+    axios.get('api/daily-quote')
       .then(res => {
         this.quote = res.data;
       });

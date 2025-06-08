@@ -5,7 +5,9 @@
             <img class="title" @click="title" :src="logoSrc" />
         </div>
         <div class="right-section">
-            <img class="login-button" @click="login" :src="'./src/assets/login.png'"/>
+            <img v-if="isLoggedIn" class="add-review-button" @click="create_review" :src="'./src/assets/add_review.png'"/>
+            <img v-if="isLoggedIn" class="profile-button" @click="profile" :src="'./src/assets/loggedin.png'"/>
+            <img v-else class="login-button" @click="login" :src="'./src/assets/login.png'" />
             <button @click="toggleTheme" id="theme-toggle" class="theme-toggle"><img id="theme-icon" class="theme-toggle" :src="themeIcon"/></button>
         </div>
     </div>
@@ -16,6 +18,7 @@ export default {
   data() {
     return {
       isLightMode: false, // Default theme
+      isLoggedIn: false
     };
   },
   computed: {
@@ -34,6 +37,12 @@ export default {
     },
     login() {
       this.$router.push('login');
+    },
+    profile() {
+      this.$router.push('profile');
+    },
+    create_review() {
+      this.$router.push('create-review');
     },
     toggleTheme() {
       this.isLightMode = !this.isLightMode;
@@ -55,8 +64,15 @@ export default {
     }
   },
   mounted() {
+    // set default user theme to the one user has chosen
     const initUserTheme = this.getMediaPreference();
     this.setTheme(initUserTheme);
+    // check login status from localStorage on load
+    const auth = localStorage.getItem('auth');
+    if (auth) {
+      const parsed = JSON.parse(auth);
+      this.isLoggedIn = parsed.loggedIn === true;
+    }
   }
 };
 </script>
@@ -65,9 +81,19 @@ export default {
 <style scoped>
 .login-button {
     cursor: pointer;
-    max-width: 60px;
+    max-width: 50px;
     height: auto;
     }
+.profile-button{
+  cursor: pointer;
+  max-width: 50px;
+  height: auto;
+}
+.add-review-button{
+  cursor: pointer;
+  max-width: 50px;
+  height: auto;
+}
 .title-container {
     display: flex;
     align-items: center;
@@ -87,18 +113,19 @@ export default {
 }
 .right-section{
     display: flex;
-    gap:40px;
+    gap:25px;
     justify-content: right;
     margin-left: -20px;
     margin-right: 20px;
 }
 
 .theme-toggle {
+  display: flex;
     cursor: pointer;
     font-size: 34px; 
     background: none; 
-    max-width: 40px;
-    max-height: auto;
+    max-width: 50px;
+    height: auto;
     border: none; 
     outline: none; 
 }

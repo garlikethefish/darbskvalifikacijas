@@ -1,49 +1,49 @@
 <template>
     <div class="series-container">
-        <img :src="'./src/assets/series_images/basic_series.png'" alt="Series">
-        <div class="card">Series Title</div>
-        <div class="caption-text">Basic series description with a lot of text like a lot a hell of a lot of text juppp jp jup.</div>
+        <img :src="getSeriesPictureUrl(series.series_picture)" alt="Series">
+        <div class="card">{{ series.title }}</div>
+        <div class="caption-text">{{ series.description.substring(0,100) + "..."  }}</div>
         <router-link to="reviews">
             <button class="hover-button">Review</button>
         </router-link>
-        <button @click="initModal('modal1')" class="modal-button" data-target="modal1">More</button>
-        <div id="modal1" class="modal">
+        <button @click="openModal" class="modal-button">More</button>
+        <div class="modal" v-if="isModalOpen" @click.self="closeModal">
             <div class="modal-content">
-                <span class="close">&times;</span>
-                <h1>Series Title</h1>
-                <p>Series description.</p>
-                <p>Seasons: X</p>
-                <p>Episodes: XX</p>
-                <p>Created by: John Doe, Jane Doe</p>
-                <p>Released: XXXX</p>
+                <span class="close" @click="closeModal">&times;</span>
+                <h1>{{ series.title }}</h1>
+                <p>{{ series.description }}</p>
+                <p>Genre: {{ series.genre }}</p>
+                <p>Released: {{ series.release_year }}</p>
             </div>
         </div>
     </div>
 </template>
 <script>
 export default {
+    data() {
+        return {
+            isModalOpen: false
+        };
+    },
     methods: {
-        initModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-            
-            const closeButton = modal.querySelector('.close');
-            
-            if (closeButton) {
-                closeButton.addEventListener('click', () => {
-                    modal.style.display = 'none';
-                });
+        openModal() {
+            this.isModalOpen = true;
+        },
+        closeModal() {
+        this.isModalOpen = false;
+        },
+        getSeriesPictureUrl(filename) {
+            if (!filename) {
+                return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
             }
-
-            window.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-
-            // Show the modal
-            modal.style.display = 'block';
+            return new URL(`../assets/series_images/${filename}`, import.meta.url).href;
         }
+    },
+    props: {
+    series: {
+      type: Object,
+      required: true
     }
+  }
 }
 </script>
