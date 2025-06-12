@@ -1,21 +1,35 @@
-## TV seriālu atsauksmju saite
+## TV seriālu atsauksmju mājaslapa
 
 Šis projekts ir mājaslapa, kas ļauj lietotājiem publicēt atsauksmes dažādiem TV seriāliem, atsevišķi katrai sezonai un sērijai.
 
+Izmantotie rīki:
+- Vue.js
+- HTML
+- CSS
+- JavaScript
+- CORS
+- Express
+- MySQL
+- bcryptjs
+- Visual Studio Code
+- MySQL Workbench
+
+Palaišanas vadlīnijas:
+- Vēlams atvērt projektu ar Visual Studio Code
+- Projekta direktorijā atvert Terminal
+- Iekš Terminal vajag ievadīt 'node server.js'
+- Pēc tam vajag jaunā Terminal (tajā pašā projekta direktorijā) 'npm run dev'
+- Tad vajag spiest uz linka, kas atver mājaslapu
 
 Funkcijas: 
 - Navigācija
 - Login/Register
+- Novērtēt sērijas no 5 zvaigznēm
+- Sortēšana, Filtrēšana
+- Profile lapa
 - Iespēja apskatīt vairāk info par TV seriālu (More poga)
 - Tumšs motīvs/Gaišs motīvs pārslēgšana
 - Vairākas informatīvas lapas (About, Contact, Updates)
-- Review lapa daļēji implementēta
-- Mobile-view daļēji implementēts
-
-Funkcijas, kuras plānotas nākotnē:
-- Var izveidot profilu
-- Vērtēt sēriju ar zvaigznēm - max 5 zvaigznes 
-- Atzīmēt kurus TV seriālus/seriālu sērijas jau ir redzējis (Watched) un kuras tikai plāno redzēt (To Watch)
-- Atzīmēt 3 mīļākos TV seriālus savā profilā
-- Apskatīt citu lietotāju atsauksmes
-- Komentēt citu atsaukmes
+- Reviews lapa
+- Mobile-view
+- ...un vēl citas
