@@ -1,62 +1,71 @@
 <template>
-    <nav class="nav-links">
-        <router-link class="link" to="reviews">Reviews</router-link>
-        <router-link class="link" to="updates">Updates</router-link>
-        <router-link class="link" to="about">About</router-link>
-        <router-link class="link" to="contact">Contact</router-link>
-        <router-link class="link" to="premium">Premium</router-link>
-        </nav>
+  <nav :class="['nav-links', { active: isMenuOpen }]">
+    <router-link class="link" to="/reviews" @click="$emit('close')">Reviews</router-link>
+    <router-link class="link" to="/updates" @click="$emit('close')">Updates</router-link>
+    <router-link class="link" to="/about" @click="$emit('close')">About</router-link>
+    <router-link class="link" to="/contact" @click="$emit('close')">Contact</router-link>
+    <router-link class="link" to="/premium" @click="$emit('close')">Premium</router-link>
+  </nav>
 </template>
-<style>
-    .nav-links {
-        display: flex;
-        justify-content: center; 
-        gap: 20px; 
-        margin-top: 30px;
-    }
-    .link{
-        margin-left: 8px;
-        margin-right: 8px;
-    }
-    .link:hover{
-        color: var(--accent-color);
-    }
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        background-color: #f9f9f9;
-        min-width: 100px;
-        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-        z-index: 1;
-        top: 100%;  
-        left: 0;
-    }
 
-    .dropdown-content a {
-        text-align: center;
-        color: black;
-        padding: 12px 16px;
-        text-decoration: none;
-        display: block;
-    }
-
-    .dropdown-content a:hover {
-        background-color: #dbdbdb;
-        display: block;
-    }
-
-    .dropdown:hover .dropdown-content {
-        display: block;
-    }
-
-    .dropdown-btn {
-        text-decoration: none;
-        display: inline-block;
-    }
-</style>
 <script>
 export default {
-  
-  
+  props: {
+    isMenuOpen: {
+      type: Boolean,
+      required: true
+    }
+  }
 }
 </script>
+
+<style scoped>
+.nav-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+  transition: transform 0.3s ease;
+}
+
+.link {
+  margin: 0 8px;
+}
+
+.link:hover {
+  color: var(--text-color);
+}
+
+@media (max-width: 500px) {
+    .nav-links a {
+        margin: 10px 0;
+        font-weight: bold;
+        padding-left: 10px;
+    }
+    .nav-links {
+        display: flex;
+        position: absolute;
+        top: 100px;
+        left: -100%;
+        width: 100%;
+        gap: 0;
+        background: linear-gradient(180deg, var(--dark-bg-color) 33%, var(--background-color) 100%);
+        border-bottom: 2px solid var(--text-color);
+        border-top: 2px solid var(--text-color);
+        transition: left 0.3s ease;
+        flex-direction: column;
+        padding: 20px;
+        box-sizing: border-box;
+        z-index: 1000;
+    }
+    .link {
+        margin: 10px 0;
+        padding-left: 10px;
+        color: var(--text-color);
+    }
+
+    .nav-links.active {
+        left: 0;
+    }
+}
+</style>

@@ -95,10 +95,10 @@ export default {
   height: auto;
 }
 .title-container {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    position: relative;  
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;  
 }
 .title {
     cursor: pointer;
@@ -128,5 +128,45 @@ export default {
     height: auto;
     border: none; 
     outline: none; 
+}
+@media (max-width: 500px) {
+  .title {
+    max-width: 200px;
+    margin-left: 0; 
+    margin-right: 0; 
+    text-align: center;
+    padding: 0;
+    display: block;  
+  }
+  .login-button {
+    margin:auto;
+    max-width: 40px;
+    max-height: 40px;
+  }
+  .profile-button{
+    margin:auto;
+    max-width: 40px;
+    max-height: 40px;
+  }
+  .add-review-button{
+    margin:auto;
+    max-width: 40px;
+    max-height: 40px;
+  }
+  .theme-toggle {
+    max-width: 40px;
+    height: auto;
+  }
+  .right-section{
+    display: flex;
+    gap:15px;
+    margin-left: 0px;
+    margin-right: 15px;
+  }
+  .title-container{
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 }
 </style>

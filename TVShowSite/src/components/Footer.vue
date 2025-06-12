@@ -20,7 +20,6 @@
     p{
         display: block;
         text-align: center;
-        min-width: 400px;
     }
     a{
         padding: 5px;

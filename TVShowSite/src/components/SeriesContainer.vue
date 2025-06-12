@@ -47,3 +47,170 @@ export default {
   }
 }
 </script>
+<style>
+.modal-button{
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.3s ease; 
+    z-index: 2;
+}
+.series-container {
+    position: relative;
+    display: inline-block;
+    width: 100%; 
+    margin: 20px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.series-container img {
+    display: block;
+    transition: filter 0.3s ease; 
+    width: 100%;
+    object-fit: cover;
+    height: 250px;
+}
+
+/* Regular Modal Styles (Desktop) */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 30px;
+    border: 1px solid #a9b6a8;
+    width: 50%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    position: relative;
+    animation: modalopen 0.3s;
+}
+
+.close {
+    color: var(--text-color);
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: var(--light-bg-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content h1 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    padding-right: 30px;
+}
+
+.modal-content p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+@keyframes modalopen {
+    from {opacity: 0; transform: translateY(-20px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+@media (max-width: 500px){
+.series-container{
+    position: relative;
+    display: inline-block;
+    width: 100%; 
+    margin: 20px;
+    overflow: hidden;
+    text-align: center;
+}
+.series-container img {
+    display: block;
+    transition: filter 0.3s ease; 
+    width: 100%;
+    object-fit: cover;
+    height: 250px;
+}
+.modal-button{
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.3s ease; 
+    z-index: 2;
+}
+
+.modal {
+    position: fixed;
+    z-index: 100; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.4); 
+  }
+  
+
+  .modal-content {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: auto; 
+    border: 1px solid #a9b6a8;
+    width: 100%; 
+    height: auto;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+
+  .close {
+    color: var(--text-color);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close:hover,
+  .close:focus {
+    color: var(--light-bg-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+}
+</style>

@@ -18,6 +18,16 @@
         text-align: center;
         font-style: italic;
     }
+    @media (max-width: 500px) {
+      h1{
+        font-size: 24px;
+        padding: 0 5px;
+      }
+      h2{
+        font-size: 18px;
+        padding: 0 5px;
+      }
+    }
 </style>
 <script>
 import axios from 'axios';

@@ -2,35 +2,36 @@
   <div id="app">
     <div class="create-review">
       <h1>Create new review</h1>
-
-      <div class="form-section">
-        <label>Select TV show:</label>
-        <div class="series-list">
-          <div
-            class="series-item"
-            v-for="series in seriesList"
-            :key="series.id"
-            @click="selectSeries(series)"
-            :class="{ selected: selectedSeries?.id === series.id }"
-          >
-            <img :src="getSeriesPictureUrl(series.series_picture)" />
-            <p>{{ series.title }}</p>
+      <div class="form-group">
+        <div class="form-section">
+          <label>Select TV SERIES:</label>
+          <div class="series-list">
+            <div
+              class="series-item"
+              v-for="series in seriesList"
+              :key="series.id"
+              @click="selectSeries(series)"
+              :class="{ selected: selectedSeries?.id === series.id }"
+            >
+              <img :src="getSeriesPictureUrl(series.series_picture)" />
+              <p>{{ series.title }}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="form-section" v-if="selectedSeries">
-        <label>Select Episode</label>
-        <div class="episode-list">
-          <div
-            class="episode-item"
-            v-for="episode in episodes"
-            :key="episode.id"
-            @click="selectEpisode(episode)"
-            :class="{ selected: selectedEpisode?.id === episode.id }"
-          >
-            <img :src="getEpisodePictureUrl(episode.picture)" />
-            <p>{{ episode.title }}</p>
+        <div class="form-section" v-if="selectedSeries">
+          <label>Select EPISODE:</label>
+          <div class="episode-list">
+            <div
+              class="episode-item"
+              v-for="episode in episodes"
+              :key="episode.id"
+              @click="selectEpisode(episode)"
+              :class="{ selected: selectedEpisode?.id === episode.id }"
+            >
+              <img :src="getEpisodePictureUrl(episode.picture)" />
+              <p>{{ episode.title }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -202,7 +203,7 @@ export default {
 input,
 textarea {
   width: 100%;
-  padding: 10px;
+  min-height: 30px;
   margin: 8px 0 20px;
   border-radius: 4px;
   border: 1px solid #ccc;
@@ -220,5 +221,35 @@ button {
 
 button:hover {
   background: #2cac56;
+}
+.form-group{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  gap: 10%;
+}
+@media (max-width: 500px) {
+  .create-review {
+    width: 100%;
+    padding: 0;
+  }
+  .form-section{
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .form-group{
+    flex-direction: column;
+  }
+  .series-item, .episode-item{
+    flex-direction: column;
+  }
+  input{
+    max-width: 300px;
+  }
+  textarea{
+    max-width: 300px;
+  }
 }
 </style>

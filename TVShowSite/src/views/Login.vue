@@ -8,10 +8,12 @@
             <div class="form-group">
                 <label for="login-email">Email</label>
                 <input type="email" id="login-email" v-model="loginForm.email" required />
+                <span class="error-message" v-if="loginErrors.email">{{ loginErrors.email }}</span>
             </div>
             <div class="form-group">
                 <label for="login-password">Password</label>
                 <input type="password" id="login-password" v-model="loginForm.password" required />
+                <span class="error-message" v-if="loginErrors.password">{{ loginErrors.password }}</span>
             </div>
             <div class="form-actions">
                 <button type="submit">Login</button>
@@ -27,18 +29,22 @@
                 <div class="form-group">
                 <label for="register-username">Username</label>
                 <input type="text" id="register-username" v-model="registerForm.username" required />
+                <span class="error-message" v-if="registerErrors.username">{{ registerErrors.username }}</span>
             </div>
             <div class="form-group">
                 <label for="register-email">Email</label>
                 <input type="email" id="register-email" v-model="registerForm.email" required />
+                <span class="error-message" v-if="registerErrors.email">{{ registerErrors.email }}</span>
             </div>
             <div class="form-group">
                 <label for="register-password">Password</label>
                 <input type="password" id="register-password" v-model="registerForm.password" required />
+                <span class="error-message" v-if="registerErrors.password">{{ registerErrors.password }}</span>
             </div>
             <div class="form-group">
                 <label for="register-confirm-password">Confirm Password</label>
                 <input type="password" id="register-confirm-password" v-model="registerForm.confirmPassword" required />
+                <span class="error-message" v-if="registerErrors.confirmPassword">{{ registerErrors.confirmPassword }}</span>
             </div>
             <div class="form-actions">
                 <button type="submit">Register</button>
@@ -66,20 +72,147 @@ data() {
         email: '',
         password: '',
     },
+    loginErrors: {
+        email: '',
+        password: ''
+    },
     registerForm: {
         username: '',
         email: '',
         password: '',
         confirmPassword: '',
     },
+    registerErrors: {
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    },
+    checkingUsername: false,
+    usernameAvailable: false,
     };
 },
 methods: {
   switchForm(form) {
     this.currentForm = form;
+    // Reset errors when switching forms
+    this.resetErrors();
+  },
+
+  resetErrors() {
+    this.loginErrors = { email: '', password: '' };
+    this.registerErrors = { username: '', email: '', password: '', confirmPassword: '' };
+  },
+
+  validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  },
+
+  validatePassword(password) {
+    // At least 8 characters, one uppercase, one number, one symbol
+    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    return re.test(password);
+  },
+
+  validateUsername(username) {
+    // Only allow alphanumeric characters, underscores and hyphens
+    const re = /^[a-zA-Z0-9_-]{3,20}$/;
+    return re.test(username);
+  },
+
+  async checkUsernameAvailability(username) {
+    if (!username || !this.validateUsername(username)) return false;
+    
+    this.checkingUsername = true;
+    try {
+      const response = await fetch(`http://localhost:3000/api/check-username?username=${encodeURIComponent(username)}`);
+      const data = await response.json();
+      this.usernameAvailable = data.available;
+      return data.available;
+    } catch (err) {
+      console.error('Error checking username:', err);
+      return false;
+    } finally {
+      this.checkingUsername = false;
+    }
+  },
+
+  async validateLoginForm() {
+    let isValid = true;
+    this.loginErrors = { email: '', password: '' };
+
+    if (!this.loginForm.email) {
+      this.loginErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!this.validateEmail(this.loginForm.email)) {
+      this.loginErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if (!this.loginForm.password) {
+      this.loginErrors.password = 'Password is required';
+      isValid = false;
+    }
+
+    return isValid;
+  },
+
+  async validateRegisterForm() {
+    let isValid = true;
+    this.registerErrors = { username: '', email: '', password: '', confirmPassword: '' };
+
+    // Username validation
+    if (!this.registerForm.username) {
+      this.registerErrors.username = 'Username is required';
+      isValid = false;
+    } else if (!this.validateUsername(this.registerForm.username)) {
+      this.registerErrors.username = 'Username must be 3-20 characters and can only contain letters, numbers, underscores, and hyphens';
+      isValid = false;
+    } else {
+      const isAvailable = await this.checkUsernameAvailability(this.registerForm.username);
+      if (!isAvailable) {
+        this.registerErrors.username = 'Username is already taken';
+        isValid = false;
+      }
+    }
+
+    // Email validation
+    if (!this.registerForm.email) {
+      this.registerErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!this.validateEmail(this.registerForm.email)) {
+      this.registerErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    // Password validation
+    if (!this.registerForm.password) {
+      this.registerErrors.password = 'Password is required';
+      isValid = false;
+    } else if (this.registerForm.password.length < 8) {
+      this.registerErrors.password = 'Password must be at least 8 characters';
+      isValid = false;
+    } else if (!this.validatePassword(this.registerForm.password)) {
+      this.registerErrors.password = 'Password must contain at least one uppercase letter, one number, and one special character';
+      isValid = false;
+    }
+
+    // Confirm password validation
+    if (!this.registerForm.confirmPassword) {
+      this.registerErrors.confirmPassword = 'Please confirm your password';
+      isValid = false;
+    } else if (this.registerForm.password !== this.registerForm.confirmPassword) {
+      this.registerErrors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
+    return isValid;
   },
 
   async login() {
+    if (!await this.validateLoginForm()) return;
+
     try {
       const response = await fetch('http://localhost:3000/api/login', {
         method: 'POST',
@@ -88,7 +221,7 @@ methods: {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) throw new Error(data.error || 'Login failed');
 
       localStorage.setItem('auth', JSON.stringify({
           loggedIn: true,
@@ -102,15 +235,12 @@ methods: {
       });
     } catch (err) {
       console.error('Login failed:', err.message);
-      alert(`Login failed: ${err.message}`);
+      this.loginErrors.password = err.message || 'Invalid email or password';
     }
   },
 
   async register() {
-    if (this.registerForm.password !== this.registerForm.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
+    if (!await this.validateRegisterForm()) return;
 
     try {
       const response = await fetch('http://localhost:3000/api/register', {
@@ -123,18 +253,19 @@ methods: {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      console.log('Registration successful:', data);
-      alert('Registered! You can now log in.');
+      if (!response.ok) throw new Error(data.error || 'Registration failed');
+      
+      alert('Registration successful! You can now log in.');
       this.switchForm('login');
+      this.registerForm = { username: '', email: '', password: '', confirmPassword: '' };
     } catch (err) {
       console.error('Registration failed:', err.message);
-      alert(`Registration failed: ${err.message}`);
+      this.registerErrors.email = err.message || 'Registration failed. Please try again.';
     }
   },
 
   forgotPassword() {
-    alert('Not implemented yet.');
+    alert('Password reset functionality will be implemented soon.');
   },
 }
 };
@@ -157,7 +288,6 @@ width: 400px;
 }
 
 h2 {
-  
 text-align: center;
 font-size: 32px;
 color:var(--text-color)
@@ -178,10 +308,18 @@ input {
 font-size: large;
 width: 100%;
 padding: 8px;
-margin-bottom: 10px;
+margin-bottom: 5px;
 border: 1px solid #ccc;
 border-radius: 4px;
 background: rgb(232, 253, 222);
+}
+
+.error-message {
+color: #ff4444;
+font-size: 0.9em;
+display: block;
+margin-top: -5px;
+margin-bottom: 10px;
 }
 
 .form-actions {
@@ -205,6 +343,11 @@ button:hover {
 background-color: rgb(20, 36, 49)
 }
 
+button:disabled {
+background-color: #cccccc;
+cursor: not-allowed;
+}
+
 a {
 color: var(--text-color);
 text-decoration: none;
@@ -215,4 +358,3 @@ a:hover {
 text-decoration: underline;
 }
 </style>
-  

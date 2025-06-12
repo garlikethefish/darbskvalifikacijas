@@ -1,33 +1,49 @@
+<template>
+  <header>
+    <Title />
+    <HamburgerMenu @toggle="toggleMenu" />
+    <NavBar :isMenuOpen="isMenuOpen" @close="closeMenu" />
+  </header>
+
+  <main class="layout-wrapper" @click="closeMenu">
+    <router-view class="page-content" />
+  </main>
+
+  <footer>
+    <Footer />
+  </footer>
+</template>
+
 <script>
-  import NavBar from './components/NavBar.vue'
-  import HamburgerMenu from './components/HamburgerMenu.vue'
-  import Title from './components/Title.vue'
-  import Footer from './components/Footer.vue'
-  export default {
-  name: 'App',
-  components: { // registers the components so that they can be used in the script
+import NavBar from './components/NavBar.vue'
+import HamburgerMenu from './components/HamburgerMenu.vue'
+import Title from './components/Title.vue'
+import Footer from './components/Footer.vue'
+
+export default {
+  components: {
     Title,
     NavBar,
     HamburgerMenu,
     Footer
+  },
+  data() {
+    return {
+      isMenuOpen: false
+    };
+  },
+  methods: {
+    toggleMenu() {
+      this.isMenuOpen = !this.isMenuOpen;
+    },
+    closeMenu() {
+      if (this.isMenuOpen) {
+        this.isMenuOpen = false;
+      }
+    }
   }
 };
 </script>
-
-<template>
-  <header>
-    <Title></Title>
-    <NavBar></NavBar>
-    <HamburgerMenu></HamburgerMenu>
-  </header>
-  
-  <main class="layout-wrapper">
-    <router-view class="page-content"/>
-  </main>
-  <footer>
-    <Footer></Footer>
-  </footer>
-</template>
 
 <style scoped>
 .layout-wrapper {
@@ -37,5 +53,14 @@
 }
 .page-content {
   flex: 1;
+}
+@media (max-width: 500px) {
+  header{
+    position:sticky;
+    top:0;
+    z-index: 100;
+    border-bottom: 2px solid var(--accent-color);
+    padding: 10px 0;
+  }
 }
 </style>
