@@ -1,10 +1,9 @@
 <template>
   <nav :class="['nav-links', { active: isMenuOpen }]">
     <router-link class="link" to="/reviews" @click="$emit('close')">Reviews</router-link>
-    <router-link class="link" to="/updates" @click="$emit('close')">Updates</router-link>
     <router-link class="link" to="/about" @click="$emit('close')">About</router-link>
     <router-link class="link" to="/contact" @click="$emit('close')">Contact</router-link>
-    <router-link class="link" to="/premium" @click="$emit('close')">Premium</router-link>
+    <router-link class="link" to="/stats" @click="$emit('close')">Statistics</router-link>
   </nav>
 </template>
 

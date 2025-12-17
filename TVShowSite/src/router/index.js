@@ -5,9 +5,8 @@ import Contact from '../views/Contact.vue';
 import Login from '../views/Login.vue';
 import Profile from '../views/Profile.vue';
 import Reviews from '../views/Reviews.vue';
-import Updates from '../views/Updates.vue';
-import Premium from '../views/Premium.vue';
 import CreateReview from '../views/CreateReview.vue';
+import Statistics from '@/views/Statistics.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,26 +40,20 @@ const router = createRouter({
     }
     ,
     {
-      path: '/updates',
-      name: 'updates',
-      component: Updates,
-    }
-    ,
-    {
       path: '/profile',
       name: 'profile',
       component: Profile,
     }
     ,
     {
-      path: '/premium',
-      name: 'premium',
-      component: Premium,
-    },
-    {
       path: '/create-review',
       name: 'create-review',
       component: CreateReview,
+    },
+    {
+      path: '/stats',
+      name: 'stats',
+      component: Statistics,
     }
   ],
 });

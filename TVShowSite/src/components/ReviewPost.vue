@@ -8,7 +8,7 @@
           <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
           <img class="square-img" :src="getEpisodePictureUrl(review.episode_picture)" alt="Episode image" />
           <h2 class="season-episode">{{ formatSeasonEpisode(review) }}</h2>
-          <p class="avg">Average score: {{ Number(review.average_rating).toFixed(2) }} / 5</p>
+          <p class="avg">Average score: {{ Math.round(review.average_rating || 0) }}/5</p>
           <div class="rating">
             <img
               v-for="n in 5"
@@ -45,9 +45,9 @@
               />
             </div>
             <button 
-              v-if="(isHoveringReview && canDeleteReview) || showDeleteModal"
+              v-show="canDeleteReview || showDeleteModal"
               class="review-delete-button"
-              @click.stop="showDeleteModal = true" >
+              @click.stop="showDeleteModal = true">
               <img src="../assets/delete.png" alt="Delete" class="delete-icon"/>
             </button>
             <div v-if="showDeleteModal" class="delete-modal">
@@ -88,7 +88,7 @@
       <div v-if="showComments" class="comment-section">
         <p v-if="loading" class="loading-text">Loading comments...</p>
 
-        <div v-else>
+        <div v-else class="center-div">
           <div v-for="comment in comments" :key="comment.id" class="comment" @mouseenter="hoveredCommentId = comment.id" 
             @mouseleave="hoveredCommentId = null">
             
@@ -194,10 +194,10 @@ export default {
       if (!filename) return new URL('../assets/defaultpfp.jpg', import.meta.url).href;
       return new URL(`../assets/user_pfp/${filename}`, import.meta.url).href;
     },
-    getEpisodePictureUrl(filename) {
-      if (!filename) return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
-      return new URL(`../assets/series_season_images/${filename}`, import.meta.url).href;
+    getEpisodePictureUrl(url) {
+      return url || new URL('../assets/series_images/basic_series.png', import.meta.url).href;
     },
+
     formatDate(dateStr) {
       if (!dateStr) return '';
       const d = new Date(dateStr);
@@ -404,28 +404,35 @@ export default {
     margin-right: 40px;
 }
 .small-icon{
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     margin: 10px;
 }
 button {
   background-color: transparent;
   border: none;
 }
-.square-img{
-    width: 200px;
-    height: 200px;
-    
-    
+.square-img {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  object-position: center;
+  overflow: hidden;
+  border-radius: 6px;
+  
 }
+
+
 .star{
-    max-width: 50px;
+    max-width: 40px;
     height: auto;
 }
 .episode-title{
+  font-size: 22px;
   text-overflow:ellipsis;
   white-space: nowrap;
 }
+
 .star-avg{
     max-width: 30px;
     height: auto;
@@ -515,18 +522,44 @@ button {
   display: flex;
   justify-content: center;
 }
-
+.center-div{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .review-box {
   width: fit-content;
   max-width: 100%;
 }
+.review-delete-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 
-.review-container{
+  opacity: 0;
+  transform: translateY(-8px) scale(0.9);
+  pointer-events: none;
+
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.review-container:hover .review-delete-button,
+.review-delete-button:focus-within {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+
+
+.review-container {
     display: flex;
-    
+    position: relative; 
     background-color: var(--dark-bg-color);
     border-radius: 8px;
-    color:var(--text-color);
+    color: var(--text-color);
     max-height: 600px;
     max-width: fit-content;
     margin: auto;
@@ -534,7 +567,18 @@ button {
     margin-bottom: 50px;
     width: 100%;
     box-sizing: border-box;
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
 }
+
+
+.review-container:hover {
+  transform: scale(1.025);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+
 .review-container.no-bottom-padding {
   margin-bottom: 0;
 }
@@ -616,17 +660,13 @@ button {
   pointer-events: none;
   transform: translate(30%, -30%);
 }
-
-.delete-review-container {
-  right: 0;
-  top: 0;
-  height: 100%;
-  min-width: 40px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 10px;
+.series-title{
+  font-size: 24px;
 }
+.delete-review-container {
+  display: none;
+}
+
 
 .delete-comment-container {
   right: 0;
@@ -695,6 +735,40 @@ button {
   color: var(--text-color);
   font-size: large;
 }
+.bottom-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bottom-section button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.likes,
+.dislikes,
+.comments {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  min-width: 26px;
+  text-align: center;
+}
+.bottom-section button img {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.bottom-section button:hover img {
+  transform: scale(1.15);
+  filter: brightness(1.2);
+}
+
+.bottom-section button:active img {
+  transform: scale(0.95);
+}
 
 .delete-modal-buttons button {
   padding: 5px 15px;
@@ -736,5 +810,22 @@ button {cursor: pointer;}
     min-width: unset;
   }
 }
+@media (hover: none) {
+  .review-container:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .review-container:hover .square-img {
+    transform: none;
+  }
+
+  .review-delete-button {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
 
 </style>

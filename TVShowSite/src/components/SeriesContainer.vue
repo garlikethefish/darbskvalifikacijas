@@ -1,51 +1,50 @@
 <template>
-    <div class="series-container">
-        <img :src="getSeriesPictureUrl(series.series_picture)" alt="Series">
-        <div class="card">{{ series.title }}</div>
-        <div class="caption-text">{{ series.description.substring(0,100) + "..."  }}</div>
-        <router-link to="reviews">
-            <button class="hover-button">Review</button>
-        </router-link>
-        <button @click="openModal" class="modal-button">More</button>
-        <div class="modal" v-if="isModalOpen" @click.self="closeModal">
-            <div class="modal-content">
-                <span class="close" @click="closeModal">&times;</span>
-                <h1>{{ series.title }}</h1>
-                <p>{{ series.description }}</p>
-                <p>Genre: {{ series.genre }}</p>
-                <p>Released: {{ series.release_year }}</p>
-            </div>
-        </div>
+  <div class="series-container">
+    <img :src="getSeriesPictureUrl(series.series_picture)" alt="Series">
+    <div class="card">{{ series.title }}</div>
+    <div class="caption-text">{{ series.description?.substring(0, 100) + '...' }}</div>
+
+    <router-link :to="`/reviews/${series.id}`">
+      <button class="hover-button">Review</button>
+    </router-link>
+
+    <button @click="openModal" class="modal-button">More</button>
+
+    <div class="modal" v-if="isModalOpen" @click.self="closeModal">
+      <div class="modal-content">
+        <span class="close" @click="closeModal">&times;</span>
+        <h1>{{ series.title }}</h1>
+        <p>{{ series.description }}</p>
+        <p>Genre: {{ series.genres?.join(', ') || 'N/A' }}</p>
+        <p>Released: {{ series.release_year || 'Unknown' }}</p>
+      </div>
     </div>
+  </div>
 </template>
+
 <script>
 export default {
-    data() {
-        return {
-            isModalOpen: false
-        };
+  props: {
+    series: { type: Object, required: true }
+  },
+  data() {
+    return {
+      isModalOpen: false
+    };
+  },
+  methods: {
+    openModal() {
+      this.isModalOpen = true;
     },
-    methods: {
-        openModal() {
-            this.isModalOpen = true;
-        },
-        closeModal() {
-        this.isModalOpen = false;
-        },
-        getSeriesPictureUrl(filename) {
-            if (!filename) {
-                return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
-            }
-            return new URL(`../assets/series_images/${filename}`, import.meta.url).href;
-        }
+    closeModal() {
+      this.isModalOpen = false;
     },
-    props: {
-    series: {
-      type: Object,
-      required: true
+    getSeriesPictureUrl(path) {
+      if (!path) return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
+      return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
     }
   }
-}
+};
 </script>
 <style>
 .modal-button{
@@ -211,6 +210,51 @@ export default {
     color: var(--light-bg-color);
     text-decoration: none;
     cursor: pointer;
+}
+.season-list {
+  margin-top: 15px;
+}
+
+.season {
+  background: var(--dark-bg-color);
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.season-header {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+  color: var(--accent-color);
+}
+
+.episode-list {
+  list-style: none;
+  padding-left: 15px;
+}
+
+.episode {
+  padding: 3px 0;
+  display: flex;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.ep-number {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.ep-name {
+  flex: 1;
+  color: var(--text-color);
+}
+
+.ep-date {
+  color: var(--subtitle-color);
+  font-style: italic;
+  font-size: 0.85rem;
 }
 }
 </style>

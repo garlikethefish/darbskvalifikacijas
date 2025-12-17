@@ -81,18 +81,18 @@ export default {
 <style scoped>
 .login-button {
     cursor: pointer;
-    max-width: 50px;
-    height: auto;
+    max-width: 40px;
+    height: 40px;
     }
 .profile-button{
   cursor: pointer;
-  max-width: 50px;
-  height: auto;
+  max-width: 40px;
+  height: 40px;
 }
 .add-review-button{
   cursor: pointer;
-  max-width: 50px;
-  height: auto;
+  max-width: 40px;
+  height: 40px;
 }
 .title-container {
   display: flex;
@@ -103,7 +103,7 @@ export default {
 .title {
     cursor: pointer;
     max-width: 400px;
-    height: auto;
+    height: 100px;
     padding-bottom: 20px;
     margin:0
 }
@@ -124,8 +124,8 @@ export default {
     cursor: pointer;
     font-size: 34px; 
     background: none; 
-    max-width: 50px;
-    height: auto;
+    max-width: 40px;
+    height: 40px;
     border: none; 
     outline: none; 
 }

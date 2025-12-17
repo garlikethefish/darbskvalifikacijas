@@ -1,25 +1,20 @@
 <script>
 import axios from 'axios';
-import Caption from '@/components/Caption.vue';
+import SeriesContainer from '@/components/SeriesContainer.vue';
 import DailyQuote from '@/components/DailyQuote.vue';
 import SectionHeader from '@/components/SectionHeader.vue';
-import SeriesContainer from '@/components/SeriesContainer.vue';
+import Caption from '@/components/Caption.vue';
 import Aside from '@/components/Aside.vue';
+
 export default {
   name: 'Home',
-  components: {
-    DailyQuote,
-    Caption,
-    SectionHeader,
-    SeriesContainer,
-    Aside
-  },
+  components: { SeriesContainer, DailyQuote, SectionHeader, Caption, Aside },
   data() {
     return {
       series: [],
       filteredSeries: [],
-      error: null,
       loading: false,
+      error: null,
       sortOptions: [
         { value: 'random', label: 'Random' },
         { value: 'title-asc', label: 'Title (A-Z)' },
@@ -28,7 +23,8 @@ export default {
         { value: 'year-desc', label: 'Newest First' }
       ],
       selectedSort: 'random',
-      selectedFilterType: '', // 'genre' or 'year'
+
+      selectedFilterType: '',
       filterOptions: {
         genres: [],
         years: [],
@@ -37,110 +33,88 @@ export default {
       }
     };
   },
-  computed: {
-    availableYears() {
-      const years = new Set();
-      this.series.forEach(series => {
-        if (series.release_year) {
-          years.add(series.release_year);
-        }
-      });
-      return Array.from(years).sort((a, b) => b - a);
-    }
-  },
   methods: {
-    shuffleSeries(series) {
-      return series
-        .map(value => ({ value, sort: Math.random() }))
-        .sort((a, b) => a.sort - b.sort)
-        .map(({ value }) => value);
+    shuffleSeries(arr) {
+      return arr.map(v => ({ v, sort: Math.random() }))
+                .sort((a, b) => a.sort - b.sort)
+                .map(({ v }) => v);
     },
-    applyFiltersAndSorting() {
-      // Apply filters
-      let filtered = [...this.series];
-      
-      // Filter by genre if any selected
-      if (this.filterOptions.selectedGenres.length > 0) {
-        filtered = filtered.filter(series => 
-          this.filterOptions.selectedGenres.some(genre => 
-            series.genre && series.genre.toLowerCase().includes(genre.toLowerCase())
-          )
-        );
-      }
-      
-      // Filter by year if any selected
-      if (this.filterOptions.selectedYears.length > 0) {
-        filtered = filtered.filter(series => 
-          this.filterOptions.selectedYears.includes(series.release_year)
-        );
-      }
-      
-      // Apply sorting
+    applySorting() {
+      let filtered = this.applyFilters([...this.series]);
+
       switch(this.selectedSort) {
-        case 'title-asc':
-          filtered.sort((a, b) => a.title.localeCompare(b.title));
-          break;
-        case 'title-desc':
-          filtered.sort((a, b) => b.title.localeCompare(a.title));
-          break;
-        case 'year-asc':
-          filtered.sort((a, b) => (a.release_year || 0) - (b.release_year || 0));
-          break;
-        case 'year-desc':
-          filtered.sort((a, b) => (b.release_year || 0) - (a.release_year || 0));
-          break;
-        case 'random':
-        default:
-          filtered = this.shuffleSeries(filtered);
-          break;
+        case 'title-asc': filtered.sort((a,b)=>a.title.localeCompare(b.title)); break;
+        case 'title-desc': filtered.sort((a,b)=>b.title.localeCompare(a.title)); break;
+        case 'year-asc': filtered.sort((a,b)=>(a.release_year||0)-(b.release_year||0)); break;
+        case 'year-desc': filtered.sort((a,b)=>(b.release_year||0)-(a.release_year||0)); break;
+        case 'random': filtered = this.shuffleSeries(filtered); break;
       }
-      
       this.filteredSeries = filtered;
     },
-    extractGenres(series) {
-      const genres = new Set();
-      series.forEach(show => {
-        if (show.genre) {
-          show.genre.split(',').forEach(g => {
-            const trimmed = g.trim();
-            if (trimmed) genres.add(trimmed);
-          });
-        }
-      });
-      return Array.from(genres).sort();
+    applyFilters(seriesList) {
+      if (this.selectedFilterType === 'genre' && this.filterOptions.selectedGenres.length) {
+        seriesList = seriesList.filter(s =>
+          s.genres.some(g => this.filterOptions.selectedGenres.includes(g))
+        );
+      }
+      if (this.selectedFilterType === 'year' && this.filterOptions.selectedYears.length) {
+        seriesList = seriesList.filter(s =>
+          this.filterOptions.selectedYears.includes(s.release_year)
+        );
+      }
+      return seriesList;
+    },
+    async fetchSeries() {
+      this.loading = true;
+      try {
+        const res = await axios.get('/api/tmdb/top-series');
+        this.series = res.data.map(show => ({
+          id: show.id,
+          title: show.title,
+          description: show.description,
+          release_year: show.release_year,
+          series_picture: show.series_picture,
+          genres: show.genres || [],
+          number_of_seasons: show.number_of_seasons || 0,
+          number_of_episodes: show.number_of_episodes || 0
+        }));
+
+        // populate filter options dynamically
+        const genresSet = new Set();
+        const yearsSet = new Set();
+        this.series.forEach(s => {
+          s.genres.forEach(g => genresSet.add(g));
+          if (s.release_year) yearsSet.add(s.release_year);
+        });
+        this.filterOptions.genres = [...genresSet].sort();
+        this.filterOptions.years = [...yearsSet].sort((a,b)=>b-a);
+
+        this.applySorting();
+      } catch (err) {
+        console.error('Failed to fetch TMDB series:', err);
+        this.error = 'Failed to load series.';
+      } finally {
+        this.loading = false;
+      }
     }
   },
   watch: {
-    selectedSort() {
-      this.applyFiltersAndSorting();
-    },
-    'filterOptions.selectedGenres'() {
-      this.applyFiltersAndSorting();
-    },
-    'filterOptions.selectedYears'() {
-      this.applyFiltersAndSorting();
+    selectedSort() { this.applySorting(); },
+    'filterOptions.selectedGenres'() { this.applySorting(); },
+    'filterOptions.selectedYears'() { this.applySorting(); },
+    selectedFilterType() {
+      // reset selections when changing filter type
+      this.filterOptions.selectedGenres = [];
+      this.filterOptions.selectedYears = [];
+      this.applySorting();
     }
   },
   mounted() {
-    this.loading = true;
-
-    axios.get('/api/series')
-      .then(res => {
-        this.series = res.data;
-        this.filterOptions.genres = this.extractGenres(res.data);
-        this.filterOptions.years = this.availableYears;
-        this.filteredSeries = this.shuffleSeries(res.data);
-      })
-      .catch(err => {
-        console.error('Failed to load series:', err);
-        this.error = 'Failed to load series.';
-      })
-      .finally(() => {
-        this.loading = false;
-      });
+    this.fetchSeries();
   }
 };
 </script>
+
 <template>
   <div id="app">
     <DailyQuote></DailyQuote>

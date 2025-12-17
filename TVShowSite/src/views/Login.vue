@@ -126,7 +126,13 @@ methods: {
     
     this.checkingUsername = true;
     try {
-      const response = await fetch(`http://localhost:3000/api/check-username?username=${encodeURIComponent(username)}`);
+      const response = await fetch(`/api/check-username?username=${encodeURIComponent(username)}`);
+
+      if (!response.ok) {
+        this.usernameAvailable = false;
+        return false;
+      }
+
       const data = await response.json();
       this.usernameAvailable = data.available;
       return data.available;
