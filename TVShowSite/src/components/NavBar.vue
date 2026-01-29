@@ -1,19 +1,44 @@
 <template>
   <nav :class="['nav-links', { active: isMenuOpen }]">
-    <router-link class="link" to="/reviews" @click="$emit('close')">Reviews</router-link>
-    <router-link class="link" to="/about" @click="$emit('close')">About</router-link>
-    <router-link class="link" to="/contact" @click="$emit('close')">Contact</router-link>
-    <router-link class="link" to="/stats" @click="$emit('close')">Statistics</router-link>
+    <router-link class="link" to="/reviews" @click="$emit('close')">{{ t('reviews') }}</router-link>
+    <router-link class="link" to="/about" @click="$emit('close')">{{ t('about') }}</router-link>
+    <router-link class="link" to="/discover" @click="$emit('close')">{{ t('discover') }}</router-link>
+    <router-link class="link" to="/contact" @click="$emit('close')">{{ t('contact') }}</router-link>
+    <router-link class="link" to="/stats" @click="$emit('close')">{{ t('statistics') }}</router-link>
   </nav>
 </template>
 
 <script>
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
+
 export default {
   props: {
     isMenuOpen: {
       type: Boolean,
       required: true
     }
+  },
+  data() {
+    return {
+      currentLanguage: 'en'
+    };
+  },
+  methods: {
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    }
+  },
+  mounted() {
+    this.currentLanguage = getCurrentLanguage();
+    // Listen for language changes
+    window.addEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+    });
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+    });
   }
 }
 </script>

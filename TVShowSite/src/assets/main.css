@@ -44,6 +44,13 @@ body
     transition: background-color 0.3s, color 0.3s;
 }
 
+/* Prevent page scrolling when certain full-screen/hero animations run */
+body.no-scroll {
+    overflow: hidden !important;
+    height: 100vh !important;
+    touch-action: none !important;
+}
+
 
 .series-container .hover-button {
     position: absolute;

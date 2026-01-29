@@ -1,21 +1,21 @@
 <template>
   <div id="app">
     <div class="create-review">
-      <h1>Create New Review</h1>
+      <h1>{{ t('createNewReview') }}</h1>
 
       <!-- Search Bar -->
       <div class="form-section search-section">
         <input
           type="text"
           v-model="searchQuery"
-          placeholder=" Search TV series..."
+          :placeholder="t('searchTVSeries')"
           @input="searchSeries"
         />
       </div>
 
       <!-- Series Grid -->
       <div class="form-section series-section">
-        <h2>TV Series</h2>
+        <h2>{{ t('tvSeries') }}</h2>
         <div class="series-grid">
           <div
             class="series-item"
@@ -32,8 +32,8 @@
 
       <!-- Episodes Grid -->
       <div class="form-section episode-section" v-if="selectedSeries">
-        <h2>Episodes</h2>
-        <div v-if="loadingEpisodes" class="loading-text">Loading episodes...</div>
+        <h2>{{ t('episodes') }}</h2>
+        <div v-if="loadingEpisodes" class="loading-text">{{ t('loadingEpisodes') }}</div>
         <div v-else class="episodes-grid">
           <div v-for="season in episodesBySeason" :key="season.season_number" class="season-block">
             <h3>Season {{ season.season_number }}</h3>
@@ -42,18 +42,18 @@
                 <div class="modal-content">
                   <span class="close" @click="closeReviewModal">&times;</span>
 
-                  <h2>Create Review</h2>
+                  <h2>{{ t('createReview') }}</h2>
                   <p class="modal-episode">
                     {{ selectedEpisode.name }}
                   </p>
 
-                  <label>Review Title</label>
+                  <label>{{ t('reviewTitle') }}</label>
                   <input v-model="review.title" type="text" />
 
-                  <label>Description</label>
+                  <label>{{ t('description') }}</label>
                   <textarea v-model="review.description"></textarea>
 
-                  <label>Rating</label>
+                  <label>{{ t('rating') }}</label>
                     <div class="rating-circles">
                       <div
                         v-for="n in 5"
@@ -69,7 +69,7 @@
                     </div>
 
 
-                  <button @click="submitReview">Post Review</button>
+                  <button @click="submitReview">{{ t('postReview') }}</button>
                 </div>
               </div>
               <div
@@ -99,6 +99,9 @@
 </template>
 
 <script>
+import axios from 'axios'
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+
 export default {
   name: "CreateReview",
   data() {
@@ -113,18 +116,13 @@ export default {
       loadingEpisodes: false,
       hoverRating: 0,
       isReviewModalOpen: false,
-      selectedEpisode: null,
-      review: {
-        title: "",
-        description: "",
-        rating: null // start with no circle selected
-      }
+      currentLanguage: 'en'
     };
   },
-  mounted() {
-    this.fetchTopSeries();
-  },
   methods: {
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    },
     async fetchTopSeries() {
       try {
         const res = await fetch("/api/tmdb/top-series");
@@ -241,6 +239,32 @@ export default {
       }
     }
 
+  },
+  mounted() {
+    this.currentLanguage = getCurrentLanguage();
+    this.fetchTopSeries();
+
+    // Pre-select series if passed via query parameter
+    this.$nextTick(() => {
+      const seriesId = this.$route.query.seriesId;
+      if (seriesId) {
+        const series = this.seriesList.find(s => s.id == seriesId);
+        if (series) {
+          this.selectSeries(series);
+        }
+      }
+    });
+
+    window.addEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+      this.$forceUpdate();
+    });
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+      this.$forceUpdate();
+    });
   }
 };
 </script>

@@ -4,21 +4,13 @@
     <div class="card">{{ series.title }}</div>
     <div class="caption-text">{{ series.description?.substring(0, 100) + '...' }}</div>
 
-    <router-link :to="`/reviews/${series.id}`">
+    <router-link :to="`/create-review?seriesId=${series.id}`">
       <button class="hover-button">Review</button>
     </router-link>
 
-    <button @click="openModal" class="modal-button">More</button>
-
-    <div class="modal" v-if="isModalOpen" @click.self="closeModal">
-      <div class="modal-content">
-        <span class="close" @click="closeModal">&times;</span>
-        <h1>{{ series.title }}</h1>
-        <p>{{ series.description }}</p>
-        <p>Genre: {{ series.genres?.join(', ') || 'N/A' }}</p>
-        <p>Released: {{ series.release_year || 'Unknown' }}</p>
-      </div>
-    </div>
+    <router-link :to="`/series/${series.id}`">
+      <button class="modal-button">More</button>
+    </router-link>
   </div>
 </template>
 
@@ -28,17 +20,9 @@ export default {
     series: { type: Object, required: true }
   },
   data() {
-    return {
-      isModalOpen: false
-    };
+    return {};
   },
   methods: {
-    openModal() {
-      this.isModalOpen = true;
-    },
-    closeModal() {
-      this.isModalOpen = false;
-    },
     getSeriesPictureUrl(path) {
       if (!path) return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
       return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
@@ -79,69 +63,6 @@ export default {
     height: 250px;
 }
 
-/* Regular Modal Styles (Desktop) */
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    padding: 30px;
-    border: 1px solid #a9b6a8;
-    width: 50%;
-    max-width: 600px;
-    max-height: 80vh;
-    overflow-y: auto;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    position: relative;
-    animation: modalopen 0.3s;
-}
-
-.close {
-    color: var(--text-color);
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: var(--light-bg-color);
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.modal-content h1 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-    padding-right: 30px;
-}
-
-.modal-content p {
-    margin-bottom: 15px;
-    line-height: 1.6;
-}
-
-@keyframes modalopen {
-    from {opacity: 0; transform: translateY(-20px);}
-    to {opacity: 1; transform: translateY(0);}
-}
 @media (max-width: 500px){
 .series-container{
     position: relative;

@@ -9,12 +9,18 @@
             <img v-if="isLoggedIn" class="profile-button" @click="profile" :src="'./src/assets/loggedin.png'"/>
             <img v-else class="login-button" @click="login" :src="'./src/assets/login.png'" />
             <button @click="toggleTheme" id="theme-toggle" class="theme-toggle"><img id="theme-icon" class="theme-toggle" :src="themeIcon"/></button>
+            <LanguageToggle @language-change="onLanguageChange" />
         </div>
     </div>
 </template>
 
 <script>
+import LanguageToggle from './LanguageToggle.vue';
+
 export default {
+  components: {
+    LanguageToggle
+  },
   data() {
     return {
       isLightMode: false, // Default theme
@@ -43,6 +49,9 @@ export default {
     },
     create_review() {
       this.$router.push('create-review');
+    },
+    onLanguageChange(lang) {
+      this.$emit('language-change', lang);
     },
     toggleTheme() {
       this.isLightMode = !this.isLightMode;
@@ -83,7 +92,7 @@ export default {
     cursor: pointer;
     max-width: 40px;
     height: 40px;
-    }
+}
 .profile-button{
   cursor: pointer;
   max-width: 40px;
@@ -98,6 +107,7 @@ export default {
   display: flex;
   align-items: center;
   width: 100%;
+  justify-content: space-between;
   position: relative;  
 }
 .title {
@@ -105,63 +115,67 @@ export default {
     max-width: 400px;
     height: 100px;
     padding-bottom: 20px;
-    margin:0
+    margin: 0;
 }
 .logo-section{
     display: flex;
     justify-content: center;
+    flex: 1;
 }
 .right-section{
     display: flex;
-    gap:25px;
-    justify-content: right;
-    margin-left: -20px;
+    gap: 25px;
+    justify-content: flex-end;
+    align-items: center;
     margin-right: 20px;
+    margin-left: auto;
 }
 
 .theme-toggle {
   display: flex;
-    cursor: pointer;
-    font-size: 34px; 
-    background: none; 
-    max-width: 40px;
-    height: 40px;
-    border: none; 
-    outline: none; 
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 34px; 
+  background: none; 
+  max-width: 40px;
+  height: 40px;
+  border: none; 
+  outline: none;
 }
+
+.theme-toggle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 @media (max-width: 500px) {
   .title {
     max-width: 200px;
-    margin-left: 0; 
-    margin-right: 0; 
-    text-align: center;
     padding: 0;
-    display: block;  
+    height: 60px;
   }
   .login-button {
-    margin:auto;
     max-width: 40px;
     max-height: 40px;
   }
   .profile-button{
-    margin:auto;
     max-width: 40px;
     max-height: 40px;
   }
   .add-review-button{
-    margin:auto;
     max-width: 40px;
     max-height: 40px;
   }
   .theme-toggle {
     max-width: 40px;
-    height: auto;
+    height: 40px;
   }
   .right-section{
     display: flex;
-    gap:15px;
-    margin-left: 0px;
-    margin-right: 15px;
+    gap: 15px;
+    margin-right: 10px;
   }
   .title-container{
     position: sticky;

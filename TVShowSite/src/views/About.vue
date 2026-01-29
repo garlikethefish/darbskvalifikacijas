@@ -1,16 +1,42 @@
 <script>
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+
 export default {
-name: 'About',
+  name: 'About',
+  data() {
+    return {
+      currentLanguage: 'en'
+    }
+  },
+  methods: {
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    }
+  },
+  mounted() {
+    this.currentLanguage = getCurrentLanguage();
+
+    window.addEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+      this.$forceUpdate();
+    });
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+      this.$forceUpdate();
+    });
+  }
 };
 </script>
 
 <template>
     <div id="app">
       <div class="center">
-        <h1 id="first-title">About Us</h1>
-        <p>This is a website dedicated to TV show reviews.<br><br>We aim to provide users with the ability to journal their favorite TV show episodes as well as view others reviews. This is such good test text about many things such as this but also a couple more.<br><br>Gloop Glop test text.</p>
+        <h1 id="first-title">{{ t('aboutUs') }}</h1>
+        <p>{{ t('aboutText') }}<br><br>{{ t('aboutDescription') }}<br><br>{{ t('satisfiedCustomer') }}</p>
         <img class="rounded-image" :src="'./src/assets/gator.png'">
-        <p>one of our satisfied customers</p><br><br>
+        <p>{{ t('oneOfOurSatisfiedCustomers') }}</p><br><br>
       </div>
     </div>
 </template>

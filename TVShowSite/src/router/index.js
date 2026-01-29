@@ -7,6 +7,8 @@ import Profile from '../views/Profile.vue';
 import Reviews from '../views/Reviews.vue';
 import CreateReview from '../views/CreateReview.vue';
 import Statistics from '@/views/Statistics.vue';
+import Discover from '@/views/Discover.vue';
+import SeriesDetail from '@/views/SeriesDetail.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,6 +56,16 @@ const router = createRouter({
       path: '/stats',
       name: 'stats',
       component: Statistics,
+    },
+    {
+      path: '/discover',
+      name: 'discover',
+      component: Discover,
+    },
+    {
+      path: '/series/:id',
+      name: 'series-detail',
+      component: SeriesDetail,
     }
   ],
 });

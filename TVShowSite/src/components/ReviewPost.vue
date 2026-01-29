@@ -1,53 +1,63 @@
 <template>
   <div class="review-wrapper">
-    <div class="review-box" >
+    <div class="review-box">
       <div class="review-container" :class="{ 'no-bottom-padding': showComments }" @mouseenter="isHoveringReview = true" 
      @mouseleave="isHoveringReview = false">
         
         <div class="series-section">
+          <div class="series-image-wrapper">
+            <img class="square-img" :src="getEpisodePictureUrl(review.episode_picture)" alt="Episode image" />
+            <div class="image-overlay"></div>
+          </div>
           <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
-          <img class="square-img" :src="getEpisodePictureUrl(review.episode_picture)" alt="Episode image" />
           <h2 class="season-episode">{{ formatSeasonEpisode(review) }}</h2>
-          <p class="avg">Average score: {{ Math.round(review.average_rating || 0) }}/5</p>
-          <div class="rating">
-            <img
-              v-for="n in 5"
-              :key="n"
-              class="star-avg"
-              :src="n <= avgStars ? './src/assets/star-avg.png' : './src/assets/star-empty.png'"
-              alt="average show star rating"
-            />
+          <div class="avg-rating-card">
+            <p class="avg-label">Community Rating</p>
+            <p class="avg-score">{{ (Number(review.average_rating) || 0).toFixed(1) }}<span>/5</span></p>
+            <div class="rating">
+              <img
+                v-for="n in 5"
+                :key="n"
+                class="star-avg"
+                :src="n <= avgStars ? starAvgFull : starEmpty"
+                alt="average show star rating"
+              />
+            </div>
           </div>
         </div>
 
         <div class="right-container">
           <div class="top-section">
-            <h2 class="episode-title">{{ review.episode_title || 'Episode Title' }}</h2>
-            <div class="rating">
-              <img
-                v-for="n in 5"
-                :key="'user-star-' + n"
-                class="star"
-                :src="n <= review.rating ? './src/assets/star.png' : './src/assets/star-empty.png'"
-                alt="user rating star"
-              />
-            </div>
-
-            <div class="user-container">
-              <div class="user">
-                <h2 >{{ review.username || 'username' }}</h2>
-                <h3>{{ review.user_review_count || 0 }} reviews</h3>
+            <div class="user-rating-section">
+              <div class="user-info">
+                <img
+                  class="pfp"
+                  :src="getProfilePictureUrl(review.profile_picture)"
+                  alt="User profile picture"
+                />
+                <div class="user-details">
+                  <h3 class="username">{{ review.username || 'username' }}</h3>
+                  <p class="user-reviews">{{ review.user_review_count || 0 }} reviews</p>
+                </div>
               </div>
-              <img
-                class="pfp"
-                :src="getProfilePictureUrl(review.profile_picture)"
-                alt="User profile picture"
-              />
+              <div class="user-rating">
+                <span class="rating-label">Their Rating</span>
+                <div class="rating-stars">
+                  <img
+                    v-for="n in 5"
+                    :key="'user-star-' + n"
+                    class="star"
+                    :src="n <= review.rating ? starFull : starEmpty"
+                    alt="user rating star"
+                  />
+                </div>
+              </div>
             </div>
             <button 
               v-show="canDeleteReview || showDeleteModal"
               class="review-delete-button"
-              @click.stop="showDeleteModal = true">
+              @click.stop="showDeleteModal = true"
+              title="Delete review">
               <img src="../assets/delete.png" alt="Delete" class="delete-icon"/>
             </button>
             <div v-if="showDeleteModal" class="delete-modal">
@@ -62,8 +72,9 @@
           </div>
 
           <div class="content-section">
-            <h1>{{ review.review_title }}</h1>
-            <p>{{ review.review_text }}</p>
+            <h2 class="episode-title">{{ review.episode_title || 'Episode Title' }}</h2>
+            <h1 class="review-title">{{ review.review_title }}</h1>
+            <p class="review-text">{{ review.review_text }}</p>
           </div>
 
           <div class="bottom-section">
@@ -71,17 +82,22 @@
               <p class="date">{{ formatDate(review.date) }}</p>
             </div>
 
-            <button @click="likeReview"><img class="small-icon" :src="'./src/assets/heart_icon.png'" alt="likes" /></button>
-            <p class="likes">{{ review.likes }}</p>
+            <div class="action-buttons">
+              <button class="action-btn like-btn" @click="likeReview" title="Like this review">
+                <img class="small-icon" :src="heartIcon" alt="likes" />
+                <span class="count">{{ review.likes }}</span>
+              </button>
 
-            <button @click="dislikeReview"><img class="small-icon" :src="'./src/assets/broken_hrt_icon.png'" alt="dislikes" /></button>
-            <p class="dislikes">{{ review.dislikes }}</p>
+              <button class="action-btn dislike-btn" @click="dislikeReview" title="Dislike this review">
+                <img class="small-icon" :src="brokenHeartIcon" alt="dislikes" />
+                <span class="count">{{ review.dislikes }}</span>
+              </button>
 
-            <button @click="toggleComments">
-              <img class="small-icon" id="comment-icon" :src="'./src/assets/comment_icon.png'"  alt="comments" />
-            </button>
-            <p class="comments">{{ review.comment_count }}</p>
-              
+              <button class="action-btn comment-btn" @click="toggleComments" title="View comments">
+                <img class="small-icon" id="comment-icon" :src="commentIcon"  alt="comments" />
+                <span class="count">{{ review.comment_count }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -150,6 +166,13 @@
 </template>
 
 <script>
+const starFull = new URL('../assets/star.png', import.meta.url).href;
+const starEmpty = new URL('../assets/star-empty.png', import.meta.url).href;
+const starAvgFull = new URL('../assets/star-avg.png', import.meta.url).href;
+const heartIcon = new URL('../assets/heart_icon.png', import.meta.url).href;
+const brokenHeartIcon = new URL('../assets/broken_hrt_icon.png', import.meta.url).href;
+const commentIcon = new URL('../assets/comment_icon.png', import.meta.url).href;
+
 export default {
   name: 'ReviewPost',
   props: {
@@ -182,6 +205,24 @@ export default {
     },
     avgStars() {
       return Math.round(this.averageRating);
+    },
+    starFull() {
+      return starFull;
+    },
+    starEmpty() {
+      return starEmpty;
+    },
+    starAvgFull() {
+      return starAvgFull;
+    },
+    heartIcon() {
+      return heartIcon;
+    },
+    brokenHeartIcon() {
+      return brokenHeartIcon;
+    },
+    commentIcon() {
+      return commentIcon;
     },
     // Check if current user can delete this review
     canDeleteReview() {
@@ -394,155 +435,276 @@ export default {
 
 
 
-<style>
-.pfp{
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin: 10px;
-    margin-right: 40px;
+<style scoped>
+/* Layout & Container Styles */
+.review-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
-.small-icon{
-    width: 40px;
-    height: 40px;
-    margin: 10px;
+
+.review-box {
+  max-width: 100%;
+  table-layout: auto;
 }
-button {
-  background-color: transparent;
-  border: none;
+
+.review-container {
+  display: flex;
+  position: relative;
+  background: linear-gradient(135deg, var(--dark-bg-color) 0%, rgba(112, 233, 116, 0.05) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(112, 233, 116, 0.2);
+  color: var(--text-color);
+  max-height: 600px;
+  margin: auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
+
+.review-container:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(112, 233, 116, 0.2);
+  border-color: rgba(112, 233, 116, 0.4);
+}
+
+.review-container.no-bottom-padding {
+  margin-bottom: 0;
+}
+
+/* Series Section */
+.series-section {
+  background: linear-gradient(180deg, rgba(18, 20, 20, 0.8) 0%, var(--section-dark-color) 100%);
+  max-width: 280px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-right: 1px solid rgba(112, 233, 116, 0.15);
+  position: relative;
+}
+
+.series-image-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.series-image-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(112, 233, 116, 0.3) 0%, transparent 100%);
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.review-container:hover .series-image-wrapper::after {
+  opacity: 1;
+}
+
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
 .square-img {
   width: 200px;
   height: 200px;
   object-fit: cover;
   object-position: center;
-  overflow: hidden;
-  border-radius: 6px;
-  
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-
-.star{
-    max-width: 40px;
-    height: auto;
-}
-.episode-title{
-  font-size: 22px;
-  text-overflow:ellipsis;
-  white-space: nowrap;
+.review-container:hover .square-img {
+  transform: scale(1.05);
 }
 
-.star-avg{
-    max-width: 30px;
-    height: auto;
+.series-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 12px 0 8px 0;
+  padding: 0 10px;
+  text-align: center;
+  color: var(--accent-color);
+  line-height: 1.3;
 }
-.rating{
-    display: flex;
-    justify-content: center; 
 
+.season-episode {
+  font-size: 14px;
+  color: var(--subtitle-color);
+  margin: 5px 0 15px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.top-section{
-    display: flex;
-    align-items: center;
-    text-align: center;
-    padding:15px;
-    gap: clamp(10px, 1vw, 40px);
+
+.avg-rating-card {
+  background: rgba(112, 233, 116, 0.1);
+  border: 1px solid rgba(112, 233, 116, 0.3);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  width: 100%;
+  margin-top: auto;
 }
-.user{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin:5px;
-    width: auto;
+
+.avg-label {
+  font-size: 12px;
+  color: var(--subtitle-color);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
-.user h3, h2{
-  margin: 2px;
+
+.avg-score {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent-color);
+  margin: 0 0 10px 0;
 }
-.user-container{
-    display: flex;
-    align-items: center;
-    justify-content: right;
-    flex-direction: row;
+
+.avg-score span {
+  font-size: 18px;
+  opacity: 0.8;
 }
-.content-section{
-    display: flex;
-    flex-direction: column;
-    min-height: 100px;
-    margin-bottom: 20px;
-    box-sizing: border-box;
-    align-self: center;
-    overflow: auto;
-    text-overflow: ellipsis;
-    max-width: 1000px;
-}
-.content-section p{
-    font-size: 18px;
-}
-.bottom-section{
-    display: flex;
-    align-items: flex-end;
-    justify-content: right;
-    flex:1;
-}
-.bottom-section p{
-    min-width: 0;
-    width: 3%;
-    margin-bottom: 30px;
-    font-size: large;
-}
-.date-container{
-    display: flex;
-    justify-content: left;
-}
-.date-container p {
-    width: auto;
-}
-.series-section{
-    background: linear-gradient(90deg,var(--dark-bg-color)0%, var(--section-dark-color) 100%);;
-    max-width: 300px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 15px;
-}
-.series-section p,h1{
-    min-width: 0;
-    padding: 0;
-}
-.right-container{
-    display: flex;
-    flex-direction: column;
-    max-height: 700px;
-    margin: 15px;
-    margin-right: 30px;
-}
-.review-wrapper {
+
+/* Right Container */
+.right-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  flex: 1;
+  padding: 20px;
+  max-height: 600px;
+  gap: 15px;
 }
-.center-div{
+
+/* Top Section - User Info */
+.top-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  position: relative;
+}
+
+.user-rating-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pfp {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgba(112, 233, 116, 0.3);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.user-info:hover .pfp {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 12px rgba(112, 233, 116, 0.3);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.username {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-color);
+  transition: color 0.2s ease;
+}
+
+.user-info:hover .username {
+  color: var(--accent-color);
+}
+
+.user-reviews {
+  font-size: 13px;
+  color: var(--subtitle-color);
+  margin: 0;
+}
+
+.user-rating {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
 }
-.review-box {
-  width: fit-content;
-  max-width: 100%;
+
+.rating-label {
+  font-size: 12px;
+  color: var(--subtitle-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
+
+.rating-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  width: 28px;
+  height: 28px;
+  transition: transform 0.2s ease;
+}
+
+.star-avg {
+  width: 24px;
+  height: 24px;
+}
+
+.rating {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Delete Button */
 .review-delete-button {
   position: absolute;
-  top: 12px;
-  right: 12px;
-
+  top: 0;
+  right: 0;
+  background: rgba(255, 100, 100, 0.9);
+  border: none;
+  border-radius: 0 16px 0 8px;
+  padding: 8px 12px;
+  cursor: pointer;
   opacity: 0;
   transform: translateY(-8px) scale(0.9);
   pointer-events: none;
-
-  transition:
-    opacity 0.25s ease,
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .review-container:hover .review-delete-button,
@@ -552,268 +714,534 @@ button {
   pointer-events: auto;
 }
 
-
-
-.review-container {
-    display: flex;
-    position: relative; 
-    background-color: var(--dark-bg-color);
-    border-radius: 8px;
-    color: var(--text-color);
-    max-height: 600px;
-    max-width: fit-content;
-    margin: auto;
-    margin-top: 20px;
-    margin-bottom: 50px;
-    width: 100%;
-    box-sizing: border-box;
-    transition:
-      transform 0.25s ease,
-      box-shadow 0.25s ease;
+.delete-icon {
+  width: 24px;
+  height: 24px;
 }
 
-
-.review-container:hover {
-  transform: scale(1.025);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+/* Content Section */
+.content-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
 }
 
-
-.review-container.no-bottom-padding {
-  margin-bottom: 0;
+.episode-title {
+  font-size: 14px;
+  color: var(--subtitle-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+  font-weight: 600;
 }
+
+.review-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-color);
+  line-height: 1.3;
+}
+
+.review-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--subtitle-color);
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Bottom Section - Actions */
+.bottom-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(112, 233, 116, 0.1);
+}
+
+.date-container {
+  display: flex;
+  align-items: center;
+}
+
+.date {
+  margin: 0;
+  font-size: 13px;
+  color: var(--subtitle-color);
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(112, 233, 116, 0.1);
+  border: 1px solid rgba(112, 233, 116, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-color);
+}
+
+.action-btn:hover {
+  background: rgba(112, 233, 116, 0.2);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+.like-btn {
+  color: rgb(255, 100, 100);
+  border-color: rgba(255, 100, 100, 0.3);
+  background: rgba(255, 100, 100, 0.05);
+}
+
+.like-btn:hover {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgb(255, 100, 100);
+  color: rgb(255, 100, 100);
+}
+
+.dislike-btn {
+  color: rgb(255, 100, 100);
+  border-color: rgba(255, 100, 100, 0.3);
+  background: rgba(255, 100, 100, 0.05);
+}
+
+.dislike-btn:hover {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgb(255, 100, 100);
+}
+
+.small-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease;
+}
+
+.action-btn:hover .small-icon {
+  transform: scale(1.15);
+}
+
+.count {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 20px;
+}
+
+/* Comments Section */
 .comment-section {
-  background: linear-gradient(180deg, var(--dark-bg-color) 33%, var(--background-color) 100%);
-  padding: 20px;
+  background: linear-gradient(180deg, rgba(30, 28, 39, 0.8) 0%, rgba(112, 233, 116, 0.05) 100%);
+  border-top: 2px solid rgba(112, 233, 116, 0.2);
+  padding: 25px;
   box-sizing: border-box;
-  margin: 40px auto; 
+  margin: 0;
   width: 100%;
-  max-width: 700px;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-.comment p {
-  text-align: left;
-}
-.comment {
-  display: flex;
-  max-width: 600px;
-  box-sizing: border-box;
-  background-color: var(--dark-bg-color);
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 15px;
-  align-items: center;
-  gap: 12px;
-}
-.comment p{
-  min-width: 400px; 
-}
-.comment-pfp {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.comment-input {
-  display: flex;
-  max-width: 600px;
-  box-sizing: border-box;
-}
-.comment-input input {
-  flex: 1;
-  padding: 8px;
-  margin-right: 10px;
-}
-.comment-input button {
-  padding: 8px 12px;
-  background-color: aquamarine;
+  border-radius: 0 0 16px 16px;
 }
 
+.loading-text {
+  color: var(--subtitle-color);
+  font-style: italic;
+}
+
+.center-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 700px;
+  gap: 15px;
+}
+
+.comment {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(112, 233, 116, 0.08);
+  padding: 15px;
+  border-radius: 10px;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid rgba(112, 233, 116, 0.15);
+  transition: all 0.2s ease;
+}
+
+.comment:hover {
+  background: rgba(112, 233, 116, 0.12);
+  border-color: rgba(112, 233, 116, 0.3);
+}
+
+.comment p {
+  margin: 0;
+  flex: 1;
+  line-height: 1.5;
+  font-size: 14px;
+  color: var(--text-color);
+}
 
 .comment-pfp-wrapper {
   position: relative;
   display: flex;
   justify-content: left;
   align-items: center;
-  min-width: 45px;
+  min-width: 40px;
   width: auto;
+  flex-shrink: 0;
 }
 
-.op-star {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 24px;
-  height: 24px;
-  pointer-events: none;
-  transform: translate(30%, -30%);
+.comment-pfp {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid rgba(112, 233, 116, 0.3);
+  transition: all 0.2s ease;
 }
 
+.comment:hover .comment-pfp {
+  border-color: var(--accent-color);
+}
+
+.op-star,
 .admin-icon {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: -8px;
+  right: -8px;
   width: 24px;
   height: 24px;
   pointer-events: none;
-  transform: translate(30%, -30%);
-}
-.series-title{
-  font-size: 24px;
-}
-.delete-review-container {
-  display: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
+.admin-user {
+  color: rgb(153, 153, 153);
+  font-weight: 600;
+}
+
+.op-user {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.admin-label {
+  font-weight: 600;
+  color: rgb(153, 153, 153);
+  font-size: 12px;
+  margin-left: 4px;
+}
 
 .delete-comment-container {
-  right: 0;
-  top: 0;
-  height: 100%;
-  min-width: 30px;
   display: flex;
-  justify-content: right;
-}
-.delete-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 10;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 30px;
+  margin-left: auto;
 }
 
 .delete-comment-button {
-  background: none;
+  background: rgba(255, 100, 100, 0.8);
   border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
   cursor: pointer;
-  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
 }
 
-.delete-icon {
-  width: 40px;
-  height: 40px;
+.comment:hover .delete-comment-button {
+  opacity: 1;
+  transform: scale(1);
 }
 
+.delete-comment-button:hover {
+  background: rgba(255, 100, 100, 1);
+}
+
+/* Comment Input */
+.comment-input {
+  display: flex;
+  width: 100%;
+  max-width: 700px;
+  box-sizing: border-box;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.comment-input input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(112, 233, 116, 0.08);
+  color: var(--text-color);
+  border: 1px solid rgba(112, 233, 116, 0.3);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.comment-input input:focus {
+  outline: none;
+  background: rgba(112, 233, 116, 0.15);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 8px rgba(112, 233, 116, 0.2);
+}
+
+.comment-input input::placeholder {
+  color: var(--subtitle-color);
+}
+
+.comment-input button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--accent-color), rgba(112, 233, 116, 0.8));
+  color: var(--dark-bg-color);
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.comment-input button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(112, 233, 116, 0.3);
+}
+
+.comment-input button:active {
+  transform: translateY(0);
+}
+
+/* Delete Modal */
 .delete-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 100;
-  border-radius: 5px;
+  backdrop-filter: blur(4px);
 }
 
 .delete-modal-content {
-  background-color: var(--dark-bg-color);
-  padding: 20px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, var(--dark-bg-color) 0%, rgba(112, 233, 116, 0.05) 100%);
+  border: 1px solid rgba(112, 233, 116, 0.2);
+  padding: 30px;
+  border-radius: 16px;
   text-align: center;
   width: auto;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.delete-modal-content p{
-  display: block;
-  text-align: center;
-  font-size: large;
-  min-width: 400px;
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.delete-modal-content p {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 16px;
+}
+
+.delete-modal-content hr {
+  margin: 15px 0;
+  border: none;
+  border-top: 1px solid rgba(112, 233, 116, 0.2);
 }
 
 .delete-modal-buttons {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 15px;
-}
-.delete-modal-buttons button{
-  background-color: var(--background-color);
-  border-radius: 20px;
-  color: var(--text-color);
-  font-size: large;
-}
-.bottom-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.bottom-section button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.likes,
-.dislikes,
-.comments {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  min-width: 26px;
-  text-align: center;
-}
-.bottom-section button img {
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-.bottom-section button:hover img {
-  transform: scale(1.15);
-  filter: brightness(1.2);
-}
-
-.bottom-section button:active img {
-  transform: scale(0.95);
+  gap: 15px;
+  margin-top: 20px;
 }
 
 .delete-modal-buttons button {
-  padding: 5px 15px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
   cursor: pointer;
-}
-button {cursor: pointer;}
-
-[data-theme="dark"] #comment-icon {
-  content: url('../assets/comment_icon.png'); 
+  transition: all 0.2s ease;
+  font-size: 14px;
 }
 
-[data-theme="light"] #comment-icon {
-  content: url('../assets/comment_icon-dark.png');
+.delete-modal-buttons button:first-child {
+  background: rgb(255, 100, 100);
+  color: white;
 }
-.admin-user {
-  color: rgb(153, 153, 153);
+
+.delete-modal-buttons button:first-child:hover {
+  background: rgb(255, 70, 70);
+  transform: translateY(-2px);
 }
-.op-user {
-  color: rgb(62, 221, 128);
+
+.delete-modal-buttons button:last-child {
+  background: rgba(112, 233, 116, 0.2);
+  color: var(--text-color);
+  border: 1px solid rgba(112, 233, 116, 0.3);
 }
-.admin-label {
-  font-weight: normal;
-  color: rgb(153, 153, 153);
+
+.delete-modal-buttons button:last-child:hover {
+  background: rgba(112, 233, 116, 0.3);
+  border-color: var(--accent-color);
 }
-@media (max-width: 500px) {
-  .review-container{
+
+/* Button Resets */
+button {
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+}
+
+/* Media Queries */
+@media (max-width: 900px) {
+  .review-container {
     flex-direction: column;
     max-height: fit-content;
   }
-  .top-section{
-    flex-direction: column;
-    padding: 0;
-  }
-  .series-section{
-    padding:0;
+
+  .series-section {
     max-width: unset;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(112, 233, 116, 0.15);
+    min-width: unset;
   }
-  .comment p{
+
+  .top-section {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .user-rating-section {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .user-rating {
+    width: 100%;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 500px) {
+  .series-section {
+    padding: 15px;
+  }
+
+  .square-img {
+    width: 160px;
+    height: 160px;
+  }
+
+  .series-title {
+    font-size: 18px;
+  }
+
+  .review-title {
+    font-size: 18px;
+  }
+
+  .right-container {
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .content-section {
+    gap: 10px;
+  }
+
+  .review-text {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    font-size: 14px;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: space-around;
+    margin-left: 0;
+  }
+
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .bottom-section {
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 12px;
+  }
+
+  .date-container {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .comment {
+    padding: 12px;
+  }
+
+  .comment p {
+    min-width: unset;
+    font-size: 13px;
+  }
+
+  .delete-modal-content {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .delete-modal-content p {
     min-width: unset;
   }
 }
+
 @media (hover: none) {
   .review-container:hover {
     transform: none;
-    box-shadow: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
   .review-container:hover .square-img {
@@ -825,7 +1253,10 @@ button {cursor: pointer;}
     transform: none;
     pointer-events: auto;
   }
+
+  .delete-comment-button {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
-
-
 </style>
