@@ -79,9 +79,17 @@
             <router-link :to="`/reviews?seriesId=${series.id}&seriesTitle=${encodeURIComponent(series.title)}`" class="btn btn-secondary">
               See All Reviews
             </router-link>
+            <FollowShow :seriesId="series.id" />
           </div>
         </div>
       </div>
+
+      <!-- Watched Status Component -->
+      <WatchedStatus 
+        v-if="series && fullSeriesData"
+        :seriesId="series.id"
+        :seriesData="fullSeriesData"
+      />
 
       <div v-if="seriesReviews.length > 0" class="reviews-section">
         <h2>{{ t('communityReviews') }}</h2>
@@ -106,14 +114,17 @@
 <script>
 import axios from 'axios';
 import ReviewPost from '@/components/ReviewPost.vue';
+import WatchedStatus from '@/components/WatchedStatus.vue';
+import FollowShow from '@/components/FollowShow.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   name: 'SeriesDetail',
-  components: { ReviewPost },
+  components: { ReviewPost, WatchedStatus, FollowShow },
   data() {
     return {
       series: null,
+      fullSeriesData: null,
       seriesReviews: [],
       loading: true,
       error: null,
@@ -163,6 +174,12 @@ export default {
           genres: genres,
           number_of_seasons: res.data.number_of_seasons || 0,
           number_of_episodes: res.data.number_of_episodes || 0
+        };
+
+        // Store full series data with seasons for WatchedStatus component
+        this.fullSeriesData = {
+          ...this.series,
+          seasons: res.data.seasons || []
         };
         
         // Fetch reviews for this series

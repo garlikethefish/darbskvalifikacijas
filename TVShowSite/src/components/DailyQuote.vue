@@ -1,6 +1,6 @@
 <template>
     <div v-if="quote" class="quote-content"> <!-- v-if so that doesnt display elements before quote data loaded-->
-        <h1 class="quote-text">"{{ quote.text }}"</h1>
+        <h1 class="quote-text">"{{ formattedQuote }}"</h1>
         <p class="quote-series">{{ quote.series}}</p>
     </div>
 </template>
@@ -69,11 +69,36 @@ export default {
       quote: null
     };
   },
+  computed: {
+    formattedQuote() {
+      if (!this.quote || !this.quote.text) return '';
+      let text = this.quote.text;
+      // Remove anything in brackets
+      text = text.replace(/\[.*?\]/g, '');
+      // If there's a colon, take the part after it
+      const colonIndex = text.indexOf(':');
+      if (colonIndex !== -1) {
+        text = text.substring(colonIndex + 1).trim();
+      }
+      return text;
+    }
+  },
   mounted() {
-    axios.get('api/daily-quote')
-      .then(res => {
-        this.quote = res.data;
-      });
+    const cachedQuote = localStorage.getItem('dailyQuote_v3');
+    const cachedTime = localStorage.getItem('quoteTimestamp_v3');
+    if (cachedQuote && cachedTime && (Date.now() - parseInt(cachedTime)) < 24 * 60 * 60 * 1000) {
+      this.quote = JSON.parse(cachedQuote);
+    } else {
+      axios.get('api/daily-quote')
+        .then(res => {
+          this.quote = res.data;
+          localStorage.setItem('dailyQuote_v3', JSON.stringify(this.quote));
+          localStorage.setItem('quoteTimestamp_v3', Date.now().toString());
+        })
+        .catch(err => {
+          console.error('Error fetching daily quote:', err);
+        });
+    }
   }
 };
 </script>

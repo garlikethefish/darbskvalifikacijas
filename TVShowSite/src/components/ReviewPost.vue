@@ -62,7 +62,11 @@
             </button>
             <div v-if="showDeleteModal" class="delete-modal">
               <div class="delete-modal-content">
-                <p><strong>DELETE POST!</strong><hr><br><p>Are you sure?</p><br></p>
+                <div>
+                  <p><strong>DELETE POST!</strong></p>
+                  <hr>
+                  <p>Are you sure?</p>
+                </div>
                 <div class="delete-modal-buttons">
                   <button @click="confirmDeleteReview">Yes</button>
                   <button @click="showDeleteModal = false">No</button>
@@ -142,7 +146,11 @@
             
             <div v-if="showDeleteCommentModal === comment.id" class="delete-modal">
             <div class="delete-modal-content">
-              <p><strong>DELETE COMMENT!</strong><hr><br><p>Are you sure?</p><br></p>
+              <div>
+                <p><strong>DELETE COMMENT!</strong></p>
+                <hr>
+                <p>Are you sure?</p>
+              </div>
               <div class="delete-modal-buttons">
                 <button @click="confirmDeleteComment(comment.id)">Yes</button>
                 <button @click="showDeleteCommentModal = null">No</button>

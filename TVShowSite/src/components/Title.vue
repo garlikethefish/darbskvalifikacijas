@@ -8,6 +8,7 @@
             <img v-if="isLoggedIn" class="add-review-button" @click="create_review" :src="'./src/assets/add_review.png'"/>
             <img v-if="isLoggedIn" class="profile-button" @click="profile" :src="'./src/assets/loggedin.png'"/>
             <img v-else class="login-button" @click="login" :src="'./src/assets/login.png'" />
+            <NotificationPanel v-if="isLoggedIn" />
             <button @click="toggleTheme" id="theme-toggle" class="theme-toggle"><img id="theme-icon" class="theme-toggle" :src="themeIcon"/></button>
             <LanguageToggle @language-change="onLanguageChange" />
         </div>
@@ -16,10 +17,12 @@
 
 <script>
 import LanguageToggle from './LanguageToggle.vue';
+import NotificationPanel from './NotificationPanel.vue';
 
 export default {
   components: {
-    LanguageToggle
+    LanguageToggle,
+    NotificationPanel
   },
   data() {
     return {
@@ -124,7 +127,7 @@ export default {
 }
 .right-section{
     display: flex;
-    gap: 25px;
+    gap: 10px;
     justify-content: flex-end;
     align-items: center;
     margin-right: 20px;
@@ -174,7 +177,7 @@ export default {
   }
   .right-section{
     display: flex;
-    gap: 15px;
+    gap: 8px;
     margin-right: 10px;
   }
   .title-container{

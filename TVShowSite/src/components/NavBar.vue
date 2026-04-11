@@ -3,6 +3,7 @@
     <router-link class="link" to="/reviews" @click="$emit('close')">{{ t('reviews') }}</router-link>
     <router-link class="link" to="/about" @click="$emit('close')">{{ t('about') }}</router-link>
     <router-link class="link" to="/discover" @click="$emit('close')">{{ t('discover') }}</router-link>
+    <router-link class="link" to="/quizzes" @click="$emit('close')">{{ t('quizzes') }}</router-link>
     <router-link class="link" to="/contact" @click="$emit('close')">{{ t('contact') }}</router-link>
     <router-link class="link" to="/stats" @click="$emit('close')">{{ t('statistics') }}</router-link>
   </nav>

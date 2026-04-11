@@ -9,6 +9,10 @@ import CreateReview from '../views/CreateReview.vue';
 import Statistics from '@/views/Statistics.vue';
 import Discover from '@/views/Discover.vue';
 import SeriesDetail from '@/views/SeriesDetail.vue';
+import Quizzes from '@/views/Quizzes.vue';
+import PublicProfile from '@/views/PublicProfile.vue';
+import ReviewDetail from '@/views/ReviewDetail.vue';
+import UserLists from '@/views/UserLists.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,6 +52,18 @@ const router = createRouter({
     }
     ,
     {
+      path: '/public-profile/:userId',
+      name: 'public-profile',
+      component: PublicProfile,
+    }
+    ,
+    {
+      path: '/review/:reviewId',
+      name: 'review-detail',
+      component: ReviewDetail,
+    }
+    ,
+    {
       path: '/create-review',
       name: 'create-review',
       component: CreateReview,
@@ -63,9 +79,19 @@ const router = createRouter({
       component: Discover,
     },
     {
+      path: '/quizzes',
+      name: 'quizzes',
+      component: Quizzes,
+    },
+    {
       path: '/series/:id',
       name: 'series-detail',
       component: SeriesDetail,
+    },
+    {
+      path: '/my-lists/:userId',
+      name: 'user-lists',
+      component: UserLists,
     }
   ],
 });

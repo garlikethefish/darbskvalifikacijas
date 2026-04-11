@@ -331,11 +331,29 @@ async function fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber) {
 }
 
 // Daily quote
-app.get('/api/daily-quote', (req, res) => {
-  db.query('SELECT * FROM quotes ORDER BY RAND() LIMIT 1', (err, results) => {
-    if (err || results.length === 0) return res.status(500).send(err);
-    res.json(results[0]);
-  });
+app.get('/api/daily-quote', async (req, res) => {
+  try {
+    let response;
+    let attempts = 0;
+    let cleanedText;
+    do {
+      response = await axios.get('https://quotes.jepcd.com/quotes?short=true');
+      let text = response.data.text;
+      // Remove brackets
+      text = text.replace(/\[.*?\]/g, '');
+      // Remove before colon
+      const colonIndex = text.indexOf(':');
+      if (colonIndex !== -1) {
+        text = text.substring(colonIndex + 1).trim();
+      }
+      cleanedText = text;
+      attempts++;
+    } while (cleanedText.split(' ').length > 10 && attempts < 10);
+    res.json({ text: response.data.text, series: response.data.show });
+  } catch (error) {
+    console.error('Error fetching quote:', error);
+    res.status(500).json({ error: 'Failed to fetch daily quote' });
+  }
 });
 
 // Register
@@ -361,7 +379,14 @@ app.post('/api/login', (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: { id: user.id, username: user.username, email: user.email, role: user.role }
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        email: user.email, 
+        role: user.role,
+        profile_picture: user.profile_picture,
+        selected_badge_id: user.selected_badge_id
+      }
     });
   });
 });
@@ -935,6 +960,103 @@ app.post('/api/users/:id/profile-picture-default', requireAuth, (req, res) => {
   );
 });
 
+// User favorites routes
+app.get('/api/users/:id/favorites', requireAuth, (req, res) => {
+  const userIdFromParams = parseInt(req.params.id);
+  const userIdFromAuth = req.userId;
+
+  if (userIdFromParams !== userIdFromAuth) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  db.query(
+    'SELECT position, tmdb_series_id FROM user_favorites WHERE user_id = ? ORDER BY position',
+    [userIdFromParams],
+    (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Failed to fetch favorites' });
+      }
+      res.json(results);
+    }
+  );
+});
+
+app.post('/api/users/:id/favorites', requireAuth, (req, res) => {
+  const userIdFromParams = parseInt(req.params.id);
+  const userIdFromAuth = req.userId;
+
+  if (userIdFromParams !== userIdFromAuth) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  const { tmdb_series_id, position } = req.body;
+
+  if (!tmdb_series_id || !position || position < 1 || position > 5) {
+    return res.status(400).json({ message: 'Invalid data' });
+  }
+
+  db.query(
+    'INSERT INTO user_favorites (user_id, tmdb_series_id, position) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE tmdb_series_id = VALUES(tmdb_series_id)',
+    [userIdFromParams, tmdb_series_id, position],
+    (err) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Failed to save favorite' });
+      }
+      res.json({ message: 'Favorite saved' });
+    }
+  );
+});
+
+app.delete('/api/users/:id/favorites/:position', requireAuth, (req, res) => {
+  const userIdFromParams = parseInt(req.params.id);
+  const userIdFromAuth = req.userId;
+  const position = parseInt(req.params.position);
+
+  if (userIdFromParams !== userIdFromAuth || !position || position < 1 || position > 5) {
+    return res.status(403).json({ message: 'Unauthorized or invalid position' });
+  }
+
+  db.query(
+    'DELETE FROM user_favorites WHERE user_id = ? AND position = ?',
+    [userIdFromParams, position],
+    (err) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Failed to remove favorite' });
+      }
+      res.json({ message: 'Favorite removed' });
+    }
+  );
+});
+
+// User top shows route
+app.get('/api/user-top-shows/:id', requireAuth, (req, res) => {
+  const userIdFromParams = parseInt(req.params.id);
+  const userIdFromAuth = req.userId;
+
+  if (userIdFromParams !== userIdFromAuth) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  db.query(
+    `SELECT tmdb_series_id, AVG(rating) as avg_rating, COUNT(*) as review_count
+     FROM reviews
+     WHERE user_id = ?
+     GROUP BY tmdb_series_id
+     ORDER BY avg_rating DESC
+     LIMIT 5`,
+    [userIdFromParams],
+    (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Failed to fetch top shows' });
+      }
+      res.json(results);
+    }
+  );
+});
 
 // Add comment
 app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
@@ -1032,6 +1154,235 @@ app.delete('/api/comments/:id', requireAuth, async (req, res) => {
     res.status(500).json({ message: 'Failed to delete comment' });
   }
 });
+
+// ===== QUIZ ENDPOINTS =====
+
+// Get all quizzes
+app.get('/api/quizzes', async (req, res) => {
+  try {
+    const [quizzes] = await db.promise().query('SELECT id, title, description, icon_emoji, created_at FROM quizzes ORDER BY created_at DESC');
+    res.json(quizzes);
+  } catch (err) {
+    console.error('Error fetching quizzes:', err);
+    res.status(500).json({ message: 'Failed to fetch quizzes' });
+  }
+});
+
+// Get specific quiz with questions
+app.get('/api/quizzes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [quiz] = await db.promise().query('SELECT id, title, description, icon_emoji FROM quizzes WHERE id = ?', [id]);
+    if (quiz.length === 0) return res.status(404).json({ message: 'Quiz not found' });
+
+    const [questions] = await db.promise().query(
+      'SELECT id, question_text, option_a, option_b, option_c, option_d FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
+      [id]
+    );
+
+    res.json({ ...quiz[0], questions });
+  } catch (err) {
+    console.error('Error fetching quiz:', err);
+    res.status(500).json({ message: 'Failed to fetch quiz' });
+  }
+});
+
+// Get user's earned badges
+app.get('/api/users/:userid/badges', async (req, res) => {
+  const { userid } = req.params;
+  try {
+    const [badges] = await db.promise().query(
+      `SELECT q.id, q.title, q.icon_emoji, ub.earned_at
+       FROM user_badges ub
+       JOIN quizzes q ON ub.quiz_id = q.id
+       WHERE ub.user_id = ?
+       ORDER BY ub.earned_at DESC`,
+      [userid]
+    );
+    res.json(badges);
+  } catch (err) {
+    console.error('Error fetching badges:', err);
+    res.status(500).json({ message: 'Failed to fetch badges' });
+  }
+});
+
+// Get badge details including completion status for user
+app.get('/api/users/:userid/quiz-status/:quizid', requireAuth, async (req, res) => {
+  const { userid, quizid } = req.params;
+  try {
+    const [badge] = await db.promise().query(
+      'SELECT * FROM user_badges WHERE user_id = ? AND quiz_id = ?',
+      [userid, quizid]
+    );
+    res.json({ completed: badge.length > 0, earnedAt: badge.length > 0 ? badge[0].earned_at : null });
+  } catch (err) {
+    console.error('Error checking badge status:', err);
+    res.status(500).json({ message: 'Failed to check quiz status' });
+  }
+});
+
+// Check quiz cooldown status - returns if user can retake after failure
+app.get('/api/quizzes/:id/cooldown-status', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Get the most recent failed attempt (score < 70)
+    const [attempts] = await db.promise().query(
+      'SELECT score, attempted_at FROM quiz_attempts WHERE user_id = ? AND quiz_id = ? AND score < 70 ORDER BY attempted_at DESC LIMIT 1',
+      [userId, id]
+    );
+
+    if (attempts.length === 0) {
+      // No failed attempts, user can retake
+      return res.json({ canRetake: true, cooldownExpired: true, nextRetakeTime: null });
+    }
+
+    const lastFailedAttempt = new Date(attempts[0].attempted_at);
+    const now = new Date();
+    const hoursElapsed = (now - lastFailedAttempt) / (1000 * 60 * 60);
+
+    if (hoursElapsed >= 24) {
+      // 24 hours have passed
+      return res.json({ canRetake: true, cooldownExpired: true, nextRetakeTime: null });
+    }
+
+    // Still in cooldown
+    const nextRetakeTime = new Date(lastFailedAttempt.getTime() + 24 * 60 * 60 * 1000);
+    return res.json({ 
+      canRetake: false, 
+      cooldownExpired: false, 
+      nextRetakeTime: nextRetakeTime.toISOString(),
+      hoursRemaining: Math.ceil((24 - hoursElapsed) * 100) / 100
+    });
+  } catch (err) {
+    console.error('Error checking quiz cooldown:', err);
+    res.status(500).json({ message: 'Failed to check quiz cooldown' });
+  }
+});
+
+// Submit quiz answers and award badge if score is >= 70%
+app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  const { answers } = req.body; // Object: { questionId: 'A', questionId2: 'B', ... }
+
+  try {
+    // Fetch all questions for this quiz
+    const [questions] = await db.promise().query(
+      'SELECT id, correct_answer FROM quiz_questions WHERE quiz_id = ?',
+      [id]
+    );
+
+    if (questions.length === 0) return res.status(404).json({ message: 'Quiz not found' });
+
+    // Calculate score
+    let correct = 0;
+    questions.forEach(q => {
+      if (answers[q.id] && answers[q.id].toUpperCase() === q.correct_answer) {
+        correct++;
+      }
+    });
+
+    const score = Math.round((correct / questions.length) * 100);
+
+    // Record attempt
+    await db.promise().query(
+      'INSERT INTO quiz_attempts (user_id, quiz_id, score) VALUES (?, ?, ?)',
+      [userId, id, score]
+    );
+
+    // Award badge if score >= 70 and user doesn't already have it
+    let badgeAwarded = false;
+    if (score >= 70) {
+      try {
+        await db.promise().query(
+          'INSERT INTO user_badges (user_id, quiz_id) VALUES (?, ?)',
+          [userId, id]
+        );
+        badgeAwarded = true;
+      } catch (err) {
+        // Badge already exists, that's fine
+        if (err.code !== 'ER_DUP_ENTRY') throw err;
+      }
+    }
+
+    res.json({
+      score,
+      totalQuestions: questions.length,
+      correctAnswers: correct,
+      passed: score >= 70,
+      badgeAwarded,
+      message: score >= 70 
+        ? badgeAwarded 
+          ? 'Congratulations! You earned a badge! 🎉'
+          : 'You already earned this badge!'
+        : 'Keep practicing!'
+    });
+  } catch (err) {
+    console.error('Error submitting quiz:', err);
+    res.status(500).json({ message: 'Failed to submit quiz' });
+  }
+});
+
+// Admin: Create a new quiz
+app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  const { title, description, icon_emoji, questions } = req.body;
+
+  try {
+    // Check if user is admin
+    const [user] = await db.promise().query('SELECT role FROM users WHERE id = ?', [userId]);
+    if (user.length === 0 || user[0].role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can create quizzes' });
+    }
+
+    // Create quiz
+    const [result] = await db.promise().query(
+      'INSERT INTO quizzes (title, description, icon_emoji, created_by) VALUES (?, ?, ?, ?)',
+      [title, description, icon_emoji, userId]
+    );
+
+    const quizId = result.insertId;
+
+    // Insert questions
+    if (questions && questions.length > 0) {
+      for (const q of questions) {
+        await db.promise().query(
+          'INSERT INTO quiz_questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [quizId, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.explanation]
+        );
+      }
+    }
+
+    res.status(201).json({ message: 'Quiz created', quizId });
+  } catch (err) {
+    console.error('Error creating quiz:', err);
+    res.status(500).json({ message: 'Failed to create quiz' });
+  }
+});
+
+// Admin: Delete a quiz
+app.delete('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Check if user is admin
+    const [user] = await db.promise().query('SELECT role FROM users WHERE id = ?', [userId]);
+    if (user.length === 0 || user[0].role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can delete quizzes' });
+    }
+
+    await db.promise().query('DELETE FROM quizzes WHERE id = ?', [id]);
+    res.json({ message: 'Quiz deleted' });
+  } catch (err) {
+    console.error('Error deleting quiz:', err);
+    res.status(500).json({ message: 'Failed to delete quiz' });
+  }
+});
+
+// ===== QUIZ ENDPOINTS END =====
 
 // Fetch series details including seasons
 app.get('/api/tmdb/series-seasons/:id', async (req, res) => {
@@ -1155,6 +1506,537 @@ app.get('/api/tmdb/search-series', async (req, res) => {
   }
 });
 
+// ===== NEW FEATURES: PUBLIC PROFILES, WATCHED SHOWS, FOLLOWED SHOWS, USER LISTS, NOTIFICATIONS =====
+
+// Get public profile of another user
+app.get('/api/users/:userId/public-profile', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [users] = await db.promise().query(
+      'SELECT id, username, profile_picture, role FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    const user = users[0];
+
+    // Get user reviews count
+    const [reviewCounts] = await db.promise().query(
+      'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?',
+      [userId]
+    );
+
+    // Get followed shows count
+    const [followedCounts] = await db.promise().query(
+      'SELECT COUNT(*) as count FROM followed_shows WHERE user_id = ?',
+      [userId]
+    );
+
+    // Get badges
+    const [badges] = await db.promise().query(
+      `SELECT ub.*, q.title, q.icon_emoji FROM user_badges ub
+       JOIN quizzes q ON ub.quiz_id = q.id
+       WHERE ub.user_id = ?
+       ORDER BY ub.earned_at DESC`,
+      [userId]
+    );
+
+    // Get user's public lists
+    const [lists] = await db.promise().query(
+      'SELECT * FROM user_lists WHERE user_id = ? AND is_public = 1 ORDER BY created_at DESC',
+      [userId]
+    );
+
+    res.json({
+      user,
+      reviewCount: reviewCounts[0].count,
+      followedShowsCount: followedCounts[0].count,
+      badges,
+      publicLists: lists
+    });
+  } catch (err) {
+    console.error('Error fetching public profile:', err);
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+});
+
+// Get single review with all details
+app.get('/api/reviews/:reviewId', async (req, res) => {
+  const { reviewId } = req.params;
+
+  try {
+    const [reviews] = await db.promise().query(
+      `SELECT r.*, u.username, u.profile_picture
+       FROM reviews r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.id = ?`,
+      [reviewId]
+    );
+
+    if (reviews.length === 0) return res.status(404).json({ message: 'Review not found' });
+
+    const review = reviews[0];
+
+    // Get total user reviews
+    const [userReviews] = await db.promise().query(
+      'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?',
+      [review.user_id]
+    );
+
+    // Get TMDB series details
+    const seriesRes = await axios.get(`${TMDB_BASE}/tv/${review.tmdb_series_id}`, {
+      params: { api_key: TMDB_KEY }
+    });
+
+    // Get episode details
+    const episodeRes = await axios.get(
+      `${TMDB_BASE}/tv/${review.tmdb_series_id}/season/${review.season_number}/episode/${review.episode_number}`,
+      { params: { api_key: TMDB_KEY } }
+    );
+
+    // Get comments
+    const [comments] = await db.promise().query(
+      `SELECT c.*, u.username, u.profile_picture FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.review_id = ?
+       ORDER BY c.date ASC`,
+      [reviewId]
+    );
+
+    res.json({
+      review,
+      seriesInfo: seriesRes.data,
+      episodeInfo: episodeRes.data,
+      userReviewCount: userReviews[0].count,
+      comments
+    });
+  } catch (err) {
+    console.error('Error fetching review:', err);
+    res.status(500).json({ message: 'Failed to fetch review' });
+  }
+});
+
+// Mark show as watched
+app.post('/api/watched-shows', requireAuth, async (req, res) => {
+  const { tmdb_series_id, watched_status } = req.body;
+  const userId = req.userId;
+
+  try {
+    const [existing] = await db.promise().query(
+      'SELECT * FROM watched_shows WHERE user_id = ? AND tmdb_series_id = ?',
+      [userId, tmdb_series_id]
+    );
+
+    if (existing.length > 0) {
+      await db.promise().query(
+        'UPDATE watched_shows SET watched_status = ? WHERE user_id = ? AND tmdb_series_id = ?',
+        [watched_status, userId, tmdb_series_id]
+      );
+    } else {
+      await db.promise().query(
+        'INSERT INTO watched_shows (user_id, tmdb_series_id, watched_status) VALUES (?, ?, ?)',
+        [userId, tmdb_series_id, watched_status]
+      );
+    }
+
+    res.json({ message: 'Show watch status updated' });
+  } catch (err) {
+    console.error('Error updating watched show:', err);
+    res.status(500).json({ message: 'Failed to update watch status' });
+  }
+});
+
+// Mark episode as watched
+app.post('/api/watched-episodes', requireAuth, async (req, res) => {
+  const { tmdb_series_id, season_number, episode_number } = req.body;
+  const userId = req.userId;
+
+  try {
+    const [existing] = await db.promise().query(
+      'SELECT * FROM watched_episodes WHERE user_id = ? AND tmdb_series_id = ? AND season_number = ? AND episode_number = ?',
+      [userId, tmdb_series_id, season_number, episode_number]
+    );
+
+    if (existing.length === 0) {
+      await db.promise().query(
+        'INSERT INTO watched_episodes (user_id, tmdb_series_id, season_number, episode_number) VALUES (?, ?, ?, ?)',
+        [userId, tmdb_series_id, season_number, episode_number]
+      );
+    }
+
+    res.json({ message: 'Episode marked as watched' });
+  } catch (err) {
+    console.error('Error marking episode as watched:', err);
+    res.status(500).json({ message: 'Failed to mark episode as watched' });
+  }
+});
+
+// Get watched shows for user
+app.get('/api/watched-shows/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [watched] = await db.promise().query(
+      'SELECT * FROM watched_shows WHERE user_id = ?',
+      [userId]
+    );
+
+    res.json(watched);
+  } catch (err) {
+    console.error('Error fetching watched shows:', err);
+    res.status(500).json({ message: 'Failed to fetch watched shows' });
+  }
+});
+
+// Get watched episodes for show
+app.get('/api/watched-episodes/:userId/:seriesId', async (req, res) => {
+  const { userId, seriesId } = req.params;
+
+  try {
+    const [episodes] = await db.promise().query(
+      'SELECT * FROM watched_episodes WHERE user_id = ? AND tmdb_series_id = ?',
+      [userId, seriesId]
+    );
+
+    res.json(episodes);
+  } catch (err) {
+    console.error('Error fetching watched episodes:', err);
+    res.status(500).json({ message: 'Failed to fetch watched episodes' });
+  }
+});
+
+// Follow a show
+app.post('/api/follow-show', requireAuth, async (req, res) => {
+  const { tmdb_series_id } = req.body;
+  const userId = req.userId;
+
+  try {
+    const [existing] = await db.promise().query(
+      'SELECT * FROM followed_shows WHERE user_id = ? AND tmdb_series_id = ?',
+      [userId, tmdb_series_id]
+    );
+
+    if (existing.length === 0) {
+      await db.promise().query(
+        'INSERT INTO followed_shows (user_id, tmdb_series_id) VALUES (?, ?)',
+        [userId, tmdb_series_id]
+      );
+    }
+
+    res.json({ message: 'Show followed' });
+  } catch (err) {
+    console.error('Error following show:', err);
+    res.status(500).json({ message: 'Failed to follow show' });
+  }
+});
+
+// Unfollow show
+app.post('/api/unfollow-show', requireAuth, async (req, res) => {
+  const { tmdb_series_id } = req.body;
+  const userId = req.userId;
+
+  try {
+    await db.promise().query(
+      'DELETE FROM followed_shows WHERE user_id = ? AND tmdb_series_id = ?',
+      [userId, tmdb_series_id]
+    );
+
+    res.json({ message: 'Show unfollowed' });
+  } catch (err) {
+    console.error('Error unfollowing show:', err);
+    res.status(500).json({ message: 'Failed to unfollow show' });
+  }
+});
+
+// Get followed shows for user
+app.get('/api/followed-shows/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [shows] = await db.promise().query(
+      'SELECT * FROM followed_shows WHERE user_id = ?',
+      [userId]
+    );
+
+    res.json(shows);
+  } catch (err) {
+    console.error('Error fetching followed shows:', err);
+    res.status(500).json({ message: 'Failed to fetch followed shows' });
+  }
+});
+
+// Get notifications for user
+app.get('/api/notifications', requireAuth, async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const [notifications] = await db.promise().query(
+      `SELECT n.* FROM notifications n
+       WHERE n.user_id = ?
+       ORDER BY n.created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    res.json(notifications);
+  } catch (err) {
+    console.error('Error fetching notifications:', err);
+    res.status(500).json({ message: 'Failed to fetch notifications' });
+  }
+});
+
+// Mark notification as read
+app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    await db.promise().query(
+      'UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    res.json({ message: 'Notification marked as read' });
+  } catch (err) {
+    console.error('Error marking notification as read:', err);
+    res.status(500).json({ message: 'Failed to mark notification as read' });
+  }
+});
+
+// Create user list
+app.post('/api/user-lists', requireAuth, async (req, res) => {
+  const { name, description, is_public } = req.body;
+  const userId = req.userId;
+
+  try {
+    const [result] = await db.promise().query(
+      'INSERT INTO user_lists (user_id, name, description, is_public) VALUES (?, ?, ?, ?)',
+      [userId, name, description, is_public ? 1 : 0]
+    );
+
+    res.status(201).json({ message: 'List created', listId: result.insertId });
+  } catch (err) {
+    console.error('Error creating user list:', err);
+    res.status(500).json({ message: 'Failed to create list' });
+  }
+});
+
+// Get user lists
+app.get('/api/user-lists/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const authUserId = req.headers.authorization ? parseInt(req.headers.authorization) : null;
+
+  try {
+    let query = 'SELECT * FROM user_lists WHERE user_id = ?';
+    const params = [userId];
+
+    // If not the same user and not looking at public lists
+    if (authUserId !== parseInt(userId)) {
+      query += ' AND is_public = 1';
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [lists] = await db.promise().query(query, params);
+
+    // Get items for each list
+    const listsWithItems = await Promise.all(lists.map(async (list) => {
+      const [items] = await db.promise().query(
+        'SELECT * FROM user_list_items WHERE list_id = ?',
+        [list.id]
+      );
+      return { ...list, items };
+    }));
+
+    res.json(listsWithItems);
+  } catch (err) {
+    console.error('Error fetching user lists:', err);
+    res.status(500).json({ message: 'Failed to fetch lists' });
+  }
+});
+
+// Add show to list
+app.post('/api/user-lists/:listId/items', requireAuth, async (req, res) => {
+  const { listId } = req.params;
+  const { tmdb_series_id } = req.body;
+  const userId = req.userId;
+
+  try {
+    // Check that the list belongs to the user
+    const [lists] = await db.promise().query(
+      'SELECT user_id FROM user_lists WHERE id = ?',
+      [listId]
+    );
+
+    if (lists.length === 0 || lists[0].user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const [existing] = await db.promise().query(
+      'SELECT * FROM user_list_items WHERE list_id = ? AND tmdb_series_id = ?',
+      [listId, tmdb_series_id]
+    );
+
+    if (existing.length === 0) {
+      await db.promise().query(
+        'INSERT INTO user_list_items (list_id, tmdb_series_id) VALUES (?, ?)',
+        [listId, tmdb_series_id]
+      );
+    }
+
+    res.json({ message: 'Show added to list' });
+  } catch (err) {
+    console.error('Error adding to list:', err);
+    res.status(500).json({ message: 'Failed to add to list' });
+  }
+});
+
+// Remove show from list
+app.delete('/api/user-lists/:listId/items/:itemId', requireAuth, async (req, res) => {
+  const { listId, itemId } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Check that the list belongs to the user
+    const [lists] = await db.promise().query(
+      'SELECT user_id FROM user_lists WHERE id = ?',
+      [listId]
+    );
+
+    if (lists.length === 0 || lists[0].user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await db.promise().query(
+      'DELETE FROM user_list_items WHERE id = ? AND list_id = ?',
+      [itemId, listId]
+    );
+
+    res.json({ message: 'Show removed from list' });
+  } catch (err) {
+    console.error('Error removing from list:', err);
+    res.status(500).json({ message: 'Failed to remove from list' });
+  }
+});
+
+// Delete user list
+app.delete('/api/user-lists/:listId', requireAuth, async (req, res) => {
+  const { listId } = req.params;
+  const userId = req.userId;
+
+  try {
+    const [lists] = await db.promise().query(
+      'SELECT user_id FROM user_lists WHERE id = ?',
+      [listId]
+    );
+
+    if (lists.length === 0 || lists[0].user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await db.promise().query(
+      'DELETE FROM user_list_items WHERE list_id = ?',
+      [listId]
+    );
+
+    await db.promise().query(
+      'DELETE FROM user_lists WHERE id = ?',
+      [listId]
+    );
+
+    res.json({ message: 'List deleted' });
+  } catch (err) {
+    console.error('Error deleting list:', err);
+    res.status(500).json({ message: 'Failed to delete list' });
+  }
+});
+
+// Update user list
+app.put('/api/user-lists/:listId', requireAuth, async (req, res) => {
+  const { listId } = req.params;
+  const { name, description, is_public } = req.body;
+  const userId = req.userId;
+
+  try {
+    const [lists] = await db.promise().query(
+      'SELECT user_id FROM user_lists WHERE id = ?',
+      [listId]
+    );
+
+    if (lists.length === 0 || lists[0].user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await db.promise().query(
+      'UPDATE user_lists SET name = ?, description = ?, is_public = ? WHERE id = ?',
+      [name, description, is_public ? 1 : 0, listId]
+    );
+
+    res.json({ message: 'List updated' });
+  } catch (err) {
+    console.error('Error updating list:', err);
+    res.status(500).json({ message: 'Failed to update list' });
+  }
+});
+
+// Select badge to display on profile
+app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
+  const { userId } = req.params;
+  const { badgeId } = req.body;
+  const authUserId = req.userId;
+
+  if (parseInt(userId) !== authUserId) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    // Verify the badge belongs to this user
+    const [badges] = await db.promise().query(
+      'SELECT * FROM user_badges WHERE id = ? AND user_id = ?',
+      [badgeId, userId]
+    );
+
+    if (badges.length === 0) {
+      return res.status(404).json({ message: 'Badge not found' });
+    }
+
+    // Update users table with selected badge
+    await db.promise().query(
+      'UPDATE users SET selected_badge_id = ? WHERE id = ?',
+      [badgeId, userId]
+    );
+
+    res.json({ message: 'Badge selected for profile' });
+  } catch (err) {
+    console.error('Error selecting badge:', err);
+    res.status(500).json({ message: 'Failed to select badge' });
+  }
+});
+
+// Get user's profile comments (comments posted by the user)
+app.get('/api/users/:userId/comments', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [comments] = await db.promise().query(
+      `SELECT c.*, u.username, u.profile_picture, r.id as review_id, r.review_title
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       JOIN reviews r ON c.review_id = r.id
+       WHERE c.user_id = ?
+       ORDER BY c.date DESC`,
+      [userId]
+    );
+
+    res.json(comments);
+  } catch (err) {
+    console.error('Error fetching user comments:', err);
+    res.status(500).json({ message: 'Failed to fetch comments' });
+  }
+});
+
 
 
 
@@ -1163,6 +2045,168 @@ app.get('/api/tmdb/search-series', async (req, res) => {
 db.connect(err => {
   if (err) throw err;
   console.log('MySQL connected');
+  
+  // Create user_favorites table if not exists
+  db.query(`CREATE TABLE IF NOT EXISTS user_favorites (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL,
+    position INT NOT NULL,
+    UNIQUE KEY unique_user_position (user_id, position),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating user_favorites table:', err);
+    else console.log('user_favorites table ready');
+  });
+
+  // Create quizzes table
+  db.query(`CREATE TABLE IF NOT EXISTS quizzes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon_emoji VARCHAR(10),
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating quizzes table:', err);
+    else console.log('quizzes table ready');
+  });
+
+  // Create quiz_questions table
+  db.query(`CREATE TABLE IF NOT EXISTS quiz_questions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    quiz_id INT NOT NULL,
+    question_text TEXT NOT NULL,
+    option_a VARCHAR(255),
+    option_b VARCHAR(255),
+    option_c VARCHAR(255),
+    option_d VARCHAR(255),
+    correct_answer CHAR(1) NOT NULL,
+    explanation TEXT,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating quiz_questions table:', err);
+    else console.log('quiz_questions table ready');
+  });
+
+  // Create user_badges table (represents earned badges)
+  db.query(`CREATE TABLE IF NOT EXISTS user_badges (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    quiz_id INT NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_badge (user_id, quiz_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating user_badges table:', err);
+    else console.log('user_badges table ready');
+  });
+
+  // Create quiz_attempts table (track all attempts)
+  db.query(`CREATE TABLE IF NOT EXISTS quiz_attempts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    quiz_id INT NOT NULL,
+    score INT NOT NULL,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating quiz_attempts table:', err);
+    else console.log('quiz_attempts table ready');
+  });
+
+  // Create watched_shows table
+  db.query(`CREATE TABLE IF NOT EXISTS watched_shows (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL,
+    watched_status VARCHAR(50) DEFAULT 'partially',
+    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_series (user_id, tmdb_series_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating watched_shows table:', err);
+    else console.log('watched_shows table ready');
+  });
+
+  // Create watched_episodes table
+  db.query(`CREATE TABLE IF NOT EXISTS watched_episodes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL,
+    season_number INT NOT NULL,
+    episode_number INT NOT NULL,
+    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_episode (user_id, tmdb_series_id, season_number, episode_number),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating watched_episodes table:', err);
+    else console.log('watched_episodes table ready');
+  });
+
+  // Create followed_shows table
+  db.query(`CREATE TABLE IF NOT EXISTS followed_shows (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL,
+    followed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_follow (user_id, tmdb_series_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating followed_shows table:', err);
+    else console.log('followed_shows table ready');
+  });
+
+  // Create notifications table
+  db.query(`CREATE TABLE IF NOT EXISTS notifications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    message TEXT,
+    is_read INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating notifications table:', err);
+    else console.log('notifications table ready');
+  });
+
+  // Create user_lists table
+  db.query(`CREATE TABLE IF NOT EXISTS user_lists (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_public INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating user_lists table:', err);
+    else console.log('user_lists table ready');
+  });
+
+  // Create user_list_items table
+  db.query(`CREATE TABLE IF NOT EXISTS user_list_items (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    list_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_list_item (list_id, tmdb_series_id),
+    FOREIGN KEY (list_id) REFERENCES user_lists(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating user_list_items table:', err);
+    else console.log('user_list_items table ready');
+  });
+
+  // Add selected_badge_id column to users if not exists
+  db.query(`ALTER TABLE users ADD COLUMN selected_badge_id INT`, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
+    else console.log('users table checked for selected_badge_id');
+  });
 });
 
 app.listen(3000, () => {

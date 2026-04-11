@@ -14,25 +14,24 @@
       <!-- Site-wide Stats -->
       <div class="stats-section">
         <div class="section-header">
-          <h2>{{ t('siteStatistics') }}</h2>
+          <h2>🌍 {{ t('siteStatistics') }}</h2>
           <p class="section-subtitle">{{ t('browsePopular') }}</p>
         </div>
 
         <div class="stat-cards">
           <div
             v-for="(stat, idx) in [
-              { label: t('highestRated'), value: siteStats.highestRated, type: 'rating' },
-              { label: t('lowestRated'), value: siteStats.lowestRated, type: 'rating' },
-              { label: t('mostReviewed'), value: siteStats.mostReviewed, type: 'count' }
+              { label: t('highestRated'), value: siteStats.highestRated, type: 'rating', icon: '⭐', color: 'gold' },
+              { label: t('lowestRated'), value: siteStats.lowestRated, type: 'rating', icon: '📉', color: 'red' },
+              { label: t('mostReviewed'), value: siteStats.mostReviewed, type: 'count', icon: '📊', color: 'blue' }
             ]"
             :key="idx"
             class="stat-card"
+            :class="`stat-${stat.color}`"
             :style="{ '--card-idx': idx }"
           >
             <div class="card-icon">
-              <span v-if="stat.type === 'rating' && idx === 0">⭐</span>
-              <span v-else-if="stat.type === 'rating' && idx === 1">📉</span>
-              <span v-else>📊</span>
+              <span>{{ stat.icon }}</span>
             </div>
             <div class="card-content">
               <p class="card-label">{{ stat.label }}</p>
@@ -47,16 +46,18 @@
 
         <div class="chart-section">
           <div class="chart-header">
-            <h3>{{ t('topShowsByReviewCount') }}</h3>
+            <h3>📊 {{ t('topShowsByReviewCount') }}</h3>
           </div>
-          <canvas id="siteChart"></canvas>
+          <div class="chart-wrapper">
+            <canvas id="siteChart"></canvas>
+          </div>
         </div>
       </div>
 
       <!-- User Stats -->
       <div class="stats-section" :class="{ locked: !isLoggedIn }">
         <div class="section-header">
-          <h2>{{ t('yourPersonalStats') }}</h2>
+          <h2>👤 {{ t('yourPersonalStats') }}</h2>
           <p class="section-subtitle">{{ isLoggedIn ? t('yourViewingJourney') : t('signInToUnlock') }}</p>
         </div>
 
@@ -71,18 +72,17 @@
           <div class="stat-cards">
             <div
               v-for="(stat, idx) in [
-                { label: t('yourFavorite'), value: userStats.highestRated, type: 'rating' },
-                { label: t('notYourStyle'), value: userStats.lowestRated, type: 'rating' },
-                { label: t('mostWatched'), value: userStats.mostReviewed, type: 'count' }
+                { label: t('yourFavorite'), value: userStats.highestRated, type: 'rating', icon: '❤️', color: 'gold' },
+                { label: t('notYourStyle'), value: userStats.lowestRated, type: 'rating', icon: '👎', color: 'red' },
+                { label: t('mostWatched'), value: userStats.mostReviewed, type: 'count', icon: '🎬', color: 'blue' }
               ]"
               :key="idx"
               class="stat-card"
+              :class="`stat-${stat.color}`"
               :style="{ '--card-idx': idx }"
             >
               <div class="card-icon">
-                <span v-if="stat.type === 'rating' && idx === 0">❤️</span>
-                <span v-else-if="stat.type === 'rating' && idx === 1">👎</span>
-                <span v-else>🎬</span>
+                <span>{{ stat.icon }}</span>
               </div>
               <div class="card-content">
                 <p class="card-label">{{ stat.label }}</p>
@@ -97,9 +97,11 @@
 
           <div class="chart-section">
             <div class="chart-header">
-              <h3>{{ t('yourTopShowsByReviewCount') }}</h3>
+              <h3>📈 {{ t('yourTopShowsByReviewCount') }}</h3>
             </div>
-            <canvas id="userChart"></canvas>
+            <div class="chart-wrapper">
+              <canvas id="userChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -502,6 +504,37 @@ export default {
   animation-delay: calc(var(--card-idx) * 80ms);
 }
 
+/* Color variants */
+.stat-card.stat-gold {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 160, 0, 0.05) 100%);
+  border: 2px solid rgba(255, 215, 0, 0.2);
+}
+
+.stat-card.stat-gold:hover {
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.15);
+}
+
+.stat-card.stat-red {
+  background: linear-gradient(135deg, rgba(255, 99, 99, 0.08) 0%, rgba(244, 67, 54, 0.05) 100%);
+  border: 2px solid rgba(255, 99, 99, 0.2);
+}
+
+.stat-card.stat-red:hover {
+  border-color: rgba(255, 99, 99, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 99, 99, 0.15);
+}
+
+.stat-card.stat-blue {
+  background: linear-gradient(135deg, rgba(100, 130, 255, 0.08) 0%, rgba(66, 133, 244, 0.05) 100%);
+  border: 2px solid rgba(100, 130, 255, 0.2);
+}
+
+.stat-card.stat-blue:hover {
+  border-color: rgba(100, 130, 255, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(100, 130, 255, 0.15);
+}
+
 @keyframes cardSlideIn {
   0% {
     opacity: 0;
@@ -533,9 +566,7 @@ export default {
 }
 
 .stat-card:hover {
-  border-color: rgba(112, 233, 116, 0.3);
   transform: translateY(-8px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(112, 233, 116, 0.1);
 }
 
 .stat-card:hover::before {
@@ -629,11 +660,17 @@ export default {
   background: linear-gradient(135deg, var(--dark-bg-color) 0%, var(--section-dark-color) 100%);
   border: 1px solid rgba(112, 233, 116, 0.1);
   border-radius: 14px;
-  padding: 1.75rem;
+  padding: 2rem;
   animation: cardSlideIn 500ms cubic-bezier(0.16, 0.84, 0.24, 1) 160ms forwards;
   opacity: 0;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  transition: all 300ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.chart-section:hover {
+  border-color: rgba(112, 233, 116, 0.25);
+  box-shadow: 0 8px 24px rgba(112, 233, 116, 0.1);
 }
 
 .chart-section::before {
@@ -649,6 +686,8 @@ export default {
 
 .chart-header {
   margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .chart-header h3 {
@@ -657,6 +696,14 @@ export default {
   font-weight: 700;
   color: var(--text-color);
   letter-spacing: -0.2px;
+}
+
+.chart-wrapper {
+  position: relative;
+  min-height: 320px;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
 }
 
 canvas {
