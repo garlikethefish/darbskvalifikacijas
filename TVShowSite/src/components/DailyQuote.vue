@@ -10,7 +10,7 @@
 }
 
 .quote-text {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: 40px;
   margin: 0 0 12px 0;
   letter-spacing: -0.3px;
   font-weight: 700;
@@ -84,16 +84,16 @@ export default {
     }
   },
   mounted() {
-    const cachedQuote = localStorage.getItem('dailyQuote_v3');
-    const cachedTime = localStorage.getItem('quoteTimestamp_v3');
+    const cachedQuote = localStorage.getItem('dailyQuote_v4');
+    const cachedTime = localStorage.getItem('quoteTimestamp_v4');
     if (cachedQuote && cachedTime && (Date.now() - parseInt(cachedTime)) < 24 * 60 * 60 * 1000) {
       this.quote = JSON.parse(cachedQuote);
     } else {
       axios.get('api/daily-quote')
         .then(res => {
           this.quote = res.data;
-          localStorage.setItem('dailyQuote_v3', JSON.stringify(this.quote));
-          localStorage.setItem('quoteTimestamp_v3', Date.now().toString());
+          localStorage.setItem('dailyQuote_v4', JSON.stringify(this.quote));
+          localStorage.setItem('quoteTimestamp_v4', Date.now().toString());
         })
         .catch(err => {
           console.error('Error fetching daily quote:', err);

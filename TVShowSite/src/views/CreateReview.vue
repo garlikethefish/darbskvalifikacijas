@@ -232,7 +232,7 @@ export default {
         }
 
         alert("Review posted successfully!");
-        this.$router.push("/profile");
+        this.$router.push(`/profile/${auth?.user?.id}`);
       } catch (err) {
         console.error("Failed to submit review:", err);
         alert(err.message);

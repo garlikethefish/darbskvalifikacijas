@@ -1,14 +1,14 @@
 <template>
   <div class="reviews-page">
     <!-- Hero Section -->
-    <header class="hero">
+    <div class="hero">
       <div class="hero-band">
         <div class="hero-inner">
           <h1>{{ t('communityReviews') }}</h1>
           <p class="subtitle">{{ t('discoverReviews') }}</p>
         </div>
       </div>
-    </header>
+    </div>
 
     <div class="controls-container">
       <div class="controls-wrapper">
@@ -288,9 +288,9 @@ export default {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   width: 100vw;
-  background: linear-gradient(90deg, rgba(34, 59, 75, 0.92), rgba(25, 61, 39, 0.92));
+  background: var(--hero-gradient);
   padding: 48px 0;
-  box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--hero-shadow);
   position: relative;
   overflow: hidden;
 }

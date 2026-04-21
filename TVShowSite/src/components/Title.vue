@@ -5,11 +5,14 @@
             <img class="title" @click="title" :src="logoSrc" />
         </div>
         <div class="right-section">
-            <img v-if="isLoggedIn" class="add-review-button" @click="create_review" :src="'./src/assets/add_review.png'"/>
-            <img v-if="isLoggedIn" class="profile-button" @click="profile" :src="'./src/assets/loggedin.png'"/>
-            <img v-else class="login-button" @click="login" :src="'./src/assets/login.png'" />
+            <button v-if="isLoggedIn" class="add-review-button" @click="create_review" title="New Review"><SvgIcon name="add-review" :size="36" /></button>
+            <button v-if="isLoggedIn" class="profile-button" @click="profile" title="Profile">
+              <img v-if="profilePicture" :src="profilePicture" class="profile-pic" @error="profilePicture = null" alt="Profile" />
+              <SvgIcon v-else name="user" :size="36" />
+            </button>
+            <button v-else class="login-button" @click="login" title="Login"><SvgIcon name="user" :size="36" /></button>
             <NotificationPanel v-if="isLoggedIn" />
-            <button @click="toggleTheme" id="theme-toggle" class="theme-toggle"><img id="theme-icon" class="theme-toggle" :src="themeIcon"/></button>
+            <button @click="toggleTheme" id="theme-toggle" class="theme-toggle"><SvgIcon :name="isLightMode ? 'sun' : 'moon'" :size="30" /></button>
             <LanguageToggle @language-change="onLanguageChange" />
         </div>
     </div>
@@ -18,26 +21,28 @@
 <script>
 import LanguageToggle from './LanguageToggle.vue';
 import NotificationPanel from './NotificationPanel.vue';
+import SvgIcon from './SvgIcon.vue';
+import logoLight from '@/assets/logo_long.png';
+import logoDark from '@/assets/logo_long_dark.png';
 
 export default {
   components: {
     LanguageToggle,
-    NotificationPanel
+    NotificationPanel,
+    SvgIcon
   },
   data() {
     return {
       isLightMode: false, // Default theme
-      isLoggedIn: false
+      isLoggedIn: false,
+      profilePicture: null
     };
   },
   computed: {
-    themeIcon() {
-      return this.isLightMode ? './src/assets/sun.png' : './src/assets/moon.png';
-    },
     logoSrc() {
     return this.isLightMode
-      ? './src/assets/logo_long_dark.png' // if is light mode then darker logo should be used for contrast
-      : './src/assets/logo_long.png';
+      ? logoDark // if is light mode then darker logo should be used for contrast
+      : logoLight;
   }
   },
   methods: {
@@ -45,13 +50,18 @@ export default {
       this.$router.push('/');
     },
     login() {
-      this.$router.push('login');
+      this.$router.push('/login');
     },
     profile() {
-      this.$router.push('profile');
+      const auth = JSON.parse(localStorage.getItem('auth') || 'null');
+      if (auth?.user?.id) {
+        this.$router.push(`/profile/${auth.user.id}`);
+      } else {
+        this.$router.push('/login');
+      }
     },
     create_review() {
-      this.$router.push('create-review');
+      this.$router.push('/create-review');
     },
     onLanguageChange(lang) {
       this.$emit('language-change', lang);
@@ -84,6 +94,7 @@ export default {
     if (auth) {
       const parsed = JSON.parse(auth);
       this.isLoggedIn = parsed.loggedIn === true;
+      this.profilePicture = parsed.user?.profile_picture || null;
     }
   }
 };
@@ -91,20 +102,34 @@ export default {
 
 
 <style scoped>
-.login-button {
+.profile-pic {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  outline: 2px solid var(--accent-color);
+}
+
+.login-button,
+.profile-button,
+.add-review-button {
     cursor: pointer;
-    max-width: 40px;
+    width: 40px;
     height: 40px;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: opacity 0.2s ease;
 }
-.profile-button{
-  cursor: pointer;
-  max-width: 40px;
-  height: 40px;
-}
-.add-review-button{
-  cursor: pointer;
-  max-width: 40px;
-  height: 40px;
+
+.login-button:hover,
+.profile-button:hover,
+.add-review-button:hover {
+    opacity: 0.75;
 }
 .title-container {
   display: flex;
@@ -119,6 +144,12 @@ export default {
     height: 100px;
     padding-bottom: 20px;
     margin: 0;
+    transition: height 0.3s cubic-bezier(0.16,0.84,0.24,1), padding 0.3s cubic-bezier(0.16,0.84,0.24,1);
+}
+
+:global(.header-compact) .title {
+    height: 65px;
+    padding-bottom: 6px;
 }
 .logo-section{
     display: flex;
@@ -139,18 +170,18 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 34px; 
-  background: none; 
-  max-width: 40px;
+  background: none;
+  width: 40px;
   height: 40px;
-  border: none; 
+  border: none;
   outline: none;
+  padding: 0;
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
 }
 
-.theme-toggle img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.theme-toggle:hover {
+  opacity: 0.75;
 }
 
 @media (max-width: 500px) {
@@ -159,17 +190,15 @@ export default {
     padding: 0;
     height: 60px;
   }
-  .login-button {
-    max-width: 40px;
-    max-height: 40px;
+  :global(.header-compact) .title {
+    height: 44px;
+    padding-bottom: 2px;
   }
-  .profile-button{
-    max-width: 40px;
-    max-height: 40px;
-  }
-  .add-review-button{
-    max-width: 40px;
-    max-height: 40px;
+  .login-button,
+  .profile-button,
+  .add-review-button {
+    width: 36px;
+    height: 36px;
   }
   .theme-toggle {
     max-width: 40px;
@@ -180,10 +209,6 @@ export default {
     gap: 8px;
     margin-right: 10px;
   }
-  .title-container{
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
+
 }
 </style>

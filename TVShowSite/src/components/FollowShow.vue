@@ -6,7 +6,7 @@
       :disabled="isLoading"
       class="follow-btn"
     >
-      <span class="icon">⭐</span>
+      <span class="icon"><SvgIcon name="star" :size="18" /></span>
       <span>Follow Show</span>
     </button>
     <button 
@@ -15,14 +15,17 @@
       :disabled="isLoading"
       class="unfollow-btn"
     >
-      <span class="icon">⭐</span>
+      <span class="icon"><SvgIcon name="star" :size="18" /></span>
       <span>Following</span>
     </button>
   </div>
 </template>
 
 <script>
+import SvgIcon from '@/components/SvgIcon.vue'
+
 export default {
+  components: { SvgIcon },
   props: {
     seriesId: {
       type: Number,

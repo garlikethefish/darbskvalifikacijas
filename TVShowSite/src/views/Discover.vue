@@ -1,19 +1,19 @@
 <template>
   <div class="discover-page">
-    <header class="hero">
+    <div class="hero">
       <div class="hero-band">
         <div class="hero-inner">
           <h1>{{ t('discoverTitle') }}</h1>
           <p class="subtitle">{{ t('discoverSubtitle') }}</p>
         </div>
       </div>
-    </header>
+    </div>
 
     <section v-if="loading" class="loading">{{ t('scanning') }}</section>
 
     <section v-else>
       <div v-if="!isLoggedIn" class="login-prompt-section">
-        <div class="lock-icon">{{ t('lockIcon') }}</div>
+        <div class="lock-icon"><SvgIcon name="lock" :size="48" /></div>
         <h2>{{ t('unlockDiscovery') }}</h2>
         <p>{{ t('signInRecommendations') }}</p>
         <router-link to="/login" class="login-btn">{{ t('signIn') }}</router-link>
@@ -58,7 +58,15 @@
             <div class="match-badge" :aria-label="`Match ${show.matchStars ?? Math.round((show.matchScore||0)/20)} stars`">
               <span class="badge-label">{{ t('match') }}</span>
               <span class="badge-stars" role="img" :aria-hidden="true">
-                <span v-for="n in 5" :key="n" class="star" :class="{filled: n <= (show.matchStars ?? Math.round((show.matchScore||0)/20))}">★</span>
+                <SvgIcon
+                  v-for="n in 5"
+                  :key="n"
+                  name="star"
+                  :size="12"
+                  :weight="n <= (show.matchStars ?? Math.round((show.matchScore||0)/20)) ? 'Bold' : 'Linear'"
+                  class="star"
+                  :class="{filled: n <= (show.matchStars ?? Math.round((show.matchScore||0)/20))}"
+                />
               </span>
             </div>
 
@@ -69,7 +77,15 @@
               <div class="score">
                 <span>{{ t('matchScore') }}</span>
                 <span class="inline-stars">
-                  <span v-for="n in 5" :key="'s-'+n+show.id" class="star small" :class="{filled: n <= (show.matchStars ?? Math.round((show.matchScore||0)/20))}">★</span>
+                  <SvgIcon
+                    v-for="n in 5"
+                    :key="'s-'+n+show.id"
+                    name="star"
+                    :size="14"
+                    :weight="n <= (show.matchStars ?? Math.round((show.matchScore||0)/20)) ? 'Bold' : 'Linear'"
+                    class="star small"
+                    :class="{filled: n <= (show.matchStars ?? Math.round((show.matchScore||0)/20))}"
+                  />
                   <strong class="stars-label">{{ show.matchStars ?? Math.round((show.matchScore||0)/20) }}/5</strong>
                 </span>
               </div>
@@ -99,9 +115,11 @@
 
 <script>
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+import SvgIcon from '@/components/SvgIcon.vue'
 
 export default {
   name: "Discover",
+  components: { SvgIcon },
   data() {
     return {
       loading: true,
@@ -262,9 +280,9 @@ export default {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   width: 100vw;
-  background: linear-gradient(90deg, rgba(34, 59, 75, 0.92), rgba(25, 61, 39, 0.92));
+  background: var(--hero-gradient);
   padding: 48px 0;
-  box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--hero-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -364,7 +382,7 @@ export default {
 }
 
 .show-card {
-  background: #111;
+  background: var(--dark-bg-color);
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -376,13 +394,14 @@ export default {
   min-width: 200px;
   min-height: 460px;
   position: relative;
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(112, 233, 116, 0.12);
 }
 
 .show-card:hover {
   transform: translateY(-10px) rotateX(4deg) scale(1.03);
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55);
-  transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(112, 233, 116, 0.25);
+  border-color: rgba(112, 233, 116, 0.35);
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease, border-color 260ms ease;
   will-change: transform, box-shadow;
 }
 
@@ -434,23 +453,16 @@ export default {
 .badge-ring { width: 24px; height: 24px; opacity: 0.18; margin-left: 4px; flex-shrink: 0 }
 .badge-ring .progress { transform-origin: center; transition: stroke-dasharray 800ms ease; stroke: rgba(0,0,0,0.12); }
 
-.star { color: rgba(255,255,255,0.18); font-size: 1rem; line-height: 1; }
-.star.filled { color: var(--accent-color); text-shadow: 0 1px 0 rgba(0,0,0,0.18); animation: starGlow 2200ms ease-in-out infinite; }
-.star.small { font-size: 0.9rem; margin-right: 2px; }
-.badge-stars { display:inline-flex; align-items:center; gap:4px }
-.stars-label { margin-left:6px; font-weight:700; font-size:0.85rem; color:#fff }
+.star { color: rgba(112, 233, 116, 0.25); line-height: 1; display: inline-flex; }
+.star.filled { color: var(--accent-color); }
+.star.small { margin-right: 1px; }
+.badge-stars { display:inline-flex; align-items:center; gap:2px }
+.stars-label { margin-left:4px; font-weight:700; font-size:0.85rem; color: var(--text-color); }
 
 @keyframes badgePop {
   0% { transform: scale(0.6); opacity: 0; }
   60% { transform: scale(1.08); opacity: 1; }
   100% { transform: scale(1); }
-}
-
-@keyframes starGlow {
-  0% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); transform: translateY(0) scale(1); }
-  40% { filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); transform: translateY(-1px) scale(1.06); }
-  80% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); transform: translateY(0) scale(1); }
-  100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); transform: translateY(0) scale(1); }
 }
 
 .info {
@@ -513,6 +525,13 @@ export default {
   text-decoration: none;
   margin-top: auto; /* push button to bottom */
   font-size: clamp(0.85rem, 1.5vw, 1rem);
+  border: 1px solid rgba(112, 233, 116, 0.2);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.btn:hover {
+  box-shadow: 0 0 12px rgba(112, 233, 116, 0.3);
+  border-color: rgba(112, 233, 116, 0.45);
 }
 
 .load-more-wrap {
@@ -614,7 +633,7 @@ export default {
 }
 
 .show-card {
-  background: #111;
+  background: var(--dark-bg-color);
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -626,7 +645,7 @@ export default {
   min-width: 200px;
   min-height: 460px;
   position: relative;
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(112, 233, 116, 0.12);
   animation: fadeUp 360ms cubic-bezier(.16,.84,.24,1) forwards;
   opacity: 0;
   will-change: transform, opacity;

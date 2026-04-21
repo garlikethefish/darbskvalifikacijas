@@ -139,19 +139,19 @@
       <!-- Side Features -->
       <div class="features-section">
         <div class="feature">
-          <div class="feature-icon">⭐</div>
-          <h3>{{ currentLanguage === 'en' ? 'Rate Shows' : 'Vērtēt Šovus' }}</h3>
-          <p>{{ currentLanguage === 'en' ? 'Share your thoughts on your favorite TV series and episodes.' : 'Dalieties saviem viedokļiem par savējiem iecienītākajiem TV šoviem un epizodēm.' }}</p>
+          <div class="feature-icon"><SvgIcon name="star" :size="32" /></div>
+          <h3>{{ t('rateShows') }}</h3>
+          <p>{{ t('rateShowsDesc') }}</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🎬</div>
-          <h3>{{ currentLanguage === 'en' ? 'Discover' : 'Atklāt' }}</h3>
-          <p>{{ currentLanguage === 'en' ? 'Get personalized recommendations based on your ratings.' : 'Saņemiet personalizētus ieteikumus, pamatojoties uz jūsu vērtējumiem.' }}</p>
+          <div class="feature-icon"><SvgIcon name="play" :size="32" /></div>
+          <h3>{{ t('discoverFeature') }}</h3>
+          <p>{{ t('discoverFeatureDesc') }}</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">👥</div>
-          <h3>{{ currentLanguage === 'en' ? 'Community' : 'Kopiens' }}</h3>
-          <p>{{ currentLanguage === 'en' ? 'Connect with other TV enthusiasts and share your passion.' : 'Savienoties ar citiem TV entuziastiem un dalieties ar savu aizrautību.' }}</p>
+          <div class="feature-icon"><SvgIcon name="users" :size="32" /></div>
+          <h3>{{ t('community') }}</h3>
+          <p>{{ t('communityDesc') }}</p>
         </div>
       </div>
     </div>
@@ -161,9 +161,11 @@
 <script>
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 import { nextTick } from 'vue';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 export default {
   name: 'Login',
+  components: { SvgIcon },
   data() {
     return {
       currentForm: 'login',
@@ -379,9 +381,9 @@ export default {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   width: 100vw;
-  background: linear-gradient(90deg, rgba(34, 59, 75, 0.92), rgba(25, 61, 39, 0.92));
+  background: var(--hero-gradient);
   padding: 48px 0;
-  box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--hero-shadow);
   position: relative;
   overflow: hidden;
 }

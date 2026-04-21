@@ -1,24 +1,38 @@
 <template>
-  <div id="review-detail-page">
+  <div id="app">
+    <!-- Hero Section -->
+    <header class="hero" v-if="review">
+      <div class="hero-band">
+        <div class="hero-inner">
+          <h1>{{ seriesInfo?.name || t('series') }}</h1>
+          <p class="subtitle">{{ t('season') }} {{ review.season_number }} {{ t('episode') }} {{ review.episode_number }} — {{ episodeInfo?.name || `${t('episode')} ${review.episode_number}` }}</p>
+        </div>
+      </div>
+    </header>
+
     <div class="review-detail-container" v-if="review">
-      <!-- Header with series info -->
+      <!-- Review Header Card -->
       <div class="review-header">
         <div class="series-poster">
           <img v-if="seriesInfo?.poster_path" :src="`https://image.tmdb.org/t/p/w300${seriesInfo.poster_path}`" :alt="seriesInfo?.name">
-          <div v-else class="no-poster">📺</div>
+          <div v-else class="no-poster"><SvgIcon name="monitor" :size="64" /></div>
         </div>
         
         <div class="header-content">
-          <h1>{{ seriesInfo?.name || 'Series' }}</h1>
-          <p class="episode-label">Season {{ review.season_number }} Episode {{ review.episode_number }}</p>
-          <p class="episode-title">{{ episodeInfo?.name || `Episode ${review.episode_number}` }}</p>
-          
           <div class="review-meta">
             <span class="rating-badge" :class="`rating-${Math.round(review.rating)}`">
-              ★ {{ review.rating }}/5
+              <SvgIcon
+                v-for="n in 5"
+                :key="'star-' + n"
+                name="star"
+                :size="20"
+                :weight="n <= review.rating ? 'Bold' : 'Linear'"
+                class="rating-star"
+              />
+              <span class="rating-number">{{ review.rating }}/5</span>
             </span>
             <span class="author">
-              By <router-link :to="`/public-profile/${review.user_id}`" class="author-link">{{ review.username }}</router-link>
+              {{ t('by') }} <router-link :to="`/profile/${review.user_id}`" class="author-link">{{ review.username }}</router-link>
             </span>
             <span class="date">{{ formatDate(review.date) }}</span>
           </div>
@@ -29,7 +43,9 @@
 
       <!-- Review Title and Text -->
       <div class="review-content">
-        <h2 class="review-title">{{ review.review_title }}</h2>
+        <div class="section-header">
+          <h2>{{ review.review_title }}</h2>
+        </div>
         <p class="review-text">{{ review.review_text }}</p>
 
         <!-- Episode Still -->
@@ -48,13 +64,15 @@
 
       <!-- Comments Section -->
       <div class="comments-section">
-        <h3>{{ t('comments') }} ({{ comments.length }})</h3>
+        <div class="section-header">
+          <h2><SvgIcon name="chat" :size="22" /> {{ t('comments') }} ({{ comments.length }})</h2>
+        </div>
 
         <!-- Add comment form -->
         <div v-if="auth?.loggedIn" class="comment-form">
           <textarea 
             v-model="newComment" 
-            placeholder="Share your thoughts..."
+            :placeholder="t('shareYourThoughts')"
             class="comment-input"
             @keydown.enter.ctrl="addComment"
           ></textarea>
@@ -63,17 +81,17 @@
           </button>
         </div>
         <p v-else class="login-prompt">
-          <router-link to="/login">{{ t('login') }}</router-link> to comment
+          <router-link to="/login">{{ t('login') }}</router-link> {{ t('loginToComment') }}
         </p>
 
         <!-- Comments list -->
         <div v-if="comments.length > 0" class="comments-list">
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
             <div class="comment-header">
-              <img :src="comment.profile_picture || '/assets/user_pfp/defaultpfp.jpg'" :alt="comment.username" class="comment-avatar">
+              <img :src="comment.profile_picture || '/assets/default_pfp_icons/default_grey.png'" :alt="comment.username" class="comment-avatar" @error="$event.target.src = '/assets/default_pfp_icons/default_grey.png'">
               <div class="comment-meta">
-                <router-link :to="`/public-profile/${comment.id}`" class="comment-author">{{ comment.username }}</router-link>
-                <span class="comment-date">{{ formatDate(comment.date) }}</span>
+                <router-link :to="`/profile/${comment.user_id}`" class="comment-author">{{ comment.username }}</router-link>
+                <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
               </div>
             </div>
             <p class="comment-text">{{ comment.comment_text }}</p>
@@ -83,13 +101,17 @@
 
       <!-- Series Info Card -->
       <div class="series-card" v-if="seriesInfo">
-        <h3>About {{ seriesInfo.name }}</h3>
-        <p><strong>Status:</strong> {{ seriesInfo.status }}</p>
-        <p><strong>Seasons:</strong> {{ seriesInfo.number_of_seasons }}</p>
-        <p><strong>Episodes:</strong> {{ seriesInfo.number_of_episodes }}</p>
-        <p v-if="seriesInfo.genres" class="genres">
-          <strong>Genres:</strong> {{ seriesInfo.genres.map(g => g.name).join(', ') }}
-        </p>
+        <div class="section-header">
+          <h2>{{ t('aboutSeries') }} {{ seriesInfo.name }}</h2>
+        </div>
+        <div class="series-details">
+          <p><strong>{{ t('status') }}:</strong> {{ seriesInfo.status }}</p>
+          <p><strong>{{ t('seasons') }}:</strong> {{ seriesInfo.number_of_seasons }}</p>
+          <p><strong>{{ t('episodes') }}:</strong> {{ seriesInfo.number_of_episodes }}</p>
+          <p v-if="seriesInfo.genres" class="genres">
+            <strong>{{ t('genres') }}:</strong> {{ seriesInfo.genres.map(g => g.name).join(', ') }}
+          </p>
+        </div>
         <p class="overview">{{ seriesInfo.overview }}</p>
       </div>
     </div>
@@ -103,8 +125,10 @@
 
 <script>
 import { getTranslation } from '@/services/translations.js'
+import SvgIcon from '@/components/SvgIcon.vue'
 
 export default {
+  components: { SvgIcon },
   data() {
     return {
       review: null,
@@ -232,15 +256,90 @@ export default {
 </script>
 
 <style scoped>
-#review-detail-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--dark-bg-color, #0f0f0f) 0%, var(--dark-bg-alt, #1a1a1a) 100%);
-  padding: 2rem 1rem;
+/* Hero Section */
+.hero {
+  color: var(--text-color);
+  margin-bottom: 40px;
+  overflow: hidden;
 }
 
+.hero-band {
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  width: 100vw;
+  background: var(--hero-gradient);
+  padding: 60px 0;
+  box-shadow: var(--hero-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-band::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.02) 28%,
+    rgba(255, 255, 255, 0.1) 48%,
+    rgba(255, 255, 255, 0.02) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  transform: translateX(-80%);
+  animation: shimmerSlide 3200ms cubic-bezier(0.22, 0.1, 0.25, 1) infinite;
+  opacity: 0.95;
+}
+
+@keyframes shimmerSlide {
+  0%   { transform: translateX(-80%); opacity: 0.45; }
+  50%  { transform: translateX(0%);   opacity: 1; }
+  100% { transform: translateX(80%);  opacity: 0.45; }
+}
+
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.hero-inner h1 {
+  font-size: 2.5rem;
+  margin: 0 0 10px 0;
+  font-weight: 700;
+  animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin: 0;
+  color: var(--subtitle-color);
+  animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) 100ms both;
+}
+
+@keyframes heroIntro {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.992); filter: blur(4px); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
+}
+
+/* Container */
 .review-detail-container {
   max-width: 900px;
-  margin: 0 auto;
+  margin: 0 auto 60px auto;
+  padding: 0 20px;
   animation: fadeIn 0.4s ease;
 }
 
@@ -249,14 +348,35 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--accent-color);
+}
+
+.section-header h2 {
+  color: var(--accent-color);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Review Header */
 .review-header {
   display: flex;
   gap: 2rem;
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(147, 112, 219, 0.1) 100%);
-  border-radius: 12px;
+  background: var(--dark-bg-color);
+  border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid rgba(255, 107, 107, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .series-poster {
@@ -266,41 +386,26 @@ export default {
 
 .series-poster img {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 .no-poster {
   width: 100%;
   aspect-ratio: 2/3;
-  background: linear-gradient(135deg, #ff6b6b, #9370db);
-  border-radius: 8px;
+  background: var(--medium-bg-color);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  color: var(--subtitle-color);
 }
 
 .header-content {
   flex: 1;
-}
-
-.header-content h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: #ff6b6b;
-}
-
-.episode-label {
-  color: #999;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.episode-title {
-  font-size: 1.3rem;
-  color: #ccc;
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .review-meta {
@@ -316,15 +421,31 @@ export default {
   border-radius: 20px;
   font-weight: bold;
   color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
-.rating-1, .rating-2 { background: #d32f2f; }
-.rating-3 { background: #f57c00; }
-.rating-4 { background: #fbc02d; }
-.rating-5 { background: #388e3c; }
+.rating-star {
+  color: var(--accent-color);
+}
+
+.rating-number {
+  margin-left: 0.3rem;
+}
+
+.rating-1 { background: #ff4c4c; }
+.rating-2 { background: #ff884c; }
+.rating-3 { background: #ffd93d; color: #333; }
+.rating-4 { background: #a6e22e; color: #333; }
+.rating-5 { background: #38c172; }
+
+.author {
+  color: var(--subtitle-color);
+}
 
 .author-link {
-  color: #ff6b6b;
+  color: var(--accent-color);
   text-decoration: none;
   font-weight: 600;
 }
@@ -334,44 +455,40 @@ export default {
 }
 
 .date {
-  color: #999;
+  color: var(--subtitle-color);
   font-size: 0.9rem;
 }
 
 .review-synopsis {
-  color: #aaa;
+  color: var(--subtitle-color);
   line-height: 1.6;
   font-style: italic;
+  margin: 0;
 }
 
+/* Review Content */
 .review-content {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.review-title {
-  color: #ff6b6b;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
 }
 
 .review-text {
-  color: #ddd;
+  color: var(--text-color);
   line-height: 1.8;
-  margin-bottom: 1rem;
+  margin: 0 0 1rem 0;
 }
 
 .episode-still {
   width: 100%;
   max-height: 400px;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-top: 1rem;
   object-fit: cover;
 }
 
+/* Reactions */
 .reactions-section {
   display: flex;
   gap: 1rem;
@@ -381,9 +498,9 @@ export default {
 .reaction-btn {
   flex: 1;
   padding: 1rem;
-  border: 2px solid rgba(255, 107, 107, 0.3);
-  background: rgba(255, 107, 107, 0.05);
-  color: #ff6b6b;
+  border: 2px solid rgba(112, 233, 116, 0.3);
+  background: rgba(112, 233, 116, 0.05);
+  color: var(--accent-color);
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
@@ -392,27 +509,29 @@ export default {
 }
 
 .reaction-btn:hover {
-  border-color: #ff6b6b;
-  background: rgba(255, 107, 107, 0.1);
+  border-color: var(--accent-color);
+  background: rgba(112, 233, 116, 0.1);
+  transform: translateY(-2px);
 }
 
-.reaction-btn.active {
-  background: #ff6b6b;
-  color: white;
+.like-btn.active {
+  background: var(--accent-color);
+  color: var(--dark-bg-color);
+  border-color: var(--accent-color);
 }
 
+.dislike-btn.active {
+  background: rgba(255, 100, 100, 0.3);
+  border-color: rgb(255, 100, 100);
+  color: rgb(255, 100, 100);
+}
+
+/* Comments Section */
 .comments-section {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.comments-section h3 {
-  color: #ff6b6b;
-  margin-bottom: 1.5rem;
-  font-size: 1.2rem;
 }
 
 .comment-form {
@@ -428,33 +547,36 @@ export default {
   width: 100%;
   padding: 0.8rem;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 107, 107, 0.2);
-  border-radius: 6px;
-  color: #ddd;
+  border: 1px solid rgba(112, 233, 116, 0.2);
+  border-radius: 8px;
+  color: var(--text-color);
   resize: vertical;
   min-height: 100px;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .comment-input:focus {
   outline: none;
-  border-color: #ff6b6b;
+  border-color: var(--accent-color);
   background: rgba(0, 0, 0, 0.5);
 }
 
 .submit-btn {
   padding: 0.8rem 1.5rem;
-  background: #ff6b6b;
-  color: white;
+  background: var(--accent-color);
+  color: var(--dark-bg-color);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  align-self: flex-end;
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #ff5252;
+  background-color: var(--medium-bg-color);
+  color: var(--text-color);
   transform: translateY(-2px);
 }
 
@@ -464,9 +586,13 @@ export default {
 }
 
 .login-prompt {
-  color: #999;
+  color: var(--subtitle-color);
   font-style: italic;
   margin-bottom: 1rem;
+}
+
+.login-prompt a {
+  color: var(--accent-color);
 }
 
 .comments-list {
@@ -479,7 +605,13 @@ export default {
   background: rgba(0, 0, 0, 0.2);
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.comment-item:hover {
+  border-color: var(--accent-color);
+  background: rgba(166, 226, 46, 0.05);
 }
 
 .comment-header {
@@ -494,6 +626,7 @@ export default {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--accent-color);
 }
 
 .comment-meta {
@@ -503,7 +636,7 @@ export default {
 }
 
 .comment-author {
-  color: #ff6b6b;
+  color: var(--accent-color);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9rem;
@@ -514,46 +647,47 @@ export default {
 }
 
 .comment-date {
-  color: #666;
+  color: var(--subtitle-color);
   font-size: 0.8rem;
 }
 
 .comment-text {
-  color: #ccc;
+  color: var(--text-color);
   line-height: 1.6;
   margin: 0;
+  word-break: break-word;
 }
 
+/* Series Card */
 .series-card {
-  background: linear-gradient(135deg, rgba(147, 112, 219, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   padding: 2rem;
-  border: 1px solid rgba(147, 112, 219, 0.2);
 }
 
-.series-card h3 {
-  color: #9370db;
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
-}
-
-.series-card p {
-  color: #aaa;
-  margin-bottom: 0.8rem;
+.series-details p {
+  color: var(--subtitle-color);
+  margin-bottom: 0.6rem;
   line-height: 1.6;
 }
 
-.series-card .genres {
-  color: #ff6b6b;
+.series-details strong {
+  color: var(--text-color);
+}
+
+.genres {
+  color: var(--accent-color) !important;
   font-weight: 600;
 }
 
-.series-card .overview {
-  color: #999;
+.overview {
+  color: var(--subtitle-color);
   font-style: italic;
   margin-top: 1rem;
+  line-height: 1.7;
 }
 
+/* Loading */
 .loading {
   display: flex;
   flex-direction: column;
@@ -561,25 +695,33 @@ export default {
   justify-content: center;
   height: 60vh;
   gap: 1rem;
+  color: var(--text-color);
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 3px solid rgba(255, 107, 107, 0.2);
-  border-top-color: #ff6b6b;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid var(--accent-color);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
+/* Responsive */
 @media (max-width: 768px) {
+  .hero-inner h1 {
+    font-size: 2rem;
+  }
+
   .review-header {
     flex-direction: column;
     gap: 1rem;
+    padding: 1.5rem;
   }
 
   .series-poster {
@@ -588,13 +730,19 @@ export default {
     margin: 0 auto;
   }
 
-  .header-content h1 {
-    font-size: 1.5rem;
-  }
-
   .review-meta {
     flex-direction: column;
     gap: 0.5rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .hero-inner h1 {
+    font-size: 1.5rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
   }
 }
 </style>

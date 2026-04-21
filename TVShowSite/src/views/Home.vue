@@ -203,7 +203,7 @@ export default {
     <div class="flex-container">
       <div class="break"></div>
       <div v-if="loading" class="load">
-        <h2>Loading series...</h2>
+        <h2>{{ t('loading') }}</h2>
       </div>
       <div v-else-if="error">{{ error }}</div>
       <template v-else>
@@ -213,7 +213,7 @@ export default {
           :series="one_series"
         />
         <div v-if="filteredSeries.length === 0" class="no-results">
-          No series match your filters.
+          {{ t('noSeriesMatch') }}
         </div>
       </template>
       <div class="break"></div>
@@ -232,9 +232,9 @@ export default {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   width: 100vw;
-  background: linear-gradient(90deg, rgba(34, 59, 75, 0.92), rgba(25, 61, 39, 0.92));
-  padding: 48px 0;
-  box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.25);
+  background: var(--hero-gradient);
+  padding: 15px 0;
+  box-shadow: var(--hero-shadow);
   position: relative;
   overflow: hidden;
 }

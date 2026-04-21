@@ -1,18 +1,19 @@
 <template>
   <nav :class="['nav-links', { active: isMenuOpen }]">
     <router-link class="link" to="/reviews" @click="$emit('close')">{{ t('reviews') }}</router-link>
-    <router-link class="link" to="/about" @click="$emit('close')">{{ t('about') }}</router-link>
     <router-link class="link" to="/discover" @click="$emit('close')">{{ t('discover') }}</router-link>
     <router-link class="link" to="/quizzes" @click="$emit('close')">{{ t('quizzes') }}</router-link>
-    <router-link class="link" to="/contact" @click="$emit('close')">{{ t('contact') }}</router-link>
     <router-link class="link" to="/stats" @click="$emit('close')">{{ t('statistics') }}</router-link>
+    <router-link v-if="isAdmin" class="link admin-link" to="/admin" @click="$emit('close')"><SvgIcon name="shield" :size="16" /> {{ t('admin') }}</router-link>
   </nav>
 </template>
 
 <script>
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
+import SvgIcon from '@/components/SvgIcon.vue';
 
 export default {
+  components: { SvgIcon },
   props: {
     isMenuOpen: {
       type: Boolean,
@@ -21,17 +22,26 @@ export default {
   },
   data() {
     return {
-      currentLanguage: 'en'
+      currentLanguage: 'en',
+      isAdmin: false
     };
   },
   methods: {
     t(key) {
       return getTranslation(key, this.currentLanguage);
+    },
+    checkAdmin() {
+      try {
+        const auth = JSON.parse(localStorage.getItem('auth'));
+        this.isAdmin = auth?.loggedIn && auth?.user?.role === 'admin';
+      } catch {
+        this.isAdmin = false;
+      }
     }
   },
   mounted() {
     this.currentLanguage = getCurrentLanguage();
-    // Listen for language changes
+    this.checkAdmin();
     window.addEventListener('languageChanged', (e) => {
       this.currentLanguage = e.detail.language;
     });
@@ -59,6 +69,11 @@ export default {
 
 .link:hover {
   color: var(--text-color);
+}
+
+.admin-link {
+  color: var(--accent-color);
+  font-weight: 600;
 }
 
 @media (max-width: 500px) {

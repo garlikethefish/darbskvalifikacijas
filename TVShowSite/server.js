@@ -19,6 +19,63 @@ app.use(express.json());
 
 // Serve static files for profile pictures
 app.use('/assets/user_pfp', express.static(path.join(__dirname, 'src/assets/user_pfp')));
+app.use('/assets/quiz_images', express.static(path.join(__dirname, 'src/assets/quiz_images')));
+app.use('/assets/badges', express.static(path.join(__dirname, 'src/assets/badges')));
+
+// Serve static files for default profile icons
+app.use('/assets/default_pfp_icons', express.static(path.join(__dirname, 'src/assets/default_pfp_icons')));
+
+// Serve static files for avatar parts
+app.use('/assets/profile_parts', express.static(path.join(__dirname, 'src/assets/profile_parts')));
+
+// Configure multer for quiz image uploads
+const quizImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'src/assets/quiz_images');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'quiz-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadQuizImage = multer({
+  storage: quizImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) return cb(null, true);
+    cb(new Error('Only image files are allowed'));
+  }
+});
+
+// Configure multer for badge image uploads
+const badgeImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'src/assets/badges');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'badge-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const uploadBadgeImage = multer({
+  storage: badgeImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    if (allowedTypes.test(file.mimetype) && allowedTypes.test(path.extname(file.originalname).toLowerCase())) return cb(null, true);
+    cb(new Error('Only image files are allowed'));
+  }
+});
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
@@ -91,6 +148,67 @@ function requireAuth(req, res, next) {
   if (!userId || isNaN(userId)) return res.status(401).json({ message: 'Login required' });
   req.userId = parseInt(userId);
   next();
+}
+
+async function requireAdmin(req, res, next) {
+  const [rows] = await db.promise().query('SELECT role FROM users WHERE id = ?', [req.userId]);
+  if (rows.length === 0 || rows[0].role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+}
+
+// Check and award milestone-based cosmetics for a user
+async function checkAndAwardMilestones(userId) {
+  try {
+    const [[reviewStat]] = await db.promise().query(
+      'SELECT COUNT(*) AS cnt FROM reviews WHERE user_id = ?', [userId]
+    );
+    const [[followerStat]] = await db.promise().query(
+      'SELECT COUNT(*) AS cnt FROM user_follows WHERE following_id = ?', [userId]
+    );
+    const [[quizStat]] = await db.promise().query(
+      'SELECT COUNT(DISTINCT source_id) AS cnt FROM user_badges WHERE user_id = ? AND badge_source = "quiz"', [userId]
+    );
+
+    const stats = {
+      review_count: reviewStat.cnt,
+      follower_count: followerStat.cnt,
+      quiz_completions: quizStat.cnt
+    };
+
+    const [sources] = await db.promise().query(
+      `SELECT cs.cosmetic_id, cs.milestone_type, cs.milestone_value, c.name, c.type, c.rarity, c.effect_key
+       FROM cosmetic_sources cs
+       JOIN cosmetics c ON cs.cosmetic_id = c.id
+       WHERE cs.source_type = 'milestone'`
+    );
+
+    const awarded = [];
+    for (const src of sources) {
+      const userVal = stats[src.milestone_type] || 0;
+      if (userVal >= src.milestone_value) {
+        try {
+          await db.promise().query(
+            'INSERT INTO user_cosmetics (user_id, cosmetic_id, source_detail) VALUES (?, ?, ?)',
+            [userId, src.cosmetic_id, `milestone:${src.milestone_type}:${src.milestone_value}`]
+          );
+          awarded.push({ id: src.cosmetic_id, name: src.name, type: src.type, rarity: src.rarity, effect_key: src.effect_key });
+          // Create notification for cosmetic unlock
+          await db.promise().query(
+            'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, 0, ?, ?)',
+            [userId, 'cosmetic_unlock', `You unlocked a new cosmetic: ${src.name} (${src.rarity})`]
+          ).catch(() => {});
+        } catch (e) {
+          if (e.code !== 'ER_DUP_ENTRY') console.error('Milestone award error:', e);
+        }
+      }
+    }
+    return awarded;
+  } catch (err) {
+    console.error('checkAndAwardMilestones error:', err);
+    return [];
+  }
 }
 
 // Build recommendations for a given user id. Returns an array of recommendation objects.
@@ -334,7 +452,6 @@ async function fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber) {
 app.get('/api/daily-quote', async (req, res) => {
   try {
     let response;
-    let attempts = 0;
     let cleanedText;
     do {
       response = await axios.get('https://quotes.jepcd.com/quotes?short=true');
@@ -347,8 +464,7 @@ app.get('/api/daily-quote', async (req, res) => {
         text = text.substring(colonIndex + 1).trim();
       }
       cleanedText = text;
-      attempts++;
-    } while (cleanedText.split(' ').length > 10 && attempts < 10);
+    } while (cleanedText.split(' ').length > 10);
     res.json({ text: response.data.text, series: response.data.show });
   } catch (error) {
     console.error('Error fetching quote:', error);
@@ -377,6 +493,8 @@ app.post('/api/login', (req, res) => {
     const user = results[0];
     if (!bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: 'Invalid credentials' });
 
+    if (user.is_banned) return res.status(403).json({ error: 'Your account has been banned. Contact an administrator.' });
+
     res.json({
       message: 'Login successful',
       user: { 
@@ -385,7 +503,9 @@ app.post('/api/login', (req, res) => {
         email: user.email, 
         role: user.role,
         profile_picture: user.profile_picture,
-        selected_badge_id: user.selected_badge_id
+        selected_badge_id: user.selected_badge_id,
+        active_cursor_trail: user.active_cursor_trail || null,
+        active_background_effect: user.active_background_effect || null
       }
     });
   });
@@ -498,18 +618,34 @@ app.post('/api/reviews', requireAuth, async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 0, 0, 0)
   `;
   db.query(query, [req.userId, tmdb_series_id, season_number, episode_number, rating, review_text, review_title],
-    (err, result) => {
+    async (err, result) => {
       if (err) return res.status(500).json({ error: err.sqlMessage });
+
+      // Notify followers about the new review
+      try {
+        const [followers] = await db.promise().query(
+          'SELECT follower_id FROM user_follows WHERE following_id = ?',
+          [req.userId]
+        );
+        if (followers.length > 0) {
+          const [authorRows] = await db.promise().query('SELECT username FROM users WHERE id = ?', [req.userId]);
+          const authorName = authorRows.length > 0 ? authorRows[0].username : 'Someone';
+          const message = `${authorName} posted a new review: "${review_title || 'Untitled'}"`;
+          const insertValues = followers.map(f => [f.follower_id, tmdb_series_id, 'new_review', message]);
+          await db.promise().query(
+            'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES ?',
+            [insertValues]
+          );
+        }
+      } catch (notifErr) {
+        console.error('Error creating new_review notifications:', notifErr);
+      }
+
+      // Check milestone cosmetics after review creation
+      checkAndAwardMilestones(req.userId).catch(() => {});
+
       res.status(201).json({ message: 'Review created', reviewId: result.insertId });
     });
-});
-
-// Get series list
-app.get('/api/series', (req, res) => {
-  db.query('SELECT * FROM series', (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Failed to fetch series' });
-    res.json(rows);
-  });
 });
 
 // Get TMDB episode directly
@@ -538,6 +674,9 @@ app.get('/api/reviews', async (req, res) => {
       r.*,
       u.username,
       u.profile_picture,
+      u.role,
+      COALESCE(ub.badge_image, sb.image) AS selected_badge_image,
+      CASE WHEN ub.badge_source = 'quiz' THEN bq.icon_emoji ELSE NULL END AS selected_badge_emoji,
       (
         SELECT COUNT(*) 
         FROM reviews 
@@ -553,6 +692,9 @@ app.get('/api/reviews', async (req, res) => {
       ) AS average_rating
     FROM reviews r
     JOIN users u ON r.user_id = u.id
+    LEFT JOIN user_badges ub ON ub.id = u.selected_badge_id AND ub.user_id = u.id
+    LEFT JOIN quizzes bq ON ub.badge_source = 'quiz' AND ub.source_id = bq.id
+    LEFT JOIN standalone_badges sb ON ub.badge_source = 'standalone' AND ub.source_id = sb.id
 
     `;
     const params = [];
@@ -712,38 +854,44 @@ app.get('/api/statistics', async (req, res) => {
 
     let userStats = null;
     if (userId) {
-      const [uHighest] = await db.promise().query(
-        `SELECT tmdb_series_id, AVG(rating) as avg_rating, COUNT(*) as review_count
-         FROM reviews
-         WHERE user_id = ?
-         GROUP BY tmdb_series_id
-         ORDER BY avg_rating DESC
-         LIMIT 1`, [userId]
+      const [[{ totalReviews }]] = await db.promise().query(
+        `SELECT COUNT(*) as totalReviews FROM reviews WHERE user_id = ?`, [userId]
       );
 
-      const [uLowest] = await db.promise().query(
-        `SELECT tmdb_series_id, AVG(rating) as avg_rating, COUNT(*) as review_count
-         FROM reviews
-         WHERE user_id = ?
-         GROUP BY tmdb_series_id
-         ORDER BY avg_rating ASC
-         LIMIT 1`, [userId]
-      );
+      if (totalReviews >= 5) {
+        const [uHighest] = await db.promise().query(
+          `SELECT tmdb_series_id, AVG(rating) as avg_rating, COUNT(*) as review_count
+           FROM reviews
+           WHERE user_id = ?
+           GROUP BY tmdb_series_id
+           ORDER BY avg_rating DESC
+           LIMIT 1`, [userId]
+        );
 
-      const [uMost] = await db.promise().query(
-        `SELECT tmdb_series_id, COUNT(*) as review_count
-         FROM reviews
-         WHERE user_id = ?
-         GROUP BY tmdb_series_id
-         ORDER BY review_count DESC
-         LIMIT 1`, [userId]
-      );
+        const [uLowest] = await db.promise().query(
+          `SELECT tmdb_series_id, AVG(rating) as avg_rating, COUNT(*) as review_count
+           FROM reviews
+           WHERE user_id = ?
+           GROUP BY tmdb_series_id
+           ORDER BY avg_rating ASC
+           LIMIT 1`, [userId]
+        );
 
-      userStats = {
-        highestRated: uHighest[0] || null,
-        lowestRated: uLowest[0] || null,
-        mostReviewed: uMost[0] || null
-      };
+        const [uMost] = await db.promise().query(
+          `SELECT tmdb_series_id, COUNT(*) as review_count
+           FROM reviews
+           WHERE user_id = ?
+           GROUP BY tmdb_series_id
+           ORDER BY review_count DESC
+           LIMIT 1`, [userId]
+        );
+
+        userStats = {
+          highestRated: uHighest[0] || null,
+          lowestRated: uLowest[0] || null,
+          mostReviewed: uMost[0] || null
+        };
+      }
     }
 
     res.json({ globalStats, userStats });
@@ -771,14 +919,18 @@ app.post('/api/reviews/:id/react', requireAuth, async (req, res) => {
       [userId, id]
     );
 
+    let currentReaction = null;
     if (existingReaction.length > 0) {
       if (existingReaction[0].is_like === isLikeInt) {
         await db.promise().query('DELETE FROM review_reactions WHERE user_id = ? AND review_id = ?', [userId, id]);
+        currentReaction = null;
       } else {
         await db.promise().query('UPDATE review_reactions SET is_like = ? WHERE user_id = ? AND review_id = ?', [isLikeInt, userId, id]);
+        currentReaction = is_like ? 'like' : 'dislike';
       }
     } else {
       await db.promise().query('INSERT INTO review_reactions (user_id, review_id, is_like) VALUES (?, ?, ?)', [userId, id, isLikeInt]);
+      currentReaction = is_like ? 'like' : 'dislike';
     }
 
     const [counts] = await db.promise().query(
@@ -788,11 +940,44 @@ app.post('/api/reviews/:id/react', requireAuth, async (req, res) => {
 
     await db.promise().query('UPDATE reviews SET likes = ?, dislikes = ? WHERE id = ?', [counts[0].likes || 0, counts[0].dislikes || 0, id]);
 
-    res.json({ message: 'Reaction processed', likes: counts[0].likes || 0, dislikes: counts[0].dislikes || 0 });
+    // Create notification for the review author (not for self-reactions, only for new like reactions)
+    const reviewOwnerId = reviewRows[0].user_id;
+    if (currentReaction === 'like' && reviewOwnerId !== userId) {
+      try {
+        const [reactorRows] = await db.promise().query('SELECT username FROM users WHERE id = ?', [userId]);
+        const reactorName = reactorRows.length > 0 ? reactorRows[0].username : 'Someone';
+        const message = `${reactorName} liked your review "${reviewRows[0].review_title || 'Untitled'}"`;
+        await db.promise().query(
+          'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, ?, ?, ?)',
+          [reviewOwnerId, reviewRows[0].tmdb_series_id, 'like', message]
+        );
+      } catch (notifErr) {
+        console.error('Error creating like notification:', notifErr);
+      }
+    }
+
+    res.json({ message: 'Reaction processed', likes: counts[0].likes || 0, dislikes: counts[0].dislikes || 0, reaction: currentReaction });
 
   } catch (err) {
     console.error('Error processing reaction:', err);
     res.status(500).json({ message: 'Failed to process reaction' });
+  }
+});
+
+// Get user's reaction for a review
+app.get('/api/reviews/:id/reaction', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  try {
+    const [rows] = await db.promise().query(
+      'SELECT is_like FROM review_reactions WHERE user_id = ? AND review_id = ?',
+      [userId, id]
+    );
+    if (rows.length === 0) return res.json({ reaction: null });
+    res.json({ reaction: rows[0].is_like === 1 ? 'like' : 'dislike' });
+  } catch (err) {
+    console.error('Error fetching reaction:', err);
+    res.status(500).json({ message: 'Failed to fetch reaction' });
   }
 });
 
@@ -897,8 +1082,8 @@ app.post('/api/users/:id/profile-picture', requireAuth, upload.single('profilePi
       console.error('Error fetching old profile picture:', err);
     } else if (results.length > 0 && results[0].profile_picture) {
       const oldPicPath = results[0].profile_picture;
-      // Only delete if it's not the default picture
-      if (oldPicPath && !oldPicPath.includes('defaultpfp')) {
+      // Only delete if it's not a default picture
+      if (oldPicPath && !oldPicPath.includes('default_pfp_icons')) {
         const oldFilePath = path.join(__dirname, 'src', oldPicPath);
         fs.unlink(oldFilePath, (err) => {
           if (err) console.error('Error deleting old profile picture:', err);
@@ -937,7 +1122,7 @@ app.post('/api/users/:id/profile-picture-default', requireAuth, (req, res) => {
 
   const { picturePath } = req.body;
   
-  if (!picturePath || !picturePath.startsWith('/assets/user_pfp/pfp')) {
+  if (!picturePath || !picturePath.startsWith('/assets/default_pfp_icons/')) {
     return res.status(400).json({ message: 'Invalid picture path' });
   }
 
@@ -961,6 +1146,78 @@ app.post('/api/users/:id/profile-picture-default', requireAuth, (req, res) => {
 });
 
 // User favorites routes
+// ==================== AVATAR MAKER ENDPOINTS ====================
+
+// List available avatar parts per category
+app.get('/api/avatar-parts', (req, res) => {
+  const partsDir = path.join(__dirname, 'src/assets/profile_parts');
+  const categories = ['background', 'background_gradient', 'body_color', 'body_outline', 'eyes'];
+  const result = {};
+
+  for (const cat of categories) {
+    const catDir = path.join(partsDir, cat);
+    try {
+      const files = fs.readdirSync(catDir).filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f));
+      result[cat] = files;
+    } catch {
+      result[cat] = [];
+    }
+  }
+
+  res.json(result);
+});
+
+// Get avatar config for a user
+app.get('/api/users/:id/avatar-config', requireAuth, (req, res) => {
+  const userIdFromParams = parseInt(req.params.id);
+  if (userIdFromParams !== req.userId) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  db.query('SELECT avatar_config FROM users WHERE id = ?', [userIdFromParams], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Database error' });
+    if (!results.length) return res.status(404).json({ message: 'User not found' });
+    let config = null;
+    try {
+      config = results[0].avatar_config ? JSON.parse(results[0].avatar_config) : null;
+    } catch { config = null; }
+    res.json({ config });
+  });
+});
+
+// Save avatar config for a user
+app.post('/api/users/:id/avatar-config', requireAuth, (req, res) => {
+  const userIdFromParams = parseInt(req.params.id);
+  if (userIdFromParams !== req.userId) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+
+  const { config } = req.body;
+  if (!config || typeof config !== 'object') {
+    return res.status(400).json({ message: 'Invalid config' });
+  }
+
+  // Validate that config only contains allowed keys and string/null values
+  const allowedKeys = ['background', 'background_gradient', 'body_color', 'body_outline', 'eyes'];
+  for (const key of Object.keys(config)) {
+    if (!allowedKeys.includes(key)) {
+      return res.status(400).json({ message: `Invalid config key: ${key}` });
+    }
+    if (config[key] !== null && typeof config[key] !== 'string') {
+      return res.status(400).json({ message: `Invalid value for ${key}` });
+    }
+  }
+
+  const configJson = JSON.stringify(config);
+  db.query('UPDATE users SET avatar_config = ? WHERE id = ?', [configJson, userIdFromParams], (err) => {
+    if (err) {
+      console.error('Error saving avatar config:', err);
+      return res.status(500).json({ message: 'Failed to save avatar config' });
+    }
+    res.json({ message: 'Avatar config saved' });
+  });
+});
+
 app.get('/api/users/:id/favorites', requireAuth, (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   const userIdFromAuth = req.userId;
@@ -1066,19 +1323,51 @@ app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
 
   if (!comment_text || comment_text.trim() === '') return res.status(400).json({ message: 'Empty comment not allowed' });
 
-  const conn = getConnection();
-  conn.query(
-    'INSERT INTO comments (user_id, review_id, comment_text, other_user_id) VALUES (?, ?, ?, ?)',
-    [userId, id, comment_text, other_user_id || null],
-    (err) => {
-      if (err) { conn.end(); return res.status(500).json({ message: 'Failed to add comment' }); }
-      conn.query('UPDATE reviews SET comment_count = comment_count + 1 WHERE id = ?', [id], (err2) => {
-        conn.end();
-        if (err2) return res.status(500).json({ message: 'Failed to update comment count' });
-        res.json({ message: 'Comment added' });
-      });
+  try {
+    await db.promise().query(
+      'INSERT INTO comments (user_id, review_id, comment_text, other_user_id) VALUES (?, ?, ?, ?)',
+      [userId, id, comment_text, other_user_id || null]
+    );
+    await db.promise().query('UPDATE reviews SET comment_count = comment_count + 1 WHERE id = ?', [id]);
+
+    // Create notifications for comment
+    try {
+      const [reviewRows] = await db.promise().query('SELECT user_id, tmdb_series_id, review_title FROM reviews WHERE id = ?', [id]);
+      const [commenterRows] = await db.promise().query('SELECT username FROM users WHERE id = ?', [userId]);
+      const commenterName = commenterRows.length > 0 ? commenterRows[0].username : 'Someone';
+
+      if (reviewRows.length > 0) {
+        const reviewOwnerId = reviewRows[0].user_id;
+        const tmdbSeriesId = reviewRows[0].tmdb_series_id;
+        const reviewTitle = reviewRows[0].review_title || 'Untitled';
+
+        // Notify review author (if not self-comment)
+        if (reviewOwnerId !== userId) {
+          const message = `${commenterName} commented on your review "${reviewTitle}"`;
+          await db.promise().query(
+            'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, ?, ?, ?)',
+            [reviewOwnerId, tmdbSeriesId, 'comment', message]
+          );
+        }
+
+        // Notify mentioned user (if different from commenter and review author)
+        if (other_user_id && other_user_id !== userId) {
+          const message = `${commenterName} mentioned you in a comment on "${reviewTitle}"`;
+          await db.promise().query(
+            'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, ?, ?, ?)',
+            [other_user_id, tmdbSeriesId, 'mention', message]
+          );
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error creating comment notification:', notifErr);
     }
-  );
+
+    res.json({ message: 'Comment added' });
+  } catch (err) {
+    console.error('Error adding comment:', err);
+    res.status(500).json({ message: 'Failed to add comment' });
+  }
 });
 
 // Get comments for a review
@@ -1086,9 +1375,14 @@ app.get('/api/reviews/:id/comments', (req, res) => {
   const { id } = req.params;
   const conn = getConnection();
   conn.query(
-    `SELECT c.id, c.comment_text, c.created_at, c.other_user_id, u.username, u.profile_picture, u.role
+    `SELECT c.id, c.comment_text, c.created_at, c.other_user_id, u.username, u.profile_picture, u.role,
+            COALESCE(ub.badge_image, sb.image) AS selected_badge_image,
+            CASE WHEN ub.badge_source = 'quiz' THEN bq.icon_emoji ELSE NULL END AS selected_badge_emoji
      FROM comments c
      JOIN users u ON c.user_id = u.id
+     LEFT JOIN user_badges ub ON ub.id = u.selected_badge_id AND ub.user_id = u.id
+     LEFT JOIN quizzes bq ON ub.badge_source = 'quiz' AND ub.source_id = bq.id
+     LEFT JOIN standalone_badges sb ON ub.badge_source = 'standalone' AND ub.source_id = sb.id
      WHERE c.review_id = ?
      ORDER BY c.created_at ASC`,
     [id],
@@ -1160,7 +1454,13 @@ app.delete('/api/comments/:id', requireAuth, async (req, res) => {
 // Get all quizzes
 app.get('/api/quizzes', async (req, res) => {
   try {
-    const [quizzes] = await db.promise().query('SELECT id, title, description, icon_emoji, created_at FROM quizzes ORDER BY created_at DESC');
+    const [quizzes] = await db.promise().query(`
+      SELECT q.id, q.title, q.description, q.icon_emoji, q.category, q.difficulty, q.icon_name, q.tmdb_series_id, q.quiz_image, q.badge_name, q.badge_rules, q.created_at,
+        (SELECT COUNT(DISTINCT ub.user_id) FROM user_badges ub WHERE ub.badge_source = 'quiz' AND ub.source_id = q.id) AS completion_count,
+        (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.id) AS question_count
+      FROM quizzes q
+      ORDER BY q.created_at DESC
+    `);
     res.json(quizzes);
   } catch (err) {
     console.error('Error fetching quizzes:', err);
@@ -1172,11 +1472,11 @@ app.get('/api/quizzes', async (req, res) => {
 app.get('/api/quizzes/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const [quiz] = await db.promise().query('SELECT id, title, description, icon_emoji FROM quizzes WHERE id = ?', [id]);
+    const [quiz] = await db.promise().query('SELECT id, title, description, icon_emoji, category, difficulty, icon_name, tmdb_series_id, quiz_image, badge_name, badge_rules FROM quizzes WHERE id = ?', [id]);
     if (quiz.length === 0) return res.status(404).json({ message: 'Quiz not found' });
 
     const [questions] = await db.promise().query(
-      'SELECT id, question_text, option_a, option_b, option_c, option_d FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
+      'SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, option_f, option_g, option_h FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
       [id]
     );
 
@@ -1187,14 +1487,22 @@ app.get('/api/quizzes/:id', async (req, res) => {
   }
 });
 
-// Get user's earned badges
+// Get user's earned badges (quiz-based + standalone, unified table)
 app.get('/api/users/:userid/badges', async (req, res) => {
   const { userid } = req.params;
   try {
     const [badges] = await db.promise().query(
-      `SELECT q.id, q.title, q.icon_emoji, ub.earned_at
+      `SELECT ub.id,
+              CASE WHEN ub.badge_source = 'quiz' THEN COALESCE(ub.badge_name_override, q.title) ELSE COALESCE(ub.badge_name_override, sb.name) END AS title,
+              CASE WHEN ub.badge_source = 'quiz' THEN q.description ELSE sb.description END AS description,
+              CASE WHEN ub.badge_source = 'quiz' THEN q.icon_emoji ELSE NULL END AS icon_emoji,
+              ub.earned_at, ub.badge_type,
+              CASE WHEN ub.badge_source = 'quiz' THEN ub.source_id ELSE NULL END AS quiz_id,
+              CASE WHEN ub.badge_source = 'quiz' THEN ub.badge_image ELSE sb.image END AS badge_image,
+              ub.badge_source
        FROM user_badges ub
-       JOIN quizzes q ON ub.quiz_id = q.id
+       LEFT JOIN quizzes q ON ub.badge_source = 'quiz' AND ub.source_id = q.id
+       LEFT JOIN standalone_badges sb ON ub.badge_source = 'standalone' AND ub.source_id = sb.id
        WHERE ub.user_id = ?
        ORDER BY ub.earned_at DESC`,
       [userid]
@@ -1211,7 +1519,7 @@ app.get('/api/users/:userid/quiz-status/:quizid', requireAuth, async (req, res) 
   const { userid, quizid } = req.params;
   try {
     const [badge] = await db.promise().query(
-      'SELECT * FROM user_badges WHERE user_id = ? AND quiz_id = ?',
+      'SELECT * FROM user_badges WHERE user_id = ? AND badge_source = "quiz" AND source_id = ?',
       [userid, quizid]
     );
     res.json({ completed: badge.length > 0, earnedAt: badge.length > 0 ? badge[0].earned_at : null });
@@ -1261,30 +1569,42 @@ app.get('/api/quizzes/:id/cooldown-status', requireAuth, async (req, res) => {
   }
 });
 
-// Submit quiz answers and award badge if score is >= 70%
+// Submit quiz answers and award badges based on performance and badge rules
 app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
   const { answers } = req.body; // Object: { questionId: 'A', questionId2: 'B', ... }
 
   try {
-    // Fetch all questions for this quiz
-    const [questions] = await db.promise().query(
-      'SELECT id, correct_answer FROM quiz_questions WHERE quiz_id = ?',
+    // Fetch quiz badge config
+    const [quizRows] = await db.promise().query(
+      'SELECT badge_name, badge_rules FROM quizzes WHERE id = ?',
       [id]
     );
+    if (quizRows.length === 0) return res.status(404).json({ message: 'Quiz not found' });
 
+    const quiz = quizRows[0];
+    const badgeRules = quiz.badge_rules ? JSON.parse(quiz.badge_rules) : null;
+
+    // Fetch all questions in order
+    const [questions] = await db.promise().query(
+      'SELECT id, correct_answer FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
+      [id]
+    );
     if (questions.length === 0) return res.status(404).json({ message: 'Quiz not found' });
 
     // Calculate score
     let correct = 0;
     questions.forEach(q => {
-      if (answers[q.id] && answers[q.id].toUpperCase() === q.correct_answer) {
-        correct++;
-      }
+      if (answers[q.id] && answers[q.id].toUpperCase() === q.correct_answer) correct++;
     });
-
     const score = Math.round((correct / questions.length) * 100);
+
+    // Determine pass threshold for "passed" flag (use first tier threshold or 70)
+    const passThreshold = badgeRules?.performance?.enabled && badgeRules.performance.tiers?.length
+      ? Math.max(...badgeRules.performance.tiers.map(t => t.minScore ?? 0))
+      : (badgeRules?.performance?.enabled ? (badgeRules.performance.passThreshold || 70) : 70);
+    const passed = score >= passThreshold;
 
     // Record attempt
     await db.promise().query(
@@ -1292,31 +1612,111 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
       [userId, id, score]
     );
 
-    // Award badge if score >= 70 and user doesn't already have it
+    const badgesAwarded = [];
     let badgeAwarded = false;
-    if (score >= 70) {
+
+    const awardBadge = async (badgeType, badgeName, badgeImage = null) => {
       try {
         await db.promise().query(
-          'INSERT INTO user_badges (user_id, quiz_id) VALUES (?, ?)',
-          [userId, id]
+          'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, badge_image, badge_name_override) VALUES (?, "quiz", ?, ?, ?, ?)',
+          [userId, id, badgeType, badgeImage || null, badgeName || null]
         );
-        badgeAwarded = true;
+        badgesAwarded.push({ type: badgeType, name: badgeName, image: badgeImage });
+        if (badgeType === 'default' || badgeType === 'pass') badgeAwarded = true;
       } catch (err) {
-        // Badge already exists, that's fine
         if (err.code !== 'ER_DUP_ENTRY') throw err;
       }
+    };
+
+    if (badgeRules?.performance?.enabled) {
+      if (badgeRules.performance.tiers?.length) {
+        // Multiple tiers: sort highest minScore first, award first matching tier
+        const sorted = [...badgeRules.performance.tiers]
+          .filter(t => t.badgeName)
+          .sort((a, b) => (b.minScore ?? 0) - (a.minScore ?? 0));
+        const matchedTier = sorted.find(t => score >= (t.minScore ?? 0));
+        if (matchedTier) {
+          // Use ON DUPLICATE KEY UPDATE so re-attempts can upgrade to a higher tier
+          await db.promise().query(
+            'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, badge_image, badge_name_override) VALUES (?, "quiz", ?, ?, ?, ?) ON DUPLICATE KEY UPDATE earned_at = NOW(), badge_image = VALUES(badge_image), badge_name_override = VALUES(badge_name_override)',
+            [userId, id, 'perf', matchedTier.badgeImage || null, matchedTier.badgeName || null]
+          );
+          badgesAwarded.push({ type: 'perf', name: matchedTier.badgeName, image: matchedTier.badgeImage || null });
+          badgeAwarded = true;
+        }
+      } else {
+        // Legacy single-threshold format
+        if (passed && badgeRules.performance.passBadgeName) {
+          await awardBadge('pass', badgeRules.performance.passBadgeName);
+        } else if (!passed && badgeRules.performance.failBadgeName) {
+          await awardBadge('fail', badgeRules.performance.failBadgeName);
+        }
+      }
+    } else if (passed && quiz.badge_name) {
+      // Default single pass badge
+      await awardBadge('default', quiz.badge_name, badgeRules?.defaultBadgeImage || null);
     }
+
+    // Secret badges: each condition is independent; use secret_N badge_type
+    const secretConditions = badgeRules?.secrets?.conditions ?? (
+      badgeRules?.secret?.enabled ? [{ questionIndex: badgeRules.secret.questionIndex, answer: badgeRules.secret.answer, badgeName: badgeRules.secret.badgeName }] : []
+    );
+    if ((badgeRules?.secrets?.enabled || badgeRules?.secret?.enabled) && secretConditions.length) {
+      for (let i = 0; i < secretConditions.length; i++) {
+        const cond = secretConditions[i];
+        if (!cond.badgeName) continue;
+        const secretQIndex = (cond.questionIndex || 1) - 1;
+        const secretQ = questions[secretQIndex];
+        if (secretQ && answers[secretQ.id]?.toUpperCase() === cond.answer?.toUpperCase()) {
+          await awardBadge(`secret_${i}`, cond.badgeName, cond.badgeImage || null);
+        }
+      }
+    }
+
+    // Award cosmetics linked to this quiz
+    const cosmeticsAwarded = [];
+    try {
+      const [cosmeticSources] = await db.promise().query(
+        `SELECT cs.cosmetic_id, cs.min_score, c.name, c.type, c.rarity, c.effect_key
+         FROM cosmetic_sources cs
+         JOIN cosmetics c ON cs.cosmetic_id = c.id
+         WHERE cs.source_type = 'quiz' AND cs.quiz_id = ? AND cs.min_score <= ?`,
+        [id, score]
+      );
+      for (const src of cosmeticSources) {
+        try {
+          await db.promise().query(
+            'INSERT INTO user_cosmetics (user_id, cosmetic_id, source_detail) VALUES (?, ?, ?)',
+            [userId, src.cosmetic_id, `quiz:${id}`]
+          );
+          cosmeticsAwarded.push({ id: src.cosmetic_id, name: src.name, type: src.type, rarity: src.rarity, effect_key: src.effect_key });
+          // Create notification for cosmetic unlock
+          await db.promise().query(
+            'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, 0, ?, ?)',
+            [userId, 'cosmetic_unlock', `You unlocked a new cosmetic: ${src.name} (${src.rarity})`]
+          ).catch(() => {});
+        } catch (e) {
+          if (e.code !== 'ER_DUP_ENTRY') console.error('Cosmetic award error:', e);
+        }
+      }
+    } catch (cosErr) {
+      console.error('Error awarding quiz cosmetics:', cosErr);
+    }
+
+    // Check milestone cosmetics after quiz completion
+    const milestoneCosmetics = await checkAndAwardMilestones(userId);
+    cosmeticsAwarded.push(...milestoneCosmetics);
 
     res.json({
       score,
       totalQuestions: questions.length,
       correctAnswers: correct,
-      passed: score >= 70,
+      passed,
       badgeAwarded,
-      message: score >= 70 
-        ? badgeAwarded 
-          ? 'Congratulations! You earned a badge! 🎉'
-          : 'You already earned this badge!'
+      badgesAwarded,
+      cosmeticsAwarded,
+      message: passed
+        ? (badgeAwarded || cosmeticsAwarded.length ? 'Congratulations! You earned rewards! 🎉' : 'You already earned this badge!')
         : 'Keep practicing!'
     });
   } catch (err) {
@@ -1325,10 +1725,28 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
   }
 });
 
+// Admin: Upload a new quiz image
+app.post('/api/admin/quiz-images', requireAuth, uploadQuizImage.single('quizImage'), async (req, res) => {
+  const userId = req.userId;
+  try {
+    const [user] = await db.promise().query('SELECT role FROM users WHERE id = ?', [userId]);
+    if (user.length === 0 || user[0].role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+    res.json({ filename: req.file.filename });
+  } catch (err) {
+    console.error('Error uploading quiz image:', err);
+    res.status(500).json({ message: 'Failed to upload image' });
+  }
+});
+
 // Admin: Create a new quiz
 app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
   const userId = req.userId;
-  const { title, description, icon_emoji, questions } = req.body;
+  const { title, description, icon_emoji, icon_name, category, difficulty, tmdb_series_id, quiz_image, badge_name, badge_rules, questions } = req.body;
 
   try {
     // Check if user is admin
@@ -1339,8 +1757,8 @@ app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
 
     // Create quiz
     const [result] = await db.promise().query(
-      'INSERT INTO quizzes (title, description, icon_emoji, created_by) VALUES (?, ?, ?, ?)',
-      [title, description, icon_emoji, userId]
+      'INSERT INTO quizzes (title, description, icon_emoji, icon_name, category, difficulty, tmdb_series_id, quiz_image, badge_name, badge_rules, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, description, icon_emoji || '', icon_name || null, category || 'series', difficulty || 'medium', tmdb_series_id || null, quiz_image || null, badge_name || null, badge_rules ? JSON.stringify(badge_rules) : null, userId]
     );
 
     const quizId = result.insertId;
@@ -1349,8 +1767,8 @@ app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
     if (questions && questions.length > 0) {
       for (const q of questions) {
         await db.promise().query(
-          'INSERT INTO quiz_questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [quizId, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.explanation]
+          'INSERT INTO quiz_questions (quiz_id, question_text, option_a, option_b, option_c, option_d, option_e, option_f, option_g, option_h, correct_answer, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [quizId, q.question_text, q.option_a || null, q.option_b || null, q.option_c || null, q.option_d || null, q.option_e || null, q.option_f || null, q.option_g || null, q.option_h || null, q.correct_answer, q.explanation || null]
         );
       }
     }
@@ -1359,6 +1777,28 @@ app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Error creating quiz:', err);
     res.status(500).json({ message: 'Failed to create quiz' });
+  }
+});
+
+// Admin: Update a quiz
+app.put('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  const { title, description, icon_name, category, difficulty, tmdb_series_id, quiz_image, badge_name } = req.body;
+
+  try {
+    const [user] = await db.promise().query('SELECT role FROM users WHERE id = ?', [userId]);
+    if (user.length === 0 || user[0].role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can update quizzes' });
+    }
+    await db.promise().query(
+      'UPDATE quizzes SET title=?, description=?, icon_name=?, category=?, difficulty=?, tmdb_series_id=?, quiz_image=?, badge_name=? WHERE id=?',
+      [title, description, icon_name || null, category || 'series', difficulty || 'medium', tmdb_series_id || null, quiz_image || null, badge_name || null, id]
+    );
+    res.json({ message: 'Quiz updated' });
+  } catch (err) {
+    console.error('Error updating quiz:', err);
+    res.status(500).json({ message: 'Failed to update quiz' });
   }
 });
 
@@ -1374,6 +1814,8 @@ app.delete('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ message: 'Only admins can delete quizzes' });
     }
 
+    // Clean up user_badges referencing this quiz
+    await db.promise().query('DELETE FROM user_badges WHERE badge_source = "quiz" AND source_id = ?', [id]);
     await db.promise().query('DELETE FROM quizzes WHERE id = ?', [id]);
     res.json({ message: 'Quiz deleted' });
   } catch (err) {
@@ -1383,6 +1825,76 @@ app.delete('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
 });
 
 // ===== QUIZ ENDPOINTS END =====
+
+// Admin: Upload badge image
+app.post('/api/admin/badge-images', requireAuth, requireAdmin, uploadBadgeImage.single('badgeImage'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No image file provided' });
+  res.json({ filename: req.file.filename });
+});
+
+// Admin: Get all standalone badges
+app.get('/api/admin/standalone-badges', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [badges] = await db.promise().query(
+      `SELECT sb.*, u.username AS created_by_username FROM standalone_badges sb
+       LEFT JOIN users u ON sb.created_by = u.id
+       ORDER BY sb.created_at DESC`
+    );
+    res.json(badges);
+  } catch (err) {
+    console.error('Error fetching standalone badges:', err);
+    res.status(500).json({ message: 'Failed to fetch badges' });
+  }
+});
+
+// Admin: Create standalone badge
+app.post('/api/admin/standalone-badges', requireAuth, requireAdmin, async (req, res) => {
+  const { name, description, image } = req.body;
+  if (!name?.trim()) return res.status(400).json({ message: 'Badge name is required' });
+  try {
+    const [result] = await db.promise().query(
+      'INSERT INTO standalone_badges (name, description, image, created_by) VALUES (?, ?, ?, ?)',
+      [name.trim(), description?.trim() || null, image || null, req.userId]
+    );
+    res.status(201).json({ message: 'Badge created', badgeId: result.insertId });
+  } catch (err) {
+    console.error('Error creating badge:', err);
+    res.status(500).json({ message: 'Failed to create badge' });
+  }
+});
+
+// Admin: Award standalone badge to user
+app.post('/api/admin/standalone-badges/:id/award', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { userId: targetUserId } = req.body;
+  if (!targetUserId) return res.status(400).json({ message: 'userId is required' });
+  try {
+    const [users] = await db.promise().query('SELECT id FROM users WHERE id = ?', [targetUserId]);
+    if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+    await db.promise().query(
+      'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, awarded_by) VALUES (?, "standalone", ?, "standalone", ?)',
+      [targetUserId, id, req.userId]
+    );
+    res.json({ message: 'Badge awarded' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'User already has this badge' });
+    console.error('Error awarding badge:', err);
+    res.status(500).json({ message: 'Failed to award badge' });
+  }
+});
+
+// Admin: Delete standalone badge
+app.delete('/api/admin/standalone-badges/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    // Clean up user_badges referencing this standalone badge
+    await db.promise().query('DELETE FROM user_badges WHERE badge_source = "standalone" AND source_id = ?', [req.params.id]);
+    await db.promise().query('DELETE FROM standalone_badges WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Badge deleted' });
+  } catch (err) {
+    console.error('Error deleting badge:', err);
+    res.status(500).json({ message: 'Failed to delete badge' });
+  }
+});
 
 // Fetch series details including seasons
 app.get('/api/tmdb/series-seasons/:id', async (req, res) => {
@@ -1530,22 +2042,21 @@ app.get('/api/users/:userId/public-profile', async (req, res) => {
 
     // Get followed shows count
     const [followedCounts] = await db.promise().query(
-      'SELECT COUNT(*) as count FROM followed_shows WHERE user_id = ?',
+      'SELECT COUNT(*) as count FROM user_shows WHERE user_id = ? AND is_followed = 1',
       [userId]
     );
 
     // Get badges
     const [badges] = await db.promise().query(
-      `SELECT ub.*, q.title, q.icon_emoji FROM user_badges ub
-       JOIN quizzes q ON ub.quiz_id = q.id
+      `SELECT ub.id, ub.earned_at, ub.badge_type, ub.badge_source, ub.source_id,
+              CASE WHEN ub.badge_source = 'quiz' THEN COALESCE(ub.badge_name_override, q.title) ELSE COALESCE(ub.badge_name_override, sb.name) END AS title,
+              CASE WHEN ub.badge_source = 'quiz' THEN q.icon_emoji ELSE NULL END AS icon_emoji,
+              CASE WHEN ub.badge_source = 'quiz' THEN ub.badge_image ELSE sb.image END AS badge_image
+       FROM user_badges ub
+       LEFT JOIN quizzes q ON ub.badge_source = 'quiz' AND ub.source_id = q.id
+       LEFT JOIN standalone_badges sb ON ub.badge_source = 'standalone' AND ub.source_id = sb.id
        WHERE ub.user_id = ?
        ORDER BY ub.earned_at DESC`,
-      [userId]
-    );
-
-    // Get user's public lists
-    const [lists] = await db.promise().query(
-      'SELECT * FROM user_lists WHERE user_id = ? AND is_public = 1 ORDER BY created_at DESC',
       [userId]
     );
 
@@ -1553,8 +2064,7 @@ app.get('/api/users/:userId/public-profile', async (req, res) => {
       user,
       reviewCount: reviewCounts[0].count,
       followedShowsCount: followedCounts[0].count,
-      badges,
-      publicLists: lists
+      badges
     });
   } catch (err) {
     console.error('Error fetching public profile:', err);
@@ -1601,7 +2111,7 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
       `SELECT c.*, u.username, u.profile_picture FROM comments c
        JOIN users u ON c.user_id = u.id
        WHERE c.review_id = ?
-       ORDER BY c.date ASC`,
+       ORDER BY c.created_at ASC`,
       [reviewId]
     );
 
@@ -1624,22 +2134,12 @@ app.post('/api/watched-shows', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
-    const [existing] = await db.promise().query(
-      'SELECT * FROM watched_shows WHERE user_id = ? AND tmdb_series_id = ?',
-      [userId, tmdb_series_id]
+    await db.promise().query(
+      `INSERT INTO user_shows (user_id, tmdb_series_id, watched_status, watched_at)
+       VALUES (?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE watched_status = VALUES(watched_status), watched_at = NOW()`,
+      [userId, tmdb_series_id, watched_status]
     );
-
-    if (existing.length > 0) {
-      await db.promise().query(
-        'UPDATE watched_shows SET watched_status = ? WHERE user_id = ? AND tmdb_series_id = ?',
-        [watched_status, userId, tmdb_series_id]
-      );
-    } else {
-      await db.promise().query(
-        'INSERT INTO watched_shows (user_id, tmdb_series_id, watched_status) VALUES (?, ?, ?)',
-        [userId, tmdb_series_id, watched_status]
-      );
-    }
 
     res.json({ message: 'Show watch status updated' });
   } catch (err) {
@@ -1679,7 +2179,7 @@ app.get('/api/watched-shows/:userId', async (req, res) => {
 
   try {
     const [watched] = await db.promise().query(
-      'SELECT * FROM watched_shows WHERE user_id = ?',
+      'SELECT id, user_id, tmdb_series_id, watched_status, watched_at FROM user_shows WHERE user_id = ? AND watched_status IS NOT NULL',
       [userId]
     );
 
@@ -1713,17 +2213,12 @@ app.post('/api/follow-show', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
-    const [existing] = await db.promise().query(
-      'SELECT * FROM followed_shows WHERE user_id = ? AND tmdb_series_id = ?',
+    await db.promise().query(
+      `INSERT INTO user_shows (user_id, tmdb_series_id, is_followed, followed_at)
+       VALUES (?, ?, 1, NOW())
+       ON DUPLICATE KEY UPDATE is_followed = 1, followed_at = COALESCE(followed_at, NOW())`,
       [userId, tmdb_series_id]
     );
-
-    if (existing.length === 0) {
-      await db.promise().query(
-        'INSERT INTO followed_shows (user_id, tmdb_series_id) VALUES (?, ?)',
-        [userId, tmdb_series_id]
-      );
-    }
 
     res.json({ message: 'Show followed' });
   } catch (err) {
@@ -1739,7 +2234,7 @@ app.post('/api/unfollow-show', requireAuth, async (req, res) => {
 
   try {
     await db.promise().query(
-      'DELETE FROM followed_shows WHERE user_id = ? AND tmdb_series_id = ?',
+      'UPDATE user_shows SET is_followed = 0, followed_at = NULL WHERE user_id = ? AND tmdb_series_id = ?',
       [userId, tmdb_series_id]
     );
 
@@ -1756,7 +2251,7 @@ app.get('/api/followed-shows/:userId', async (req, res) => {
 
   try {
     const [shows] = await db.promise().query(
-      'SELECT * FROM followed_shows WHERE user_id = ?',
+      'SELECT id, user_id, tmdb_series_id, followed_at FROM user_shows WHERE user_id = ? AND is_followed = 1',
       [userId]
     );
 
@@ -1764,6 +2259,160 @@ app.get('/api/followed-shows/:userId', async (req, res) => {
   } catch (err) {
     console.error('Error fetching followed shows:', err);
     res.status(500).json({ message: 'Failed to fetch followed shows' });
+  }
+});
+
+// ===== USER FOLLOWS (follow other users) =====
+
+// Follow a user
+app.post('/api/users/:id/follow', requireAuth, async (req, res) => {
+  const followingId = parseInt(req.params.id);
+  const followerId = req.userId;
+
+  if (followerId === followingId) {
+    return res.status(400).json({ message: 'Cannot follow yourself' });
+  }
+
+  try {
+    const [existing] = await db.promise().query(
+      'SELECT * FROM user_follows WHERE follower_id = ? AND following_id = ?',
+      [followerId, followingId]
+    );
+
+    if (existing.length > 0) {
+      return res.status(409).json({ message: 'Already following this user' });
+    }
+
+    await db.promise().query(
+      'INSERT INTO user_follows (follower_id, following_id) VALUES (?, ?)',
+      [followerId, followingId]
+    );
+
+    // Create a notification for the followed user
+    try {
+      const [followerRows] = await db.promise().query('SELECT username FROM users WHERE id = ?', [followerId]);
+      const followerName = followerRows.length > 0 ? followerRows[0].username : 'Someone';
+      const message = `${followerName} started following you`;
+      await db.promise().query(
+        'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, ?, ?, ?)',
+        [followingId, 0, 'follow', message]
+      );
+    } catch (notifErr) {
+      console.error('Error creating follow notification:', notifErr);
+    }
+
+    // Check milestone cosmetics for the user gaining a follower
+    checkAndAwardMilestones(followingId).catch(() => {});
+
+    res.json({ message: 'Now following user' });
+  } catch (err) {
+    console.error('Error following user:', err);
+    res.status(500).json({ message: 'Failed to follow user' });
+  }
+});
+
+// Unfollow a user
+app.delete('/api/users/:id/follow', requireAuth, async (req, res) => {
+  const followingId = parseInt(req.params.id);
+  const followerId = req.userId;
+
+  try {
+    await db.promise().query(
+      'DELETE FROM user_follows WHERE follower_id = ? AND following_id = ?',
+      [followerId, followingId]
+    );
+    res.json({ message: 'Unfollowed user' });
+  } catch (err) {
+    console.error('Error unfollowing user:', err);
+    res.status(500).json({ message: 'Failed to unfollow user' });
+  }
+});
+
+// Check if current user follows a user
+app.get('/api/users/:id/follow-status', requireAuth, async (req, res) => {
+  const followingId = parseInt(req.params.id);
+  const followerId = req.userId;
+
+  try {
+    const [rows] = await db.promise().query(
+      'SELECT * FROM user_follows WHERE follower_id = ? AND following_id = ?',
+      [followerId, followingId]
+    );
+    res.json({ isFollowing: rows.length > 0 });
+  } catch (err) {
+    console.error('Error checking follow status:', err);
+    res.status(500).json({ message: 'Failed to check follow status' });
+  }
+});
+
+// Get follower/following counts for a user
+app.get('/api/users/:id/follow-counts', async (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  try {
+    const [followers] = await db.promise().query(
+      'SELECT COUNT(*) as count FROM user_follows WHERE following_id = ?',
+      [userId]
+    );
+    const [following] = await db.promise().query(
+      'SELECT COUNT(*) as count FROM user_follows WHERE follower_id = ?',
+      [userId]
+    );
+    res.json({
+      followers: followers[0].count,
+      following: following[0].count
+    });
+  } catch (err) {
+    console.error('Error fetching follow counts:', err);
+    res.status(500).json({ message: 'Failed to fetch follow counts' });
+  }
+});
+
+// Get common followed shows between current user and another user
+app.get('/api/users/:id/common-shows', requireAuth, async (req, res) => {
+  const otherUserId = parseInt(req.params.id);
+  const currentUserId = req.userId;
+
+  try {
+    const [commonFollowed] = await db.promise().query(
+      `SELECT us1.tmdb_series_id
+       FROM user_shows us1
+       INNER JOIN user_shows us2 ON us1.tmdb_series_id = us2.tmdb_series_id
+       WHERE us1.user_id = ? AND us2.user_id = ? AND us1.is_followed = 1 AND us2.is_followed = 1`,
+      [currentUserId, otherUserId]
+    );
+
+    const [commonFavorites] = await db.promise().query(
+      `SELECT uf1.tmdb_series_id, uf1.position AS your_position, uf2.position AS their_position
+       FROM user_favorites uf1
+       INNER JOIN user_favorites uf2 ON uf1.tmdb_series_id = uf2.tmdb_series_id
+       WHERE uf1.user_id = ? AND uf2.user_id = ?`,
+      [currentUserId, otherUserId]
+    );
+
+    res.json({
+      commonFollowedShows: commonFollowed.map(r => r.tmdb_series_id),
+      commonFavorites: commonFavorites
+    });
+  } catch (err) {
+    console.error('Error fetching common shows:', err);
+    res.status(500).json({ message: 'Failed to fetch common shows' });
+  }
+});
+
+// Get a user's favorites (public view)
+app.get('/api/users/:id/public-favorites', async (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  try {
+    const [favorites] = await db.promise().query(
+      'SELECT position, tmdb_series_id FROM user_favorites WHERE user_id = ? ORDER BY position',
+      [userId]
+    );
+    res.json(favorites);
+  } catch (err) {
+    console.error('Error fetching public favorites:', err);
+    res.status(500).json({ message: 'Failed to fetch favorites' });
   }
 });
 
@@ -1787,6 +2436,23 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
   }
 });
 
+// Mark all notifications as read (must be before /:id/read to avoid param matching)
+app.post('/api/notifications/mark-all-read', requireAuth, async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    await db.promise().query(
+      'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
+      [userId]
+    );
+
+    res.json({ message: 'All notifications marked as read' });
+  } catch (err) {
+    console.error('Error marking all notifications as read:', err);
+    res.status(500).json({ message: 'Failed to mark all notifications as read' });
+  }
+});
+
 // Mark notification as read
 app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
   const { id } = req.params;
@@ -1805,179 +2471,38 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
   }
 });
 
-// Create user list
-app.post('/api/user-lists', requireAuth, async (req, res) => {
-  const { name, description, is_public } = req.body;
+// Delete all notifications for user (must be before /:id to avoid param matching)
+app.delete('/api/notifications', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
-    const [result] = await db.promise().query(
-      'INSERT INTO user_lists (user_id, name, description, is_public) VALUES (?, ?, ?, ?)',
-      [userId, name, description, is_public ? 1 : 0]
-    );
-
-    res.status(201).json({ message: 'List created', listId: result.insertId });
-  } catch (err) {
-    console.error('Error creating user list:', err);
-    res.status(500).json({ message: 'Failed to create list' });
-  }
-});
-
-// Get user lists
-app.get('/api/user-lists/:userId', async (req, res) => {
-  const { userId } = req.params;
-  const authUserId = req.headers.authorization ? parseInt(req.headers.authorization) : null;
-
-  try {
-    let query = 'SELECT * FROM user_lists WHERE user_id = ?';
-    const params = [userId];
-
-    // If not the same user and not looking at public lists
-    if (authUserId !== parseInt(userId)) {
-      query += ' AND is_public = 1';
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const [lists] = await db.promise().query(query, params);
-
-    // Get items for each list
-    const listsWithItems = await Promise.all(lists.map(async (list) => {
-      const [items] = await db.promise().query(
-        'SELECT * FROM user_list_items WHERE list_id = ?',
-        [list.id]
-      );
-      return { ...list, items };
-    }));
-
-    res.json(listsWithItems);
-  } catch (err) {
-    console.error('Error fetching user lists:', err);
-    res.status(500).json({ message: 'Failed to fetch lists' });
-  }
-});
-
-// Add show to list
-app.post('/api/user-lists/:listId/items', requireAuth, async (req, res) => {
-  const { listId } = req.params;
-  const { tmdb_series_id } = req.body;
-  const userId = req.userId;
-
-  try {
-    // Check that the list belongs to the user
-    const [lists] = await db.promise().query(
-      'SELECT user_id FROM user_lists WHERE id = ?',
-      [listId]
-    );
-
-    if (lists.length === 0 || lists[0].user_id !== userId) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-
-    const [existing] = await db.promise().query(
-      'SELECT * FROM user_list_items WHERE list_id = ? AND tmdb_series_id = ?',
-      [listId, tmdb_series_id]
-    );
-
-    if (existing.length === 0) {
-      await db.promise().query(
-        'INSERT INTO user_list_items (list_id, tmdb_series_id) VALUES (?, ?)',
-        [listId, tmdb_series_id]
-      );
-    }
-
-    res.json({ message: 'Show added to list' });
-  } catch (err) {
-    console.error('Error adding to list:', err);
-    res.status(500).json({ message: 'Failed to add to list' });
-  }
-});
-
-// Remove show from list
-app.delete('/api/user-lists/:listId/items/:itemId', requireAuth, async (req, res) => {
-  const { listId, itemId } = req.params;
-  const userId = req.userId;
-
-  try {
-    // Check that the list belongs to the user
-    const [lists] = await db.promise().query(
-      'SELECT user_id FROM user_lists WHERE id = ?',
-      [listId]
-    );
-
-    if (lists.length === 0 || lists[0].user_id !== userId) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-
     await db.promise().query(
-      'DELETE FROM user_list_items WHERE id = ? AND list_id = ?',
-      [itemId, listId]
+      'DELETE FROM notifications WHERE user_id = ?',
+      [userId]
     );
 
-    res.json({ message: 'Show removed from list' });
+    res.json({ message: 'All notifications deleted' });
   } catch (err) {
-    console.error('Error removing from list:', err);
-    res.status(500).json({ message: 'Failed to remove from list' });
+    console.error('Error deleting all notifications:', err);
+    res.status(500).json({ message: 'Failed to delete all notifications' });
   }
 });
 
-// Delete user list
-app.delete('/api/user-lists/:listId', requireAuth, async (req, res) => {
-  const { listId } = req.params;
+// Delete a single notification
+app.delete('/api/notifications/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
   const userId = req.userId;
 
   try {
-    const [lists] = await db.promise().query(
-      'SELECT user_id FROM user_lists WHERE id = ?',
-      [listId]
-    );
-
-    if (lists.length === 0 || lists[0].user_id !== userId) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-
     await db.promise().query(
-      'DELETE FROM user_list_items WHERE list_id = ?',
-      [listId]
+      'DELETE FROM notifications WHERE id = ? AND user_id = ?',
+      [id, userId]
     );
 
-    await db.promise().query(
-      'DELETE FROM user_lists WHERE id = ?',
-      [listId]
-    );
-
-    res.json({ message: 'List deleted' });
+    res.json({ message: 'Notification deleted' });
   } catch (err) {
-    console.error('Error deleting list:', err);
-    res.status(500).json({ message: 'Failed to delete list' });
-  }
-});
-
-// Update user list
-app.put('/api/user-lists/:listId', requireAuth, async (req, res) => {
-  const { listId } = req.params;
-  const { name, description, is_public } = req.body;
-  const userId = req.userId;
-
-  try {
-    const [lists] = await db.promise().query(
-      'SELECT user_id FROM user_lists WHERE id = ?',
-      [listId]
-    );
-
-    if (lists.length === 0 || lists[0].user_id !== userId) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-
-    await db.promise().query(
-      'UPDATE user_lists SET name = ?, description = ?, is_public = ? WHERE id = ?',
-      [name, description, is_public ? 1 : 0, listId]
-    );
-
-    res.json({ message: 'List updated' });
-  } catch (err) {
-    console.error('Error updating list:', err);
-    res.status(500).json({ message: 'Failed to update list' });
+    console.error('Error deleting notification:', err);
+    res.status(500).json({ message: 'Failed to delete notification' });
   }
 });
 
@@ -1992,13 +2517,22 @@ app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
   }
 
   try {
-    // Verify the badge belongs to this user
-    const [badges] = await db.promise().query(
-      'SELECT * FROM user_badges WHERE id = ? AND user_id = ?',
+    // Allow clearing badge selection
+    if (badgeId === null || badgeId === undefined) {
+      await db.promise().query(
+        'UPDATE users SET selected_badge_id = NULL WHERE id = ?',
+        [userId]
+      );
+      return res.json({ message: 'Badge removed from profile' });
+    }
+
+    // Verify the badge belongs to this user (check unified user_badges table)
+    const [ownedBadges] = await db.promise().query(
+      'SELECT id FROM user_badges WHERE id = ? AND user_id = ?',
       [badgeId, userId]
     );
 
-    if (badges.length === 0) {
+    if (ownedBadges.length === 0) {
       return res.status(404).json({ message: 'Badge not found' });
     }
 
@@ -2015,6 +2549,238 @@ app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
   }
 });
 
+// ==================== COSMETICS ENDPOINTS ====================
+
+// Get user's earned cosmetics inventory
+app.get('/api/users/:userId/cosmetics', async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT c.*, uc.earned_at, uc.source_detail
+       FROM user_cosmetics uc
+       JOIN cosmetics c ON uc.cosmetic_id = c.id
+       WHERE uc.user_id = ?
+       ORDER BY uc.earned_at DESC`,
+      [req.params.userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching user cosmetics:', err);
+    res.status(500).json({ message: 'Failed to fetch cosmetics' });
+  }
+});
+
+// Get user's active (equipped) cosmetics — public endpoint
+app.get('/api/users/:userId/active-cosmetics', async (req, res) => {
+  try {
+    const [users] = await db.promise().query(
+      'SELECT active_cursor_trail, active_background_effect FROM users WHERE id = ?',
+      [req.params.userId]
+    );
+    if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    const user = users[0];
+    let cursorTrail = null;
+    let backgroundEffect = null;
+
+    if (user.active_cursor_trail) {
+      const [ct] = await db.promise().query('SELECT * FROM cosmetics WHERE id = ?', [user.active_cursor_trail]);
+      if (ct.length) cursorTrail = ct[0];
+    }
+    if (user.active_background_effect) {
+      const [bg] = await db.promise().query('SELECT * FROM cosmetics WHERE id = ?', [user.active_background_effect]);
+      if (bg.length) backgroundEffect = bg[0];
+    }
+
+    res.json({ cursorTrail, backgroundEffect });
+  } catch (err) {
+    console.error('Error fetching active cosmetics:', err);
+    res.status(500).json({ message: 'Failed to fetch active cosmetics' });
+  }
+});
+
+// Equip a cosmetic
+app.post('/api/users/:userId/equip-cosmetic', requireAuth, async (req, res) => {
+  const { userId } = req.params;
+  const { cosmeticId, slot } = req.body;
+
+  if (parseInt(userId) !== req.userId) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  if (!['cursor_trail', 'background_effect'].includes(slot)) {
+    return res.status(400).json({ message: 'Invalid slot' });
+  }
+
+  try {
+    // Verify ownership
+    const [owned] = await db.promise().query(
+      'SELECT id FROM user_cosmetics WHERE user_id = ? AND cosmetic_id = ?',
+      [userId, cosmeticId]
+    );
+    if (owned.length === 0) return res.status(404).json({ message: 'Cosmetic not owned' });
+
+    // Verify cosmetic type matches slot
+    const [cosmetic] = await db.promise().query('SELECT type FROM cosmetics WHERE id = ?', [cosmeticId]);
+    if (cosmetic.length === 0) return res.status(404).json({ message: 'Cosmetic not found' });
+    if (cosmetic[0].type !== slot) return res.status(400).json({ message: 'Cosmetic type does not match slot' });
+
+    const column = slot === 'cursor_trail' ? 'active_cursor_trail' : 'active_background_effect';
+    await db.promise().query(`UPDATE users SET ${column} = ? WHERE id = ?`, [cosmeticId, userId]);
+
+    res.json({ message: 'Cosmetic equipped' });
+  } catch (err) {
+    console.error('Error equipping cosmetic:', err);
+    res.status(500).json({ message: 'Failed to equip cosmetic' });
+  }
+});
+
+// Unequip a cosmetic
+app.post('/api/users/:userId/unequip-cosmetic', requireAuth, async (req, res) => {
+  const { userId } = req.params;
+  const { slot } = req.body;
+
+  if (parseInt(userId) !== req.userId) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  if (!['cursor_trail', 'background_effect'].includes(slot)) {
+    return res.status(400).json({ message: 'Invalid slot' });
+  }
+
+  try {
+    const column = slot === 'cursor_trail' ? 'active_cursor_trail' : 'active_background_effect';
+    await db.promise().query(`UPDATE users SET ${column} = NULL WHERE id = ?`, [userId]);
+    res.json({ message: 'Cosmetic unequipped' });
+  } catch (err) {
+    console.error('Error unequipping cosmetic:', err);
+    res.status(500).json({ message: 'Failed to unequip cosmetic' });
+  }
+});
+
+// Get full cosmetics catalog with sources
+app.get('/api/cosmetics/catalog', async (req, res) => {
+  try {
+    const [cosmetics] = await db.promise().query('SELECT * FROM cosmetics ORDER BY type, rarity DESC, name');
+    const [sources] = await db.promise().query(
+      `SELECT cs.*, q.title AS quiz_title
+       FROM cosmetic_sources cs
+       LEFT JOIN quizzes q ON cs.quiz_id = q.id`
+    );
+
+    const catalog = cosmetics.map(c => ({
+      ...c,
+      config: c.config ? JSON.parse(c.config) : null,
+      sources: sources.filter(s => s.cosmetic_id === c.id)
+    }));
+
+    res.json(catalog);
+  } catch (err) {
+    console.error('Error fetching cosmetics catalog:', err);
+    res.status(500).json({ message: 'Failed to fetch catalog' });
+  }
+});
+
+// Admin: Create cosmetic
+app.post('/api/admin/cosmetics', requireAuth, requireAdmin, async (req, res) => {
+  const { name, description, type, effect_key, config, preview_image, rarity } = req.body;
+  if (!name?.trim() || !type || !effect_key?.trim()) {
+    return res.status(400).json({ message: 'name, type, and effect_key are required' });
+  }
+  try {
+    const configStr = config ? (typeof config === 'string' ? config : JSON.stringify(config)) : null;
+    const [result] = await db.promise().query(
+      'INSERT INTO cosmetics (name, description, type, effect_key, config, preview_image, rarity) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name.trim(), description?.trim() || null, type, effect_key.trim(), configStr, preview_image || null, rarity || 'common']
+    );
+    res.status(201).json({ message: 'Cosmetic created', cosmeticId: result.insertId });
+  } catch (err) {
+    console.error('Error creating cosmetic:', err);
+    res.status(500).json({ message: 'Failed to create cosmetic' });
+  }
+});
+
+// Admin: Update cosmetic
+app.put('/api/admin/cosmetics/:id', requireAuth, requireAdmin, async (req, res) => {
+  const { name, description, type, effect_key, config, preview_image, rarity } = req.body;
+  try {
+    const configStr = config ? (typeof config === 'string' ? config : JSON.stringify(config)) : null;
+    await db.promise().query(
+      'UPDATE cosmetics SET name=?, description=?, type=?, effect_key=?, config=?, preview_image=?, rarity=? WHERE id=?',
+      [name, description || null, type, effect_key, configStr, preview_image || null, rarity || 'common', req.params.id]
+    );
+    res.json({ message: 'Cosmetic updated' });
+  } catch (err) {
+    console.error('Error updating cosmetic:', err);
+    res.status(500).json({ message: 'Failed to update cosmetic' });
+  }
+});
+
+// Admin: Delete cosmetic
+app.delete('/api/admin/cosmetics/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await db.promise().query('DELETE FROM cosmetics WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Cosmetic deleted' });
+  } catch (err) {
+    console.error('Error deleting cosmetic:', err);
+    res.status(500).json({ message: 'Failed to delete cosmetic' });
+  }
+});
+
+// Admin: Award cosmetic to user
+app.post('/api/admin/cosmetics/:id/award', requireAuth, requireAdmin, async (req, res) => {
+  const { userId: targetUserId } = req.body;
+  if (!targetUserId) return res.status(400).json({ message: 'userId is required' });
+  try {
+    const [users] = await db.promise().query('SELECT id FROM users WHERE id = ?', [targetUserId]);
+    if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+    await db.promise().query(
+      'INSERT INTO user_cosmetics (user_id, cosmetic_id, source_detail) VALUES (?, ?, ?)',
+      [targetUserId, req.params.id, 'admin']
+    );
+    res.json({ message: 'Cosmetic awarded' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'User already has this cosmetic' });
+    console.error('Error awarding cosmetic:', err);
+    res.status(500).json({ message: 'Failed to award cosmetic' });
+  }
+});
+
+// Admin: Get all cosmetic sources
+app.get('/api/admin/cosmetic-sources', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.promise().query('SELECT * FROM cosmetic_sources ORDER BY cosmetic_id, source_type');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching cosmetic sources:', err);
+    res.status(500).json({ message: 'Failed to fetch cosmetic sources' });
+  }
+});
+
+// Admin: Link cosmetic to source (quiz or milestone)
+app.post('/api/admin/cosmetic-sources', requireAuth, requireAdmin, async (req, res) => {
+  const { cosmetic_id, source_type, quiz_id, min_score, milestone_type, milestone_value } = req.body;
+  if (!cosmetic_id || !source_type) return res.status(400).json({ message: 'cosmetic_id and source_type are required' });
+  try {
+    const [result] = await db.promise().query(
+      'INSERT INTO cosmetic_sources (cosmetic_id, source_type, quiz_id, min_score, milestone_type, milestone_value) VALUES (?, ?, ?, ?, ?, ?)',
+      [cosmetic_id, source_type, quiz_id || null, min_score || 70, milestone_type || null, milestone_value || null]
+    );
+    res.status(201).json({ message: 'Source linked', sourceId: result.insertId });
+  } catch (err) {
+    console.error('Error creating cosmetic source:', err);
+    res.status(500).json({ message: 'Failed to link source' });
+  }
+});
+
+// Admin: Delete cosmetic source
+app.delete('/api/admin/cosmetic-sources/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await db.promise().query('DELETE FROM cosmetic_sources WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Source removed' });
+  } catch (err) {
+    console.error('Error deleting cosmetic source:', err);
+    res.status(500).json({ message: 'Failed to remove source' });
+  }
+});
+
 // Get user's profile comments (comments posted by the user)
 app.get('/api/users/:userId/comments', async (req, res) => {
   const { userId } = req.params;
@@ -2026,7 +2792,7 @@ app.get('/api/users/:userId/comments', async (req, res) => {
        JOIN users u ON c.user_id = u.id
        JOIN reviews r ON c.review_id = r.id
        WHERE c.user_id = ?
-       ORDER BY c.date DESC`,
+       ORDER BY c.created_at DESC`,
       [userId]
     );
 
@@ -2065,6 +2831,10 @@ db.connect(err => {
     title VARCHAR(255) NOT NULL,
     description TEXT,
     icon_emoji VARCHAR(10),
+    category VARCHAR(50) DEFAULT 'series',
+    difficulty VARCHAR(20) DEFAULT 'medium',
+    icon_name VARCHAR(50) DEFAULT NULL,
+    tmdb_series_id INT DEFAULT NULL,
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
@@ -2072,6 +2842,23 @@ db.connect(err => {
     if (err) console.error('Error creating quizzes table:', err);
     else console.log('quizzes table ready');
   });
+
+  // Add new columns to quizzes table if they don't exist (migration)
+  const quizColumns = [
+    "ALTER TABLE quizzes ADD COLUMN category VARCHAR(50) DEFAULT 'series'",
+    "ALTER TABLE quizzes ADD COLUMN difficulty VARCHAR(20) DEFAULT 'medium'",
+    "ALTER TABLE quizzes ADD COLUMN icon_name VARCHAR(50) DEFAULT NULL",
+    "ALTER TABLE quizzes ADD COLUMN tmdb_series_id INT DEFAULT NULL",
+    "ALTER TABLE quizzes ADD COLUMN quiz_image VARCHAR(255) DEFAULT NULL",
+    "ALTER TABLE quizzes ADD COLUMN badge_name VARCHAR(100) DEFAULT NULL",
+    "ALTER TABLE quizzes ADD COLUMN badge_rules TEXT DEFAULT NULL"
+  ];
+  for (const sql of quizColumns) {
+    db.query(sql, () => {}); // Ignore errors if column already exists
+  }
+
+  // Migrate user_badges to support multiple badge types per quiz
+  db.query("ALTER TABLE user_badges ADD COLUMN badge_type VARCHAR(20) NOT NULL DEFAULT 'default'", () => {});
 
   // Create quiz_questions table
   db.query(`CREATE TABLE IF NOT EXISTS quiz_questions (
@@ -2082,6 +2869,10 @@ db.connect(err => {
     option_b VARCHAR(255),
     option_c VARCHAR(255),
     option_d VARCHAR(255),
+    option_e VARCHAR(255),
+    option_f VARCHAR(255),
+    option_g VARCHAR(255),
+    option_h VARCHAR(255),
     correct_answer CHAR(1) NOT NULL,
     explanation TEXT,
     FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
@@ -2090,18 +2881,49 @@ db.connect(err => {
     else console.log('quiz_questions table ready');
   });
 
-  // Create user_badges table (represents earned badges)
+  // Migrate existing quiz_questions table to support up to 8 options
+  ['option_e', 'option_f', 'option_g', 'option_h'].forEach(col => {
+    db.query(`ALTER TABLE quiz_questions ADD COLUMN ${col} VARCHAR(255)`, () => {});
+  });
+
+  // Create user_badges table (unified: quiz badges + standalone badges)
   db.query(`CREATE TABLE IF NOT EXISTS user_badges (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    quiz_id INT NOT NULL,
+    badge_source VARCHAR(20) NOT NULL DEFAULT 'quiz',
+    source_id INT NOT NULL,
+    badge_type VARCHAR(20) NOT NULL DEFAULT 'default',
+    badge_image VARCHAR(255),
+    badge_name_override VARCHAR(255),
+    awarded_by INT DEFAULT NULL,
     earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_user_badge (user_id, quiz_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+    UNIQUE KEY unique_user_badge_src (user_id, badge_source, source_id, badge_type),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )`, (err) => {
     if (err) console.error('Error creating user_badges table:', err);
     else console.log('user_badges table ready');
+  });
+
+  // Migration: add new columns to user_badges if upgrading from old schema
+  db.query("ALTER TABLE user_badges ADD COLUMN badge_source VARCHAR(20) NOT NULL DEFAULT 'quiz'", () => {});
+  db.query("ALTER TABLE user_badges ADD COLUMN source_id INT DEFAULT NULL", () => {});
+  db.query("ALTER TABLE user_badges ADD COLUMN awarded_by INT DEFAULT NULL", () => {});
+  db.query("ALTER TABLE user_badges ADD COLUMN badge_image VARCHAR(255)", () => {});
+  db.query("ALTER TABLE user_badges ADD COLUMN badge_name_override VARCHAR(255)", () => {});
+  db.query("UPDATE user_badges SET source_id = quiz_id WHERE source_id IS NULL AND quiz_id IS NOT NULL", () => {});
+
+  // Standalone badges (admin-created badge definitions)
+  db.query(`CREATE TABLE IF NOT EXISTS standalone_badges (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    image VARCHAR(255),
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  )`, (err) => {
+    if (err) console.error('Error creating standalone_badges table:', err);
+    else console.log('standalone_badges table ready');
   });
 
   // Create quiz_attempts table (track all attempts)
@@ -2118,18 +2940,20 @@ db.connect(err => {
     else console.log('quiz_attempts table ready');
   });
 
-  // Create watched_shows table
-  db.query(`CREATE TABLE IF NOT EXISTS watched_shows (
+  // Create user_shows table (replaces watched_shows + followed_shows)
+  db.query(`CREATE TABLE IF NOT EXISTS user_shows (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     tmdb_series_id INT NOT NULL,
-    watched_status VARCHAR(50) DEFAULT 'partially',
-    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_user_series (user_id, tmdb_series_id),
+    watched_status VARCHAR(50) DEFAULT NULL,
+    is_followed TINYINT DEFAULT 0,
+    watched_at TIMESTAMP NULL DEFAULT NULL,
+    followed_at TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY unique_user_show (user_id, tmdb_series_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )`, (err) => {
-    if (err) console.error('Error creating watched_shows table:', err);
-    else console.log('watched_shows table ready');
+    if (err) console.error('Error creating user_shows table:', err);
+    else console.log('user_shows table ready');
   });
 
   // Create watched_episodes table
@@ -2147,17 +2971,18 @@ db.connect(err => {
     else console.log('watched_episodes table ready');
   });
 
-  // Create followed_shows table
-  db.query(`CREATE TABLE IF NOT EXISTS followed_shows (
+  // Create user_follows table (follow other users)
+  db.query(`CREATE TABLE IF NOT EXISTS user_follows (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    tmdb_series_id INT NOT NULL,
-    followed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_follow (user_id, tmdb_series_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    follower_id INT NOT NULL,
+    following_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_follow (follower_id, following_id),
+    FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
   )`, (err) => {
-    if (err) console.error('Error creating followed_shows table:', err);
-    else console.log('followed_shows table ready');
+    if (err) console.error('Error creating user_follows table:', err);
+    else console.log('user_follows table ready');
   });
 
   // Create notifications table
@@ -2175,38 +3000,221 @@ db.connect(err => {
     else console.log('notifications table ready');
   });
 
-  // Create user_lists table
-  db.query(`CREATE TABLE IF NOT EXISTS user_lists (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    is_public INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  )`, (err) => {
-    if (err) console.error('Error creating user_lists table:', err);
-    else console.log('user_lists table ready');
-  });
-
-  // Create user_list_items table
-  db.query(`CREATE TABLE IF NOT EXISTS user_list_items (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    list_id INT NOT NULL,
-    tmdb_series_id INT NOT NULL,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_list_item (list_id, tmdb_series_id),
-    FOREIGN KEY (list_id) REFERENCES user_lists(id) ON DELETE CASCADE
-  )`, (err) => {
-    if (err) console.error('Error creating user_list_items table:', err);
-    else console.log('user_list_items table ready');
-  });
-
   // Add selected_badge_id column to users if not exists
   db.query(`ALTER TABLE users ADD COLUMN selected_badge_id INT`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for selected_badge_id');
   });
+
+  // Add is_banned column to users if not exists
+  db.query(`ALTER TABLE users ADD COLUMN is_banned TINYINT DEFAULT 0`, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
+    else console.log('users table checked for is_banned');
+  });
+
+  // Add created_at column to users if not exists
+  db.query(`ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
+    else console.log('users table checked for created_at');
+  });
+
+  // Add avatar_config column to users if not exists
+  db.query(`ALTER TABLE users ADD COLUMN avatar_config TEXT DEFAULT NULL`, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
+    else console.log('users table checked for avatar_config');
+  });
+
+  // Create cosmetics table (catalog of all cursor trails and background effects)
+  db.query(`CREATE TABLE IF NOT EXISTS cosmetics (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    type ENUM('cursor_trail', 'background_effect') NOT NULL,
+    effect_key VARCHAR(50) NOT NULL,
+    config TEXT,
+    preview_image VARCHAR(255),
+    rarity ENUM('common', 'rare', 'epic', 'legendary') DEFAULT 'common',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) console.error('Error creating cosmetics table:', err);
+    else console.log('cosmetics table ready');
+  });
+
+  // Create cosmetic_sources table (how cosmetics are earned)
+  db.query(`CREATE TABLE IF NOT EXISTS cosmetic_sources (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    cosmetic_id INT NOT NULL,
+    source_type ENUM('quiz', 'milestone', 'admin') NOT NULL,
+    quiz_id INT DEFAULT NULL,
+    min_score INT DEFAULT 70,
+    milestone_type VARCHAR(50) DEFAULT NULL,
+    milestone_value INT DEFAULT NULL,
+    FOREIGN KEY (cosmetic_id) REFERENCES cosmetics(id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating cosmetic_sources table:', err);
+    else console.log('cosmetic_sources table ready');
+  });
+
+  // Create user_cosmetics table (earned inventory)
+  db.query(`CREATE TABLE IF NOT EXISTS user_cosmetics (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    cosmetic_id INT NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source_detail VARCHAR(100),
+    UNIQUE KEY unique_user_cosmetic (user_id, cosmetic_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (cosmetic_id) REFERENCES cosmetics(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating user_cosmetics table:', err);
+    else console.log('user_cosmetics table ready');
+  });
+
+  // Add active cosmetic columns to users
+  db.query(`ALTER TABLE users ADD COLUMN active_cursor_trail INT DEFAULT NULL`, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
+    else console.log('users table checked for active_cursor_trail');
+  });
+  db.query(`ALTER TABLE users ADD COLUMN active_background_effect INT DEFAULT NULL`, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
+    else console.log('users table checked for active_background_effect');
+  });
+});
+
+// ==================== ADMIN ENDPOINTS ====================
+
+// Get all users (admin)
+app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [users] = await db.promise().query(
+      'SELECT id, username, email, role, profile_picture, is_banned, created_at FROM users ORDER BY id ASC'
+    );
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+// Update user role (admin)
+app.put('/api/admin/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role' });
+  }
+  if (parseInt(id) === req.userId) {
+    return res.status(400).json({ message: 'Cannot change your own role' });
+  }
+  try {
+    await db.promise().query('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+    res.json({ message: 'Role updated' });
+  } catch (err) {
+    console.error('Error updating role:', err);
+    res.status(500).json({ message: 'Failed to update role' });
+  }
+});
+
+// Ban/unban user (admin)
+app.put('/api/admin/users/:id/ban', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { banned } = req.body;
+  if (parseInt(id) === req.userId) {
+    return res.status(400).json({ message: 'Cannot ban yourself' });
+  }
+  try {
+    await db.promise().query('UPDATE users SET is_banned = ? WHERE id = ?', [banned ? 1 : 0, id]);
+    res.json({ message: banned ? 'User banned' : 'User unbanned' });
+  } catch (err) {
+    console.error('Error updating ban status:', err);
+    res.status(500).json({ message: 'Failed to update ban status' });
+  }
+});
+
+// Delete user (admin)
+app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (parseInt(id) === req.userId) {
+    return res.status(400).json({ message: 'Cannot delete yourself' });
+  }
+  try {
+    await db.promise().query('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ message: 'User deleted' });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+// Get all badges with stats (admin)
+app.get('/api/admin/badges', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [badges] = await db.promise().query(
+      `SELECT q.id, q.title, q.description, q.icon_emoji, q.created_at,
+        (SELECT COUNT(*) FROM quiz_questions WHERE quiz_id = q.id) AS question_count,
+        (SELECT COUNT(*) FROM user_badges WHERE badge_source = 'quiz' AND source_id = q.id) AS earned_count
+       FROM quizzes q
+       ORDER BY q.created_at DESC`
+    );
+    res.json(badges);
+  } catch (err) {
+    console.error('Error fetching badges:', err);
+    res.status(500).json({ message: 'Failed to fetch badges' });
+  }
+});
+
+// Get all reviews with user info (admin)
+app.get('/api/admin/reviews', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [reviews] = await db.promise().query(
+      `SELECT r.id, r.tmdb_series_id, r.season_number, r.episode_number,
+              r.rating, r.review_title, r.review_text, r.date,
+              u.username
+       FROM reviews r
+       JOIN users u ON r.user_id = u.id
+       ORDER BY r.date DESC
+       LIMIT 200`
+    );
+    res.json(reviews);
+  } catch (err) {
+    console.error('Error fetching reviews:', err);
+    res.status(500).json({ message: 'Failed to fetch reviews' });
+  }
+});
+
+// Site stats (admin)
+app.get('/api/admin/stats', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [[userCount]] = await db.promise().query('SELECT COUNT(*) AS count FROM users');
+    const [[reviewCount]] = await db.promise().query('SELECT COUNT(*) AS count FROM reviews');
+    const [[commentCount]] = await db.promise().query('SELECT COUNT(*) AS count FROM comments');
+    const [[quizCount]] = await db.promise().query('SELECT COUNT(*) AS count FROM quizzes');
+    res.json({
+      totalUsers: userCount.count,
+      totalReviews: reviewCount.count,
+      totalComments: commentCount.count,
+      totalQuizzes: quizCount.count
+    });
+  } catch (err) {
+    console.error('Error fetching stats:', err);
+    res.status(500).json({ message: 'Failed to fetch stats' });
+  }
+});
+
+// Add quote (admin)
+app.post('/api/admin/quotes', requireAuth, requireAdmin, async (req, res) => {
+  const { text, author } = req.body;
+  if (!text || !text.trim()) {
+    return res.status(400).json({ message: 'Quote text is required' });
+  }
+  try {
+    await db.promise().query('INSERT INTO quotes (text, author) VALUES (?, ?)', [text.trim(), author ? author.trim() : null]);
+    res.json({ message: 'Quote added' });
+  } catch (err) {
+    console.error('Error adding quote:', err);
+    res.status(500).json({ message: 'Failed to add quote' });
+  }
 });
 
 app.listen(3000, () => {

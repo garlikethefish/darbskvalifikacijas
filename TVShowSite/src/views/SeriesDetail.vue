@@ -3,7 +3,7 @@
     <header class="hero">
       <div class="hero-band">
         <div class="hero-inner">
-          <h1 v-if="loading">Loading...</h1>
+          <h1 v-if="loading">{{ t('loading') }}</h1>
           <h1 v-else-if="series">{{ series.title }}</h1>
           <h1 v-else>{{ t('seriesDetails') }}</h1>
           <p class="subtitle">{{ yearRangeSubtitle }}</p>
@@ -13,7 +13,7 @@
 
     <div v-if="loading" class="load">
       <div class="spinner"></div>
-      <h2>Loading Series Details...</h2>
+      <h2>{{ t('loading') }}</h2>
     </div>
 
     <div v-else-if="error" class="error-message">{{ error }}</div>
@@ -21,12 +21,12 @@
     <div v-else-if="series" class="content-container">
       <div class="series-card">
         <div class="poster-section">
-          <button class="poster-button" @click="toggleTrailer" :disabled="!trailerKey" :title="trailerKey ? 'Play trailer' : 'Trailer not available'">
+          <button class="poster-button" @click="toggleTrailer" :disabled="!trailerKey" :title="trailerKey ? t('playTrailer') : t('trailerNotAvailable')">
             <img :src="getSeriesPictureUrl(series.series_picture)" :alt="series.title" class="poster" />
             <div v-if="trailerKey" class="play-overlay">
               <span class="play-ring"></span>
               <span class="play-icon">▶</span>
-              <span class="play-text">Trailer</span>
+              <span class="play-text">{{ t('trailer') }}</span>
             </div>
           </button>
         </div>
@@ -52,32 +52,32 @@
           
           <div class="meta">
             <span v-if="series.release_year" class="meta-item">
-              <strong>Release Year:</strong> {{ series.release_year }}
+              <strong>{{ t('releaseYear') }}:</strong> {{ series.release_year }}
             </span>
             <span v-if="series.number_of_seasons" class="meta-item">
-              <strong>Seasons:</strong> {{ series.number_of_seasons }}
+              <strong>{{ t('seasons') }}:</strong> {{ series.number_of_seasons }}
             </span>
             <span v-if="series.number_of_episodes" class="meta-item">
-              <strong>Episodes:</strong> {{ series.number_of_episodes }}
+              <strong>{{ t('episodes') }}:</strong> {{ series.number_of_episodes }}
             </span>
           </div>
 
           <div v-if="series.genres && series.genres.length" class="genres">
-            <strong>Genre:</strong>
+            <strong>{{ t('genre') }}:</strong>
             <span v-for="genre in series.genres" :key="genre" class="genre-tag">{{ genre }}</span>
           </div>
 
           <div class="description">
-            <h2>Synopsis</h2>
-            <p>{{ series.description || 'No description available.' }}</p>
+            <h2>{{ t('synopsis') }}</h2>
+            <p>{{ series.description || t('noDescriptionAvailable') }}</p>
           </div>
 
           <div class="actions">
             <router-link :to="`/create-review?seriesId=${series.id}`" class="btn btn-primary">
-              Write Review
+              {{ t('writeReview') }}
             </router-link>
             <router-link :to="`/reviews?seriesId=${series.id}&seriesTitle=${encodeURIComponent(series.title)}`" class="btn btn-secondary">
-              See All Reviews
+              {{ t('seeAllReviews') }}
             </router-link>
             <FollowShow :seriesId="series.id" />
           </div>
@@ -255,9 +255,9 @@ export default {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   width: 100vw;
-  background: linear-gradient(90deg, rgba(34, 59, 75, 0.92), rgba(25, 61, 39, 0.92));
+  background: var(--hero-gradient);
   padding: 48px 0;
-  box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--hero-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -318,6 +318,7 @@ export default {
   font-weight: 800;
   color: var(--text-color);
   text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
 }
 
 .hero-inner .subtitle {
@@ -325,6 +326,13 @@ export default {
   color: var(--subtitle-color);
   font-size: clamp(0.95rem, 1.6vw, 1.1rem);
   opacity: 0.95;
+  animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) 100ms both;
+}
+
+@keyframes heroIntro {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.992); filter: blur(4px); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
 }
 
 .content-container {

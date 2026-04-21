@@ -1,7 +1,7 @@
 <template>
   <div class="watched-status-container">
     <div class="watched-section">
-      <h3>📺 Watched Status</h3>
+      <h3><SvgIcon name="monitor" :size="20" /> {{ t('watchedStatus') }}</h3>
       
       <!-- Show Watched Toggle -->
       <div class="watch-show-container">
@@ -12,21 +12,21 @@
             @change="updateShowWatched"
             class="watch-checkbox"
           >
-          <span class="watch-text">Mark entire show as watched</span>
+          <span class="watch-text">{{ t('markShowWatched') }}</span>
         </label>
       </div>
 
       <!-- Episodes Watched -->
       <div v-if="seasons && seasons.length > 0" class="episodes-section">
         <div class="season-selector">
-          <label>Season:</label>
+          <label>{{ t('season') }}:</label>
           <select v-model="selectedSeason" @change="onSeasonChange" class="season-select">
-            <option value="">All Seasons</option>
+            <option value="">{{ t('allSeasons') }}</option>
             <option v-for="season in seasons" 
               :key="season.season_number" 
               :value="season.season_number"
             >
-              Season {{ season.season_number }}
+              {{ t('season') }} {{ season.season_number }}
             </option>
           </select>
         </div>
@@ -37,6 +37,12 @@
             :key="`${episode.season_number}-${episode.episode_number}`"
             class="episode-item"
           >
+            <img
+              v-if="episode.still_path"
+              :src="`https://image.tmdb.org/t/p/w300${episode.still_path}`"
+              :alt="episode.name"
+              class="episode-still"
+            />
             <label class="episode-label">
               <input 
                 type="checkbox"
@@ -53,7 +59,7 @@
 
         <!-- Statistics -->
         <div class="watched-stats">
-          <p>{{ watchedEpisodeCount }} / {{ totalEpisodeCount }} episodes watched</p>
+          <p>{{ watchedEpisodeCount }} / {{ totalEpisodeCount }} {{ t('episodesWatched') }}</p>
           <div class="progress-bar">
             <div class="progress" :style="{ width: watchedPercentage + '%' }"></div>
           </div>
@@ -64,7 +70,11 @@
 </template>
 
 <script>
+import SvgIcon from '@/components/SvgIcon.vue'
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+
 export default {
+  components: { SvgIcon },
   props: {
     seriesId: {
       type: Number,
@@ -80,7 +90,8 @@ export default {
       showWatched: false,
       selectedSeason: '',
       watchedEpisodes: new Set(),
-      seasons: []
+      seasons: [],
+      currentLanguage: 'en'
     };
   },
   computed: {
@@ -113,6 +124,9 @@ export default {
     }
   },
   methods: {
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    },
     padNumber(num) {
       return String(num).padStart(2, '0');
     },
@@ -217,16 +231,31 @@ export default {
       handler(newData) {
         if (newData.seasons) {
           this.seasons = newData.seasons;
+          if (!this.selectedSeason) {
+            const first = newData.seasons.find(s => s.season_number >= 1);
+            if (first) this.selectedSeason = first.season_number;
+          }
         }
       },
       deep: true
     }
   },
   mounted() {
+    this.currentLanguage = getCurrentLanguage();
+    window.addEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+    });
     if (this.seriesData.seasons) {
       this.seasons = this.seriesData.seasons;
+      const first = this.seriesData.seasons.find(s => s.season_number >= 1);
+      if (first) this.selectedSeason = first.season_number;
     }
     this.loadWatchedStatus();
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+    });
   }
 };
 </script>
@@ -318,10 +347,22 @@ export default {
 .episode-item {
   padding: 0.6rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
 }
 
 .episode-item:last-child {
   border-bottom: none;
+}
+
+.episode-still {
+  width: 120px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .episode-label {
@@ -329,6 +370,7 @@ export default {
   align-items: center;
   gap: 0.8rem;
   cursor: pointer;
+  flex: 1;
 }
 
 .episode-checkbox {

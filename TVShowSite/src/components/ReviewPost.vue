@@ -12,15 +12,16 @@
           <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
           <h2 class="season-episode">{{ formatSeasonEpisode(review) }}</h2>
           <div class="avg-rating-card">
-            <p class="avg-label">Community Rating</p>
+            <p class="avg-label">{{ t('communityRating') }}</p>
             <p class="avg-score">{{ (Number(review.average_rating) || 0).toFixed(1) }}<span>/5</span></p>
             <div class="rating">
-              <img
+              <SvgIcon
                 v-for="n in 5"
                 :key="n"
+                name="star"
+                :size="22"
+                :weight="n <= avgStars ? 'Bold' : 'Linear'"
                 class="star-avg"
-                :src="n <= avgStars ? starAvgFull : starEmpty"
-                alt="average show star rating"
               />
             </div>
           </div>
@@ -29,26 +30,46 @@
         <div class="right-container">
           <div class="top-section">
             <div class="user-rating-section">
-              <div class="user-info">
-                <img
-                  class="pfp"
-                  :src="getProfilePictureUrl(review.profile_picture)"
-                  alt="User profile picture"
-                />
+              <div class="user-info" @click.stop="goToProfile(review.user_id)">
+                <div class="pfp-wrapper">
+                  <img
+                    class="pfp"
+                    :src="getProfilePictureUrl(review.profile_picture)"
+                    alt="User profile picture"
+                    @error="$event.target.src = '/assets/default_pfp_icons/default_grey.png'"
+                  />
+                  <span v-if="review.role === 'admin'" class="pfp-admin-icon" title="Admin"><SvgIcon name="shield" :size="18" /></span>
+                  <div
+                    v-if="review.selected_badge_image"
+                    class="pfp-badge"
+                    :class="{ 'pfp-badge--below-admin': review.role === 'admin' }"
+                    :title="review.selected_badge_emoji || 'Badge'"
+                  >
+                    <img :src="`/assets/badges/${review.selected_badge_image}`" alt="badge" class="pfp-badge-img" />
+                  </div>
+                  <div
+                    v-else-if="review.selected_badge_emoji"
+                    class="pfp-badge"
+                    :class="{ 'pfp-badge--below-admin': review.role === 'admin' }"
+                  >
+                    <span class="pfp-badge-emoji">{{ review.selected_badge_emoji }}</span>
+                  </div>
+                </div>
                 <div class="user-details">
                   <h3 class="username">{{ review.username || 'username' }}</h3>
-                  <p class="user-reviews">{{ review.user_review_count || 0 }} reviews</p>
+                  <p class="user-reviews">{{ review.user_review_count || 0 }} {{ t('reviews') }}</p>
                 </div>
               </div>
               <div class="user-rating">
-                <span class="rating-label">Their Rating</span>
+                <span class="rating-label">{{ t('theirRating') }}</span>
                 <div class="rating-stars">
-                  <img
+                  <SvgIcon
                     v-for="n in 5"
                     :key="'user-star-' + n"
+                    name="star"
+                    :size="26"
+                    :weight="n <= review.rating ? 'Bold' : 'Linear'"
                     class="star"
-                    :src="n <= review.rating ? starFull : starEmpty"
-                    alt="user rating star"
                   />
                 </div>
               </div>
@@ -58,18 +79,18 @@
               class="review-delete-button"
               @click.stop="showDeleteModal = true"
               title="Delete review">
-              <img src="../assets/delete.png" alt="Delete" class="delete-icon"/>
+              <SvgIcon name="trash" :size="24" />
             </button>
             <div v-if="showDeleteModal" class="delete-modal">
               <div class="delete-modal-content">
                 <div>
-                  <p><strong>DELETE POST!</strong></p>
+                  <p><strong>{{ t('deletePost') }}</strong></p>
                   <hr>
-                  <p>Are you sure?</p>
+                  <p>{{ t('areYouSure') }}</p>
                 </div>
                 <div class="delete-modal-buttons">
-                  <button @click="confirmDeleteReview">Yes</button>
-                  <button @click="showDeleteModal = false">No</button>
+                  <button @click="confirmDeleteReview">{{ t('yes') }}</button>
+                  <button @click="showDeleteModal = false">{{ t('no') }}</button>
                 </div>
               </div>
             </div>
@@ -87,18 +108,18 @@
             </div>
 
             <div class="action-buttons">
-              <button class="action-btn like-btn" @click="likeReview" title="Like this review">
-                <img class="small-icon" :src="heartIcon" alt="likes" />
+              <button class="action-btn like-btn" :class="{ 'btn-active-like': userLiked }" @click="likeReview" title="Like this review">
+                <SvgIcon name="heart" :size="20" />
                 <span class="count">{{ review.likes }}</span>
               </button>
 
-              <button class="action-btn dislike-btn" @click="dislikeReview" title="Dislike this review">
-                <img class="small-icon" :src="brokenHeartIcon" alt="dislikes" />
+              <button class="action-btn dislike-btn" :class="{ 'btn-active-dislike': userDisliked }" @click="dislikeReview" title="Dislike this review">
+                <SvgIcon name="heart-fill" :size="20" />
                 <span class="count">{{ review.dislikes }}</span>
               </button>
 
               <button class="action-btn comment-btn" @click="toggleComments" title="View comments">
-                <img class="small-icon" id="comment-icon" :src="commentIcon"  alt="comments" />
+                <SvgIcon name="chat-dots" :size="20" />
                 <span class="count">{{ review.comment_count }}</span>
               </button>
             </div>
@@ -106,7 +127,7 @@
         </div>
       </div>
       <div v-if="showComments" class="comment-section">
-        <p v-if="loading" class="loading-text">Loading comments...</p>
+        <p v-if="loading" class="loading-text">{{ t('loadingComments') }}</p>
 
         <div v-else class="center-div">
           <div v-for="comment in comments" :key="comment.id" class="comment" @mouseenter="hoveredCommentId = comment.id" 
@@ -117,43 +138,56 @@
                 class="comment-pfp"
                 :src="getProfilePictureUrl(comment.profile_picture)"
                 alt="User profile picture"
+                @error="$event.target.src = '/assets/default_pfp_icons/default_grey.png'"
               />
-              <img
+              <SvgIcon
                 v-if="comment.username === review.username && comment.role !== 'admin'"
-                src="../assets/star-op.png"
-                alt="Original poster star"
+                name="star"
+                :size="20"
                 class="op-star"
               />
-              <img
+              <span
                 v-if="comment.role === 'admin'"
-                src="../assets/admin_gear.png"
-                alt="Admin icon"
                 class="admin-icon"
-              />
+              ><SvgIcon name="shield" :size="20" /></span>
+              <div
+                v-if="comment.selected_badge_image"
+                class="comment-badge"
+                :class="{ 'comment-badge--below-admin': comment.role === 'admin' }"
+              >
+                <img :src="`/assets/badges/${comment.selected_badge_image}`" alt="badge" class="comment-badge-img" />
+              </div>
+              <div
+                v-else-if="comment.selected_badge_emoji"
+                class="comment-badge"
+                :class="{ 'comment-badge--below-admin': comment.role === 'admin' }"
+              >
+                <span class="comment-badge-emoji">{{ comment.selected_badge_emoji }}</span>
+              </div>
             </div>
             <p><strong :class="{
               'admin-user': comment.role === 'admin',
-              'op-user': comment.username === review.username && comment.role !== 'admin'}">{{ comment.username }}<span v-if="comment.role === 'admin'" class="admin-label">(ADMIN)</span>:</strong>&nbsp;{{ comment.comment_text }}
+              'op-user': comment.username === review.username && comment.role !== 'admin'}">{{ comment.username }}<span v-if="comment.role === 'admin'" class="admin-label">({{ t('admin') }})</span>:</strong>&nbsp;{{ comment.comment_text }}
             </p>
             <div class="delete-comment-container">
               <button 
                 v-if="(hoveredCommentId === comment.id && canDeleteComment(comment)) || showDeleteCommentModal === comment.id"
                 class="delete-comment-button"
                 @click.stop="showDeleteCommentModal = comment.id">
-                <img src="../assets/delete.png" alt="Delete" class="delete-icon" />
+                <SvgIcon name="trash" :size="18" />
               </button>
             </div>
             
             <div v-if="showDeleteCommentModal === comment.id" class="delete-modal">
             <div class="delete-modal-content">
               <div>
-                <p><strong>DELETE COMMENT!</strong></p>
+                <p><strong>{{ t('deleteComment') }}</strong></p>
                 <hr>
-                <p>Are you sure?</p>
+                <p>{{ t('areYouSure') }}</p>
               </div>
               <div class="delete-modal-buttons">
-                <button @click="confirmDeleteComment(comment.id)">Yes</button>
-                <button @click="showDeleteCommentModal = null">No</button>
+                <button @click="confirmDeleteComment(comment.id)">{{ t('yes') }}</button>
+                <button @click="showDeleteCommentModal = null">{{ t('no') }}</button>
                 </div>
               </div>
             </div>
@@ -161,11 +195,11 @@
           </div>
 
           <div v-if="isLoggedIn" class="comment-input">
-            <input v-model="newComment" placeholder="Write a comment..." />
-            <button @click="submitComment">Post</button>
+            <input v-model="newComment" :placeholder="t('writeComment')" />
+            <button @click="submitComment">{{ t('post') }}</button>
           </div>
           <p v-else style="color: gray;">
-            You must be logged in to post comments.
+            {{ t('mustLogin') }}
           </p>
         </div>
       </div>
@@ -174,15 +208,13 @@
 </template>
 
 <script>
-const starFull = new URL('../assets/star.png', import.meta.url).href;
-const starEmpty = new URL('../assets/star-empty.png', import.meta.url).href;
-const starAvgFull = new URL('../assets/star-avg.png', import.meta.url).href;
-const heartIcon = new URL('../assets/heart_icon.png', import.meta.url).href;
-const brokenHeartIcon = new URL('../assets/broken_hrt_icon.png', import.meta.url).href;
-const commentIcon = new URL('../assets/comment_icon.png', import.meta.url).href;
+import SvgIcon from './SvgIcon.vue';
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
+
 
 export default {
   name: 'ReviewPost',
+  components: { SvgIcon },
   props: {
     review: {
       type: Object,
@@ -198,13 +230,15 @@ export default {
       currentUsername: '',
       userLiked: false,
       userDisliked: false,
+      isReacting: false,
       loading: false,
       isHoveringReview: false,
       hoveredCommentId: null,
       showDeleteModal: false,
       showDeleteCommentModal: null,
       userRole: '',
-      auth: null
+      auth: null,
+      currentLanguage: 'en'
     };
   },
    computed: {
@@ -214,24 +248,6 @@ export default {
     avgStars() {
       return Math.round(this.averageRating);
     },
-    starFull() {
-      return starFull;
-    },
-    starEmpty() {
-      return starEmpty;
-    },
-    starAvgFull() {
-      return starAvgFull;
-    },
-    heartIcon() {
-      return heartIcon;
-    },
-    brokenHeartIcon() {
-      return brokenHeartIcon;
-    },
-    commentIcon() {
-      return commentIcon;
-    },
     // Check if current user can delete this review
     canDeleteReview() {
       if (!this.isLoggedIn) return false;
@@ -239,9 +255,15 @@ export default {
     }
   },
   methods: {
-    getProfilePictureUrl(filename) {
-      if (!filename) return new URL('../assets/defaultpfp.jpg', import.meta.url).href;
-      return new URL(`../assets/user_pfp/${filename}`, import.meta.url).href;
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    },
+    goToProfile(userId) {
+      if (userId) this.$router.push(`/profile/${userId}`);
+    },
+    getProfilePictureUrl(profilePicture) {
+      if (!profilePicture) return '/assets/default_pfp_icons/default_grey.png';
+      return profilePicture;
     },
     getEpisodePictureUrl(url) {
       return url || new URL('../assets/series_images/basic_series.png', import.meta.url).href;
@@ -264,7 +286,25 @@ export default {
 
     async likeReview() {
       const auth = JSON.parse(localStorage.getItem('auth'));
-      if (!auth?.loggedIn) return;
+      if (!auth?.loggedIn || this.isReacting) return;
+      this.isReacting = true;
+
+      const wasLiked = this.userLiked;
+      const wasDisliked = this.userDisliked;
+      const prevLikes = this.review.likes;
+      const prevDislikes = this.review.dislikes;
+
+      if (wasLiked) {
+        this.userLiked = false;
+        this.review.likes = Math.max(0, prevLikes - 1);
+      } else {
+        this.userLiked = true;
+        this.review.likes = prevLikes + 1;
+        if (wasDisliked) {
+          this.userDisliked = false;
+          this.review.dislikes = Math.max(0, prevDislikes - 1);
+        }
+      }
 
       try {
         const res = await fetch(`/api/reviews/${this.review.id}/react`, {
@@ -276,21 +316,44 @@ export default {
           body: JSON.stringify({ is_like: true })
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          this.review.likes = data.likes;
-          this.review.dislikes = data.dislikes;
-          this.userLiked = data.reaction === 'like';
-          this.userDisliked = data.reaction === 'dislike';
+        if (!res.ok) {
+          this.userLiked = wasLiked;
+          this.userDisliked = wasDisliked;
+          this.review.likes = prevLikes;
+          this.review.dislikes = prevDislikes;
         }
       } catch (e) {
         console.error('Error liking review:', e);
+        this.userLiked = wasLiked;
+        this.userDisliked = wasDisliked;
+        this.review.likes = prevLikes;
+        this.review.dislikes = prevDislikes;
+      } finally {
+        this.isReacting = false;
       }
     },
 
     async dislikeReview() {
       const auth = JSON.parse(localStorage.getItem('auth'));
-      if (!auth?.loggedIn) return;
+      if (!auth?.loggedIn || this.isReacting) return;
+      this.isReacting = true;
+
+      const wasLiked = this.userLiked;
+      const wasDisliked = this.userDisliked;
+      const prevLikes = this.review.likes;
+      const prevDislikes = this.review.dislikes;
+
+      if (wasDisliked) {
+        this.userDisliked = false;
+        this.review.dislikes = Math.max(0, prevDislikes - 1);
+      } else {
+        this.userDisliked = true;
+        this.review.dislikes = prevDislikes + 1;
+        if (wasLiked) {
+          this.userLiked = false;
+          this.review.likes = Math.max(0, prevLikes - 1);
+        }
+      }
 
       try {
         const res = await fetch(`/api/reviews/${this.review.id}/react`, {
@@ -302,15 +365,20 @@ export default {
           body: JSON.stringify({ is_like: false })
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          this.review.likes = data.likes;
-          this.review.dislikes = data.dislikes;
-          this.userLiked = data.reaction === 'like';
-          this.userDisliked = data.reaction === 'dislike';
+        if (!res.ok) {
+          this.userLiked = wasLiked;
+          this.userDisliked = wasDisliked;
+          this.review.likes = prevLikes;
+          this.review.dislikes = prevDislikes;
         }
       } catch (e) {
         console.error('Error disliking review:', e);
+        this.userLiked = wasLiked;
+        this.userDisliked = wasDisliked;
+        this.review.likes = prevLikes;
+        this.review.dislikes = prevDislikes;
+      } finally {
+        this.isReacting = false;
       }
     },
     // Check if current user can delete a comment
@@ -400,6 +468,21 @@ export default {
       }
     },
 
+    async fetchUserReaction() {
+      try {
+        const res = await fetch(`/api/reviews/${this.review.id}/reaction`, {
+          headers: { 'Authorization': this.auth.user.id.toString() }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.userLiked = data.reaction === 'like';
+          this.userDisliked = data.reaction === 'dislike';
+        }
+      } catch (e) {
+        console.error('Error fetching reaction:', e);
+      }
+    },
+
     async submitComment() {
       const text = this.newComment.trim();
       const auth = JSON.parse(localStorage.getItem('auth'));
@@ -432,10 +515,21 @@ export default {
     }
   },
 
-  mounted() {
+  async mounted() {
     this.loading = true;
+    this.currentLanguage = getCurrentLanguage();
+    window.addEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+    });
     this.checkLoginStatus();
-
+    if (this.isLoggedIn && this.auth?.user?.id) {
+      await this.fetchUserReaction();
+    }
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', (e) => {
+      this.currentLanguage = e.detail.language;
+    });
   }
 };
 </script>
@@ -501,6 +595,7 @@ export default {
 .series-image-wrapper {
   position: relative;
   margin-bottom: 15px;
+  width: auto;
 }
 
 .series-image-wrapper::after {
@@ -563,7 +658,7 @@ export default {
   border-radius: 12px;
   padding: 15px;
   text-align: center;
-  width: 100%;
+  width: 85%;
   margin-top: auto;
 }
 
@@ -617,7 +712,15 @@ export default {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 22px;
+  cursor: pointer;
+}
+
+.pfp-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
 }
 
 .pfp {
@@ -626,8 +729,50 @@ export default {
   object-fit: cover;
   border-radius: 12px;
   border: 2px solid rgba(112, 233, 116, 0.3);
-  flex-shrink: 0;
+  display: block;
   transition: all 0.3s ease;
+}
+
+.pfp-admin-icon {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  color: var(--accent-color);
+  display: flex;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.pfp-badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pfp-badge--below-admin {
+  bottom: auto;
+  top: 12px;
+  right: -8px;
+}
+
+.pfp-badge-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: cover;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.pfp-badge-emoji {
+  font-size: 16px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
 .user-info:hover .pfp {
@@ -639,6 +784,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: auto;
 }
 
 .username {
@@ -680,14 +826,12 @@ export default {
 }
 
 .star {
-  width: 28px;
-  height: 28px;
+  color: #4caf50;
   transition: transform 0.2s ease;
 }
 
 .star-avg {
-  width: 24px;
-  height: 24px;
+  color: #4caf50;
 }
 
 .rating {
@@ -802,7 +946,7 @@ export default {
   border-radius: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   color: var(--text-color);
 }
 
@@ -839,14 +983,32 @@ export default {
   border-color: rgb(255, 100, 100);
 }
 
+.btn-active-like {
+  background: rgba(255, 100, 100, 0.3) !important;
+  border-color: rgb(255, 100, 100) !important;
+  color: rgb(255, 100, 100) !important;
+  box-shadow: 0 0 12px rgba(255, 100, 100, 0.5);
+}
+
+.btn-active-dislike {
+  background: rgba(255, 100, 100, 0.3) !important;
+  border-color: rgb(255, 100, 100) !important;
+  color: rgb(255, 100, 100) !important;
+  box-shadow: 0 0 12px rgba(255, 100, 100, 0.5);
+}
+
 .small-icon {
   width: 20px;
   height: 20px;
   transition: transform 0.2s ease;
 }
 
-.action-btn:hover .small-icon {
+.action-btn:hover .svg-icon {
   transform: scale(1.15);
+}
+
+.action-btn .svg-icon {
+  transition: transform 0.2s ease;
 }
 
 .count {
@@ -932,7 +1094,48 @@ export default {
   border-color: var(--accent-color);
 }
 
-.op-star,
+.comment-badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.comment-badge--below-admin {
+  top: 14px;
+  right: -8px;
+}
+
+.comment-badge-img {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  object-fit: cover;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.comment-badge-emoji {
+  font-size: 14px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.op-star {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  color: gold;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
 .admin-icon {
   position: absolute;
   top: -8px;
@@ -940,6 +1143,8 @@ export default {
   width: 24px;
   height: 24px;
   pointer-events: none;
+  display: flex;
+  color: var(--accent-color);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 

@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
-import About from '../views/About.vue';
-import Contact from '../views/Contact.vue';
 import Login from '../views/Login.vue';
 import Profile from '../views/Profile.vue';
 import Reviews from '../views/Reviews.vue';
@@ -10,9 +8,8 @@ import Statistics from '@/views/Statistics.vue';
 import Discover from '@/views/Discover.vue';
 import SeriesDetail from '@/views/SeriesDetail.vue';
 import Quizzes from '@/views/Quizzes.vue';
-import PublicProfile from '@/views/PublicProfile.vue';
 import ReviewDetail from '@/views/ReviewDetail.vue';
-import UserLists from '@/views/UserLists.vue';
+import AdminPanel from '@/views/AdminPanel.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,17 +19,7 @@ const router = createRouter({
       name: 'home',
       component: Home,
     },
-    {
-      path: '/about',
-      name: 'about',
-      component: About,
-    },
-    {
-      path: '/contact',
-      name: 'contact',
-      component: Contact,
-    }
-    ,
+
     {
       path: '/login',
       name: 'login',
@@ -46,15 +33,26 @@ const router = createRouter({
     }
     ,
     {
-      path: '/profile',
+      path: '/profile/:userId',
       name: 'profile',
       component: Profile,
     }
     ,
     {
+      path: '/profile',
+      name: 'profile-redirect',
+      redirect: () => {
+        const auth = JSON.parse(localStorage.getItem('auth') || 'null');
+        if (auth?.loggedIn && auth?.user?.id) {
+          return `/profile/${auth.user.id}`;
+        }
+        return '/login';
+      }
+    }
+    ,
+    {
       path: '/public-profile/:userId',
-      name: 'public-profile',
-      component: PublicProfile,
+      redirect: to => `/profile/${to.params.userId}`
     }
     ,
     {
@@ -89,9 +87,9 @@ const router = createRouter({
       component: SeriesDetail,
     },
     {
-      path: '/my-lists/:userId',
-      name: 'user-lists',
-      component: UserLists,
+      path: '/admin',
+      name: 'admin',
+      component: AdminPanel,
     }
   ],
 });
