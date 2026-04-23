@@ -1,5 +1,7 @@
+providers = ["node"]
+[phases.setup]
+nixPkgs = ["nodejs-22_x"]
 [phases.build]
 cmds = ["npm install", "npm run build"]
-
 [phases.start]
-cmds = ["node server.js"]
+cmd = "npm start"
