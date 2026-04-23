@@ -31,5 +31,4 @@ coverage
 
 .env
 
-# Copilot instructions (internal AI documentation)
 .github/copilot-instructions.md
