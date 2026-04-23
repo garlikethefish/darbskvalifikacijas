@@ -75,10 +75,14 @@ export default {
     async fetchSeries() {
       this.loading = true;
       try {
-        const res = await axios.get('/api/tmdb/top-series');
+        const res = await axios.get('/api/tmdb/top-series', {
+          params: { lang: this.currentLanguage }
+        });
         this.series = res.data.map(show => ({
           id: show.id,
           title: show.title,
+          english_title: show.english_title || show.title,
+          machine_translated_title: !!show.machine_translated_title,
           description: show.description,
           release_year: show.release_year,
           series_picture: show.series_picture,
@@ -121,15 +125,14 @@ export default {
     this.currentLanguage = getCurrentLanguage();
     this.fetchSeries();
     // Listen for language changes
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+      this.fetchSeries();
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>
@@ -143,7 +146,7 @@ export default {
         </div>
       </div>
     </header>
-    <SectionHeader></SectionHeader>
+    <SectionHeader level="h1">{{ t('topTVShowsToday') }}</SectionHeader>
     
     <!-- Sorting and Filtering Controls -->
     <div class="controls-container">
@@ -218,7 +221,7 @@ export default {
       </template>
       <div class="break"></div>
     </div>
-    <SectionHeader>{{ "" }}</SectionHeader> <!-- blank text -->
+    <SectionHeader level="h1"></SectionHeader>
     <Aside></Aside>
   </div>
 </template>

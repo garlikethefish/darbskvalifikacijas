@@ -60,6 +60,7 @@
             </button>
           </div>
         </div>
+
       </div>
 
       <div class="filter-group" v-if="selectedFilterType">
@@ -231,6 +232,22 @@ export default {
       this.filterOptions.users = Array.from(users).sort();
       this.filterOptions.series = Array.from(series).sort();
       this.filterOptions.episodes = Array.from(episodes).sort();
+    },
+    async fetchReviews() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await axios.get('/api/reviews', {
+          params: { lang: this.currentLanguage }
+        });
+        this.reviews = res.data;
+        this.updateFilterOptions();
+      } catch (err) {
+        console.error('Failed to load reviews:', err);
+        this.error = this.t('failedToLoadReview');
+      } finally {
+        this.loading = false;
+      }
     }
   },
   mounted() {
@@ -244,30 +261,16 @@ export default {
       this.seriesTitleFilter = decodeURIComponent(seriesTitle);
     }
 
-    this.loading = true;
-    axios.get('/api/reviews')
-      .then(res => {
-        this.reviews = res.data;
-        this.updateFilterOptions();
-      })
-      .catch(err => {
-        console.error('Failed to load reviews:', err);
-        this.error = 'Failed to load reviews.';
-      })
-      .finally(() => {
-        this.loading = false;
-      });
+    this.fetchReviews();
 
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+      this.fetchReviews();
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>
@@ -407,6 +410,7 @@ export default {
   gap: 12px;
   align-items: center;
 }
+
 
 .sort-controls label,
 .filter-controls label,

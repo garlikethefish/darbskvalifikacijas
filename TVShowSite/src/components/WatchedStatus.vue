@@ -138,7 +138,7 @@ export default {
     },
     async updateShowWatched() {
       if (!localStorage.getItem('auth')) {
-        alert('Please login to mark shows as watched');
+        alert(this.t('pleaseLoginMarkShowsWatched'));
         this.showWatched = false;
         return;
       }
@@ -160,13 +160,13 @@ export default {
         this.$emit('show-watched-updated', this.showWatched);
       } catch (error) {
         console.error('Error updating show watched status:', error);
-        alert('Error updating watched status');
+        alert(this.t('errorUpdatingWatchedStatus'));
         this.showWatched = !this.showWatched;
       }
     },
     async toggleEpisodeWatched(seasonNumber, episodeNumber) {
       if (!localStorage.getItem('auth')) {
-        alert('Please login to mark episodes as watched');
+        alert(this.t('pleaseLoginMarkEpisodesWatched'));
         return;
       }
 
@@ -198,7 +198,7 @@ export default {
         this.$emit('episode-watched-updated', { seasonNumber, episodeNumber, watched: !isCurrentlyWatched });
       } catch (error) {
         console.error('Error updating episode watched status:', error);
-        alert('Error updating episode status');
+        alert(this.t('errorUpdatingEpisodeStatus'));
       }
     },
     isEpisodeWatched(seasonNumber, episodeNumber) {
@@ -242,9 +242,10 @@ export default {
   },
   mounted() {
     this.currentLanguage = getCurrentLanguage();
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
-    });
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
     if (this.seriesData.seasons) {
       this.seasons = this.seriesData.seasons;
       const first = this.seriesData.seasons.find(s => s.season_number >= 1);
@@ -253,9 +254,7 @@ export default {
     this.loadWatchedStatus();
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>

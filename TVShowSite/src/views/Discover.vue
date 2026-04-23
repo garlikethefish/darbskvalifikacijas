@@ -138,6 +138,43 @@ export default {
     t(key) {
       return getTranslation(key, this.currentLanguage);
     },
+    async loadRecommendations() {
+      try {
+        const auth = JSON.parse(localStorage.getItem("auth"));
+
+        if (!auth || !auth.loggedIn || !auth.user?.id) {
+          this.isLoggedIn = false;
+          this.recommendations = [];
+          this.loading = false;
+          return;
+        }
+
+        this.isLoggedIn = true;
+
+        const res = await fetch(`/api/discover?lang=${encodeURIComponent(this.currentLanguage)}`, {
+          headers: {
+            authorization: auth.user.id
+          }
+        });
+
+        if (!res.ok) {
+          this.recommendations = [];
+          return;
+        }
+
+        this.recommendations = await res.json();
+        this.genres = Array.from(new Set(this.recommendations.flatMap(r => r.genres || []))).sort();
+
+        this.$nextTick(() => {
+          this.updateColumns();
+        });
+      } catch (err) {
+        console.error(err);
+        this.recommendations = [];
+      } finally {
+        this.loading = false;
+      }
+    },
     loadMore() {
       // Add two full rows per click (fill partial row first if needed)
       const cols = this.computeCols() || 1;
@@ -209,57 +246,19 @@ export default {
 
   async mounted() {
     this.currentLanguage = getCurrentLanguage();
-    try {
-      const auth = JSON.parse(localStorage.getItem("auth"));
+    await this.loadRecommendations();
 
-      if (!auth || !auth.loggedIn || !auth.user?.id) {
-        this.isLoggedIn = false;
-        this.recommendations = [];
-        this.loading = false;
-        return;
-      }
-
-      this.isLoggedIn = true;
-
-      const res = await fetch("http://localhost:3000/api/discover", {
-        headers: {
-          authorization: auth.user.id
-        }
-      });
-
-      if (!res.ok) {
-        this.recommendations = [];
-        return;
-      }
-
-      this.recommendations = await res.json();
-
-      // populate genre options from recommendations
-      this.genres = Array.from(new Set(this.recommendations.flatMap(r => r.genres || []))).sort();
-
-      // compute initial columns/visible after data is rendered
-      this.$nextTick(() => {
-        this.updateColumns();
-      });
-    } catch (err) {
-      console.error(err);
-      this.recommendations = [];
-    } finally {
-      this.loading = false;
-    }
-
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+      this.loading = true;
+      await this.loadRecommendations();
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
 
   beforeUnmount() {
     window.removeEventListener('resize', this.updateColumns);
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>

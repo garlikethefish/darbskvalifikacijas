@@ -138,13 +138,15 @@
 
         <!-- Badges Section -->
         <div v-if="badges.length > 0" class="badges-section">
-          <div class="section-header">
-            <h2><SvgIcon name="badge" :size="22" /> {{ isOwnProfile ? t('badges') : t('earnedBadges') }}</h2>
-            <div v-if="isOwnProfile" class="badge-header-actions">
-              <span class="badge-hint">{{ t('clickToInspect') }}</span>
-              <button v-if="selectedDisplayBadgeId" class="remove-badge-btn" @click="removeDisplayBadge">{{ t('removeBadge') }}</button>
-            </div>
-          </div>
+          <SectionHeader>
+            <SvgIcon name="badge" :size="22" /> {{ isOwnProfile ? t('badges') : t('earnedBadges') }}
+            <template #actions v-if="isOwnProfile">
+              <div class="badge-header-actions">
+                <span class="badge-hint">{{ t('clickToInspect') }}</span>
+                <button v-if="selectedDisplayBadgeId" class="remove-badge-btn" @click="removeDisplayBadge">{{ t('removeBadge') }}</button>
+              </div>
+            </template>
+          </SectionHeader>
           <div class="badges-container">
             <div 
               v-for="badge in badges" 
@@ -202,18 +204,18 @@
 
         <!-- Cosmetics Section (Owner only) -->
         <div v-if="isOwnProfile" class="cosmetics-section">
-          <div class="section-header">
-            <h2><SvgIcon name="palette" :size="22" /> {{ t('cosmetics') }}</h2>
-          </div>
+          <SectionHeader><SvgIcon name="palette" :size="22" /> {{ t('cosmetics') }}</SectionHeader>
           <CosmeticsPanel :userId="user.id" :isOwnProfile="isOwnProfile" />
         </div>
 
         <!-- DEV: Background Effects Test -->
         <div v-if="isOwnProfile && bgTestActive" class="bg-test-section">
-          <div class="section-header">
-            <h2>{{ t('backgroundEffectsTest') }}</h2>
-            <button class="bg-test-close" @click="bgTestActive = false">✕</button>
-          </div>
+          <SectionHeader>
+            {{ t('backgroundEffectsTest') }}
+            <template #actions>
+              <button class="bg-test-close" @click="bgTestActive = false">✕</button>
+            </template>
+          </SectionHeader>
           <div class="bg-test-buttons">
             <button
               v-for="eff in bgTestEffects"
@@ -224,14 +226,16 @@
           </div>
           <p class="bg-test-hint">Effect is applied to the page background. Move your mouse around to see interactive effects.</p>
         </div>
-        <button v-if="isOwnProfile && !bgTestActive" class="bg-test-toggle" @click="bgTestActive = true">🛠 {{ t('testBackgrounds') }}</button>
+        <!-- For Developer BG testing <button v-if="isOwnProfile && !bgTestActive" class="bg-test-toggle" @click="bgTestActive = true">🛠 {{ t('testBackgrounds') }}</button> -->
 
         <!-- DEV: Cursor Effects Test -->
         <div v-if="isOwnProfile && cursorTestActive" class="bg-test-section">
-          <div class="section-header">
-            <h2>{{ t('cursorEffectsTest') }}</h2>
-            <button class="bg-test-close" @click="cursorTestActive = false; cursorTestCurrent = null">✕</button>
-          </div>
+          <SectionHeader>
+            {{ t('cursorEffectsTest') }}
+            <template #actions>
+              <button class="bg-test-close" @click="cursorTestActive = false; cursorTestCurrent = null">✕</button>
+            </template>
+          </SectionHeader>
           <div class="bg-test-buttons">
             <button
               v-for="eff in cursorTestEffects"
@@ -242,13 +246,11 @@
           </div>
           <p class="bg-test-hint">Move your mouse around to see the cursor effect. Click a different effect to switch.</p>
         </div>
-        <button v-if="isOwnProfile && !cursorTestActive" class="bg-test-toggle" @click="cursorTestActive = true">🖱 {{ t('testCursors') }}</button>
+        <!-- For Developer Cursor Effect testing <button v-if="isOwnProfile && !cursorTestActive" class="bg-test-toggle" @click="cursorTestActive = true">🖱 {{ t('testCursors') }}</button> -->
 
         <!-- Favorite Shows Section (Owner - editable) -->
         <div v-if="isOwnProfile" class="favorites-section">
-          <div class="section-header">
-            <h2>{{ t('favoriteShows') }}</h2>
-          </div>
+          <SectionHeader>{{ t('favoriteShows') }}</SectionHeader>
           <div class="favorites-grid">
             <div v-for="(fav, index) in favorites" :key="index" class="favorite-slot" :class="{ dragging: isDragging && index === dragIndex }" @dragstart="dragStart($event, index)" @dragover.prevent @drop="drop($event, index)" @dragend="dragEnd" @click="openSelectModal(index)" :draggable="fav.tmdb_id !== null">
               <img v-if="fav.poster" :src="fav.poster" :alt="fav.title" />
@@ -281,9 +283,7 @@
 
         <!-- Favorite Shows Section (Visitor - read only) -->
         <div v-if="!isOwnProfile && favoriteShows.length > 0" class="favorites-section">
-          <div class="section-header">
-            <h2>{{ t('favoriteShows') }}</h2>
-          </div>
+          <SectionHeader>{{ t('favoriteShows') }}</SectionHeader>
           <div class="favorites-grid">
             <div 
               v-for="fav in paddedFavorites" 
@@ -304,9 +304,7 @@
 
         <!-- Common Shows Section (Visitor only) -->
         <div v-if="!isOwnProfile && auth && auth.loggedIn && (commonFollowedShowsData.length > 0 || commonFavoritesData.length > 0)" class="common-section">
-          <div class="section-header">
-            <h2><SvgIcon name="star" :size="22" /> {{ t('whatInCommon') }}</h2>
-          </div>
+          <SectionHeader><SvgIcon name="star" :size="22" /> {{ t('whatInCommon') }}</SectionHeader>
           <div v-if="commonFavoritesData.length > 0" class="common-group">
             <h3 class="common-subtitle">{{ t('sharedFavoriteShows') }} ({{ commonFavoritesData.length }})</h3>
             <div class="common-grid">
@@ -346,10 +344,12 @@
 
         <!-- Reviews Section -->
         <div class="reviews-section" v-if="reviews.length">
-          <div class="section-header">
-            <h2>{{ isOwnProfile ? t('userReviews') : t('recentReviews') + ' ' + t('reviews') }}</h2>
-            <button v-if="isOwnProfile" class="new-review-btn" @click="new_review">+ {{ t('newReview') }}</button>
-          </div>
+          <SectionHeader>
+            {{ isOwnProfile ? t('userReviews') : t('recentReviews') + ' ' + t('reviews') }}
+            <template #actions v-if="isOwnProfile">
+              <button class="new-review-btn" @click="new_review">+ {{ t('newReview') }}</button>
+            </template>
+          </SectionHeader>
           <div class="reviews-grid">
             <div 
               v-for="review in displayReviews" 
@@ -376,9 +376,7 @@
 
         <!-- Comments Section -->
         <div class="comments-section" v-if="userComments.length">
-          <div class="section-header">
-            <h2><SvgIcon name="chat" :size="22" /> {{ t('postedComments') }}</h2>
-          </div>
+          <SectionHeader><SvgIcon name="chat" :size="22" /> {{ t('postedComments') }}</SectionHeader>
           <div class="comments-list">
             <div v-for="comment in displayComments" :key="comment.id" class="comment-card" @click="$router.push(`/review/${comment.review_id}`)">
               <div class="comment-header">
@@ -392,9 +390,7 @@
 
         <!-- Followed Shows Section -->
         <div class="followed-shows-section" v-if="followedShows.length">
-          <div class="section-header">
-            <h2><SvgIcon name="star" :size="22" /> {{ t('followedShows') }}</h2>
-          </div>
+          <SectionHeader><SvgIcon name="star" :size="22" /> {{ t('followedShows') }}</SectionHeader>
           <div class="followed-grid">
             <div 
               v-for="show in followedShows.slice(0, 12)" 
@@ -437,13 +433,14 @@
 <script>
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 import SvgIcon from '@/components/SvgIcon.vue'
+import SectionHeader from '@/components/SectionHeader.vue'
 import AvatarMaker from '@/components/AvatarMaker.vue'
 import CosmeticsPanel from '@/components/CosmeticsPanel.vue'
 import ProfileBackground from '@/components/ProfileBackground.vue'
 import CursorTrail from '@/components/CursorTrail.vue'
 
 export default {
-  components: { SvgIcon, AvatarMaker, CosmeticsPanel, ProfileBackground, CursorTrail },
+  components: { SvgIcon, SectionHeader, AvatarMaker, CosmeticsPanel, ProfileBackground, CursorTrail },
   data() {
     return {
       // Shared
@@ -574,15 +571,15 @@ export default {
     // === Shared data loading ===
     async fetchShowDetails(tmdbId) {
       try {
-        const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${import.meta.env.VITE_TMDB_API_KEY}`);
+        const res = await fetch(`/api/tmdb/series/${tmdbId}?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
         return {
           tmdb_id: tmdbId,
-          title: data.name,
+          title: data.name || this.t('noShow'),
           poster: data.poster_path ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : ''
         };
       } catch (error) {
-        return { tmdb_id: tmdbId, title: 'Unknown', poster: '' };
+        return { tmdb_id: tmdbId, title: this.t('noShow'), poster: '' };
       }
     },
     async loadFollowCounts(userId) {
@@ -599,7 +596,7 @@ export default {
     },
     async fetchUserReviews(userId) {
       try {
-        const res = await fetch(`/api/user-reviews/${userId}`);
+        const res = await fetch(`/api/user-reviews/${userId}?lang=${encodeURIComponent(this.currentLanguage)}`);
         if (!res.ok) throw new Error('Failed to fetch reviews');
         this.reviews = await res.json();
         this.reviewCount = this.reviews.length;
@@ -653,7 +650,7 @@ export default {
               const details = await this.fetchShowDetails(show.tmdb_series_id);
               return { ...show, title: details.title, poster: details.poster };
             } catch {
-              return { ...show, title: 'Unknown Show', poster: '' };
+              return { ...show, title: this.t('noShow'), poster: '' };
             }
           })
         );
@@ -684,7 +681,7 @@ export default {
       auth.user.profile_picture = profilePicturePath;
       localStorage.setItem('auth', JSON.stringify(auth));
       this.showProfilePictureModal = false;
-      alert('Avatar saved successfully!');
+      alert(this.t('avatarSavedSuccessfully'));
     },
     async selectDefaultProfilePicture(icon) {
       const defaultPath = `/assets/default_pfp_icons/${icon}`;
@@ -704,22 +701,22 @@ export default {
         this.user.profile_picture = defaultPath;
         auth.user.profile_picture = defaultPath;
         localStorage.setItem('auth', JSON.stringify(auth));
-        alert('Profile picture updated successfully!');
+        alert(this.t('profilePictureUpdatedSuccessfully'));
         this.showProfilePictureModal = false;
       } catch(err) {
         console.error('Error selecting default profile picture:', err);
-        alert(err.message || 'Error updating profile picture');
+        alert(err.message || this.t('profilePictureUpdateError'));
       }
     },
     async handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        alert(this.t('selectImageFile'));
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size must be less than 5MB');
+        alert(this.t('imageSizeLessThan5MB'));
         return;
       }
       this.isUploading = true;
@@ -740,18 +737,18 @@ export default {
         this.profileImageUrl = `${newPicturePath}?t=${cacheBuster}`;
         auth.user.profile_picture = newPicturePath;
         localStorage.setItem('auth', JSON.stringify(auth));
-        alert('Profile picture updated successfully!');
+        alert(this.t('profilePictureUpdatedSuccessfully'));
         this.showProfilePictureModal = false;
       } catch(err) {
         console.error('Upload error:', err);
-        alert(err.message || 'Error uploading profile picture');
+        alert(err.message || this.t('profilePictureUploadError'));
       } finally {
         this.isUploading = false;
         this.$refs.fileInput.value = '';
       }
     },
     async saveUsername() {
-      if (!this.newUsername.trim()) return alert('Username cannot be empty');
+      if (!this.newUsername.trim()) return alert(this.t('usernameCannotBeEmpty'));
       if (this.newUsername === this.user.username) return this.isEditingUsername = false;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
@@ -769,9 +766,9 @@ export default {
         this.isEditingUsername = false;
         auth.user.username = data.user.username;
         localStorage.setItem('auth', JSON.stringify({ loggedIn: true, user: this.user }));
-        alert('Username updated successfully');
+        alert(this.t('usernameUpdatedSuccessfully'));
         location.reload();
-      } catch(err) { alert(err.message || 'Error updating username'); }
+      } catch(err) { alert(err.message || this.t('usernameUpdateError')); }
     },
     async removeDisplayBadge() {
       try {
@@ -792,7 +789,7 @@ export default {
         localStorage.setItem('auth', JSON.stringify(auth));
       } catch (error) {
         console.error('Failed to remove badge:', error);
-        alert('Error removing badge');
+        alert(this.t('errorRemovingBadge'));
       }
     },
     async selectDisplayBadge(badgeId) {
@@ -814,7 +811,7 @@ export default {
         localStorage.setItem('auth', JSON.stringify(auth));
       } catch (error) {
         console.error('Failed to select badge:', error);
-        alert('Error selecting badge');
+        alert(this.t('errorSelectingBadge'));
       }
     },
     openBadgeInspect(badge) {
@@ -975,9 +972,13 @@ export default {
         return;
       }
       try {
-        const res = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${import.meta.env.VITE_TMDB_API_KEY}&query=${encodeURIComponent(this.searchQuery)}`);
+        const res = await fetch(`/api/tmdb/search-series?query=${encodeURIComponent(this.searchQuery)}&lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
-        this.searchResults = data.results || [];
+        this.searchResults = (data || []).map(show => ({
+          id: show.id,
+          name: show.title,
+          poster_path: show.series_picture
+        }));
       } catch (error) {
         console.error('Search error:', error);
         this.searchResults = [];
@@ -988,7 +989,7 @@ export default {
         idx !== this.selectingPosition && fav.tmdb_id === show.id
       );
       if (isDuplicate) {
-        alert('This show is already in your favorites!');
+        alert(this.t('duplicateFavoriteShow'));
         return;
       }
       this.favorites[this.selectingPosition] = {
@@ -1081,15 +1082,14 @@ export default {
         const enriched = await Promise.all(
           favorites.map(async (fav) => {
             try {
-              const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${fav.tmdb_series_id}?api_key=${import.meta.env.VITE_TMDB_API_KEY}`);
-              const data = await tmdbRes.json();
+              const data = await this.fetchShowDetails(fav.tmdb_series_id);
               return {
                 ...fav,
-                title: data.name,
-                poster: data.poster_path ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : ''
+                title: data.title,
+                poster: data.poster
               };
             } catch {
-              return { ...fav, title: 'Unknown', poster: '' };
+              return { ...fav, title: this.t('noShow'), poster: '' };
             }
           })
         );
@@ -1111,15 +1111,14 @@ export default {
           this.commonFollowedShowsData = await Promise.all(
             this.commonFollowedShows.map(async (tmdbId) => {
               try {
-                const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${import.meta.env.VITE_TMDB_API_KEY}`);
-                const d = await tmdbRes.json();
+                const d = await this.fetchShowDetails(tmdbId);
                 return {
                   tmdb_series_id: tmdbId,
-                  title: d.name,
-                  poster: d.poster_path ? `https://image.tmdb.org/t/p/w200${d.poster_path}` : ''
+                  title: d.title,
+                  poster: d.poster
                 };
               } catch {
-                return { tmdb_series_id: tmdbId, title: 'Unknown', poster: '' };
+                return { tmdb_series_id: tmdbId, title: this.t('noShow'), poster: '' };
               }
             })
           );
@@ -1128,17 +1127,16 @@ export default {
           this.commonFavoritesData = await Promise.all(
             this.commonFavorites.map(async (fav) => {
               try {
-                const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${fav.tmdb_series_id}?api_key=${import.meta.env.VITE_TMDB_API_KEY}`);
-                const d = await tmdbRes.json();
+                const d = await this.fetchShowDetails(fav.tmdb_series_id);
                 return {
                   tmdb_series_id: fav.tmdb_series_id,
                   your_position: fav.your_position,
                   their_position: fav.their_position,
-                  title: d.name,
-                  poster: d.poster_path ? `https://image.tmdb.org/t/p/w200${d.poster_path}` : ''
+                  title: d.title,
+                  poster: d.poster
                 };
               } catch {
-                return { ...fav, title: 'Unknown', poster: '' };
+                return { ...fav, title: this.t('noShow'), poster: '' };
               }
             })
           );
@@ -1186,7 +1184,7 @@ export default {
       try {
         const profileRes = await fetch(`/api/users/${userId}/public-profile`);
         if (!profileRes.ok) {
-          alert('User not found');
+          alert(this.t('userNotFound'));
           this.$router.push('/');
           return;
         }
@@ -1222,14 +1220,18 @@ export default {
       }
     }
 
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
-    });
+      if (this.isOwnProfile && this.user?.id) {
+        await Promise.all([this.fetchFollowedShows(this.user.id), this.fetchFavorites()]);
+      } else if (this.user?.id) {
+        await Promise.all([this.fetchFollowedShows(this.user.id), this.loadFavoriteShows(this.user.id)]);
+      }
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
     document.removeEventListener('keydown', this._badgeEscHandler);
     if (this._cosmeticHandler) window.removeEventListener('cosmetic-changed', this._cosmeticHandler);
     document.body.style.overflow = '';
@@ -1828,26 +1830,6 @@ export default {
 .follow-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Section Header */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 15px;
-  border-bottom: 2px solid var(--accent-color);
-}
-
-.section-header h2 {
-  color: var(--accent-color);
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 /* Badges Section */
@@ -2668,6 +2650,17 @@ export default {
   height: 60vh;
   gap: 1rem;
 }
+.badges-section, 
+.favorites-section, 
+.reviews-section, 
+.cosmetics-section,
+.comments-section, 
+.followed-shows-section {
+  padding-top: 0 !important;
+  padding-left: 0 !important; 
+  padding-right: 0 !important; 
+  overflow: hidden; 
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -2706,12 +2699,6 @@ export default {
 
   .action-buttons {
     justify-content: center;
-  }
-
-  .section-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: stretch;
   }
 
   .reviews-grid {
@@ -2802,11 +2789,6 @@ export default {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-}
-.bg-test-section .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 .bg-test-close {
   background: transparent;

@@ -311,7 +311,7 @@ export default {
         await Promise.all(allSeries.map(async s => {
           if (s.tmdb_series_id && !this.tmdbCache[s.tmdb_series_id]) {
             try {
-              const r = await axios.get(`https://api.themoviedb.org/3/tv/${s.tmdb_series_id}`, { params: { api_key: import.meta.env.VITE_TMDB_API_KEY } });
+              const r = await axios.get(`/api/tmdb/series/${s.tmdb_series_id}`, { params: { lang: this.currentLanguage } });
               this.tmdbCache[s.tmdb_series_id] = r.data.name;
             } catch { this.tmdbCache[s.tmdb_series_id] = 'Unknown'; }
           }
@@ -684,7 +684,11 @@ export default {
     this.isLoggedIn = !!auth?.user?.id;
     this.fetchStatistics(auth?.user?.id);
 
-    this._langHandler = (e) => { this.currentLanguage = e.detail.language; this.$forceUpdate(); };
+    this._langHandler = (e) => {
+      this.currentLanguage = e.detail.language;
+      this.tmdbCache = {};
+      this.fetchStatistics(auth?.user?.id);
+    };
     window.addEventListener('languageChanged', this._langHandler);
 
     this.$nextTick(() => {

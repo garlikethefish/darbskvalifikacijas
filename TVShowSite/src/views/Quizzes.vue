@@ -128,7 +128,7 @@
                   <SvgIcon :name="badge.type === 'secret' ? 'star' : 'badge'" :size="48" />
                 </div>
                 <p class="badge-text">
-                  {{ badge.type === 'secret' ? 'Secret Badge Unlocked!' : t('badgeEarned') + '!' }}
+                  {{ badge.type === 'secret' ? t('secretBadgeUnlocked') : t('badgeEarned') + '!' }}
                 </p>
                 <p class="badge-name">{{ badge.name }}</p>
               </div>
@@ -145,7 +145,7 @@
                 <div class="cosmetic-unlock-icon">
                   {{ cosmetic.type === 'cursor_trail' ? '✨' : '🎨' }}
                 </div>
-                <p class="cosmetic-unlock-text">New Cosmetic Unlocked!</p>
+                <p class="cosmetic-unlock-text">{{ t('newCosmeticUnlocked') }}</p>
                 <p class="cosmetic-unlock-name">{{ cosmetic.name }}</p>
                 <span class="cosmetic-rarity-tag" :class="cosmetic.rarity">{{ cosmetic.rarity }}</span>
               </div>
@@ -199,67 +199,67 @@
       <div v-if="showAdminPanel" class="modal-overlay" @click.self="closeAdminPanel">
         <div class="modal-content admin-quiz-modal">
           <div class="admin-modal-header">
-            <h2>Create New Quiz</h2>
+            <h2>{{ t('createNewQuiz') }}</h2>
             <button type="button" class="close-x-btn" @click.stop="closeAdminPanel">✕</button>
           </div>
 
           <div class="admin-form">
             <!-- Basic Info -->
             <div class="admin-section">
-              <h3>Quiz Details</h3>
+              <h3>{{ t('quizDetails') }}</h3>
               <div class="form-row">
-                <label>Title *</label>
+                <label>{{ t('title') }} *</label>
                 <input v-model="adminForm.title" type="text" class="admin-input" placeholder="Quiz title" />
               </div>
               <div class="form-row">
-                <label>Description</label>
+                <label>{{ t('description') }}</label>
                 <textarea v-model="adminForm.description" class="admin-input admin-textarea" placeholder="Short description…" rows="2"></textarea>
               </div>
               <div class="form-grid-2">
                 <div class="form-row">
-                  <label>Category</label>
+                  <label>{{ t('category') }}</label>
                   <select v-model="adminForm.category" class="admin-input">
                     <option v-for="cat in categories.filter(c => c.key !== 'all')" :key="cat.key" :value="cat.key">{{ cat.localLabel || cat.key }}</option>
                     <option value="__custom__">＋ Add new category…</option>
                   </select>
                   <template v-if="adminForm.category === '__custom__'">
                     <div class="custom-cat-fields">
-                      <input v-model="adminForm.newCategoryLabel" type="text" class="admin-input" placeholder="Category name (e.g. Game Shows)" />
-                      <input v-model="adminForm.newCategoryIcon" type="text" class="admin-input" placeholder="Icon name (e.g. tv, star, crown)" />
+                      <input v-model="adminForm.newCategoryLabel" type="text" class="admin-input" :placeholder="t('categoryName')" />
+                      <input v-model="adminForm.newCategoryIcon" type="text" class="admin-input" :placeholder="t('iconName')" />
                     </div>
                   </template>
                 </div>
                 <div class="form-row">
-                  <label>Difficulty</label>
+                  <label>{{ t('difficulty') }}</label>
                   <select v-model="adminForm.difficulty" class="admin-input">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
+                    <option value="easy">{{ t('easy') }}</option>
+                    <option value="medium">{{ t('medium') }}</option>
+                    <option value="hard">{{ t('hard') }}</option>
                   </select>
                 </div>
               </div>
               <div class="form-grid-2">
                 <div class="form-row">
-                  <label>Icon Name</label>
-                  <input v-model="adminForm.icon_name" type="text" class="admin-input" placeholder="e.g. tv, crown, star" />
+                  <label>{{ t('iconName') }}</label>
+                  <input v-model="adminForm.icon_name" type="text" class="admin-input" :placeholder="t('iconName')" />
                 </div>
                 <div class="form-row">
-                  <label>TMDB Series ID</label>
-                  <input v-model="adminForm.tmdb_series_id" type="number" class="admin-input" placeholder="Leave blank for custom image" />
+                  <label>{{ t('tmdbSeriesId') }}</label>
+                  <input v-model="adminForm.tmdb_series_id" type="number" class="admin-input" :placeholder="t('leaveBlankCustomImage')" />
                 </div>
               </div>
               <div class="form-row">
-                <label>Badge <span class="form-hint">(earnable badge)</span></label>
+                <label>{{ t('badge') }} <span class="form-hint">({{ t('thisQuizAwardsBadge') }})</span></label>
                 <select v-model="adminForm.badge_name" class="admin-input" @change="onDefaultBadgeSelect">
                   <option value="">— Select badge —</option>
                   <option v-for="b in standaloneBadges" :key="b.id" :value="b.name">{{ b.name }}</option>
                 </select>
-                <p v-if="!standaloneBadges.length" class="form-hint" style="color:#e57373;margin-top:4px">No badges created yet. Create badges using the New Badge button.</p>
+                <p v-if="!standaloneBadges.length" class="form-hint" style="color:#e57373;margin-top:4px">{{ t('noBadgesYetCreate') }}</p>
               </div>
 
               <!-- Image Upload -->
               <div class="form-row">
-                <label>Quiz Image</label>
+                <label>{{ t('quizImage') }}</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -431,9 +431,9 @@
             <p v-if="adminError" class="admin-error">{{ adminError }}</p>
 
             <div class="admin-actions">
-              <button type="button" class="cancel-btn" @click.stop="closeAdminPanel">Cancel</button>
+              <button type="button" class="cancel-btn" @click.stop="closeAdminPanel">{{ t('cancel') }}</button>
               <button type="button" class="save-quiz-btn" @click.stop="saveNewQuiz" :disabled="adminSaving">
-                {{ adminSaving ? 'Saving…' : 'Create Quiz' }}
+                {{ adminSaving ? t('savingQuiz') : t('createQuiz') }}
               </button>
             </div>
           </div>
@@ -444,7 +444,7 @@
       <div v-if="showBadgePanel" class="modal-overlay" @click.self="closeBadgePanel">
         <div class="modal-content admin-quiz-modal">
           <div class="admin-modal-header">
-            <h2>Manage Badges</h2>
+            <h2>{{ t('manageBadges') }}</h2>
             <button type="button" class="close-x-btn" @click.stop="closeBadgePanel">✕</button>
           </div>
           <div class="admin-form">
@@ -469,7 +469,7 @@
               <p v-if="badgeError" class="admin-error">{{ badgeError }}</p>
               <div class="admin-actions" style="margin-top:8px">
                 <button type="button" class="save-quiz-btn" @click.stop="saveNewBadge" :disabled="badgeSaving">
-                  {{ badgeSaving ? 'Creating…' : 'Create Badge' }}
+                  {{ badgeSaving ? t('creating') : t('createBadge') }}
                 </button>
               </div>
             </div>
@@ -771,12 +771,10 @@ export default {
       return {};
     },
     async fetchTmdbPosters() {
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY;
-      if (!apiKey) return;
       const ids = [...new Set(this.quizzes.map(q => q.tmdb_series_id).filter(Boolean))];
       for (const id of ids) {
         try {
-          const res = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${apiKey}`);
+          const res = await fetch(`/api/tmdb/series/${id}?lang=${encodeURIComponent(this.currentLanguage)}`);
           if (res.ok) {
             const data = await res.json();
             if (data.backdrop_path) {
@@ -909,7 +907,7 @@ export default {
       }
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
-        if (!auth?.user?.id) { alert('You must be logged in to submit a quiz'); return; }
+        if (!auth?.user?.id) { alert(this.t('mustBeLoggedInToSubmitQuiz')); return; }
         const res = await fetch(`/api/quizzes/${this.activeQuiz.id}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': auth.user.id.toString() },
@@ -932,7 +930,7 @@ export default {
         this.showResults = true;
       } catch (err) {
         console.error('Error submitting quiz:', err);
-        alert(err.message || 'Failed to submit quiz');
+        alert(err.message || this.t('failedToSubmitQuiz'));
       }
     },
     retakeQuiz() {
@@ -978,7 +976,7 @@ export default {
         const data = await res.json();
         this.adminForm.quiz_image = data.filename;
       } catch (err) {
-        this.adminError = 'Failed to upload image: ' + err.message;
+        this.adminError = `${this.t('failedToUploadImage')}: ${err.message}`;
       }
     },
     async handleBadgeImageFile(event, targetObj, field) {
@@ -997,7 +995,7 @@ export default {
         const data = await res.json();
         targetObj[field] = data.filename;
       } catch (err) {
-        this.adminError = 'Failed to upload badge image: ' + err.message;
+        this.adminError = `${this.t('failedToUploadBadgeImage')}: ${err.message}`;
       }
     },
     openBadgePanel() {
@@ -1020,7 +1018,7 @@ export default {
     },
     async saveNewBadge() {
       this.badgeError = '';
-      if (!this.badgeForm.name.trim()) { this.badgeError = 'Badge name is required.'; return; }
+      if (!this.badgeForm.name.trim()) { this.badgeError = this.t('badgeNameRequired'); return; }
       try {
         this.badgeSaving = true;
         const auth = JSON.parse(localStorage.getItem('auth'));
@@ -1040,7 +1038,7 @@ export default {
       }
     },
     async awardBadgeToUser(badgeId) {
-      const uid = prompt('Enter user ID to award this badge to:');
+      const uid = prompt(this.t('enterUserIdToAwardBadge'));
       if (!uid || isNaN(Number(uid))) return;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
@@ -1051,20 +1049,20 @@ export default {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
-        alert('Badge awarded successfully!');
+        alert(this.t('badgeAwardedSuccessfully'));
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
     async deleteBadge(badgeId) {
-      if (!confirm('Delete this badge? It will be removed from all users.')) return;
+      if (!confirm(this.t('deleteBadgeConfirm'))) return;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
         const res = await fetch(`/api/admin/standalone-badges/${badgeId}`, {
           method: 'DELETE',
           headers: { 'Authorization': auth.user.id.toString() }
         });
-        if (!res.ok) throw new Error('Failed to delete badge');
+        if (!res.ok) throw new Error(this.t('failedToDeleteBadge'));
         await this.fetchStandaloneBadges();
       } catch (err) {
         alert(err.message);
@@ -1133,7 +1131,7 @@ export default {
       // Resolve custom category
       let resolvedCategory = f.category;
       if (f.category === '__custom__') {
-        if (!f.newCategoryLabel.trim()) { this.adminError = 'Custom category name is required.'; return; }
+        if (!f.newCategoryLabel.trim()) { this.adminError = this.t('customCategoryNameRequired'); return; }
         resolvedCategory = f.newCategoryLabel.trim().toLowerCase().replace(/\s+/g, '_');
         // Register in filter tabs if not already there
         if (!this.categories.find(c => c.key === resolvedCategory)) {
@@ -1141,18 +1139,18 @@ export default {
         }
       }
 
-      if (!f.title.trim()) { this.adminError = 'Title is required.'; return; }
-      if (f.questions.length === 0) { this.adminError = 'Add at least one question.'; return; }
+      if (!f.title.trim()) { this.adminError = this.t('titleRequired'); return; }
+      if (f.questions.length === 0) { this.adminError = this.t('addAtLeastOneQuestion'); return; }
       for (const q of f.questions) {
         if (!q.question_text.trim()) {
-          this.adminError = 'All questions must have text.'; return;
+          this.adminError = this.t('allQuestionsMustHaveText'); return;
         }
         const filledOptions = q.options.filter(o => o.trim());
         if (filledOptions.length < 2) {
-          this.adminError = 'Each question must have at least 2 answer options.'; return;
+          this.adminError = this.t('eachQuestionAtLeastTwoOptions'); return;
         }
         if (!q.correct_answer) {
-          this.adminError = 'Select a correct answer for each question.'; return;
+          this.adminError = this.t('selectCorrectAnswerEachQuestion'); return;
         }
       }
       try {
@@ -1190,14 +1188,14 @@ export default {
       }
     },
     async deleteQuiz(quizId) {
-      if (!confirm('Delete this quiz and all its questions?')) return;
+      if (!confirm(this.t('deleteQuizConfirm'))) return;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
         const res = await fetch(`/api/admin/quizzes/${quizId}`, {
           method: 'DELETE',
           headers: { 'Authorization': auth.user.id.toString() }
         });
-        if (!res.ok) throw new Error('Failed to delete quiz');
+        if (!res.ok) throw new Error(this.t('failedToDeleteQuiz'));
         await this.fetchQuizzes();
       } catch (err) {
         alert(err.message);
@@ -1214,14 +1212,15 @@ export default {
   mounted() {
     this.currentLanguage = getCurrentLanguage();
     this.fetchQuizzes();
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
-    });
+      this.tmdbPosters = {};
+      await this.fetchTmdbPosters();
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>

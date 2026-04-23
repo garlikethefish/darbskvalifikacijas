@@ -1,8 +1,32 @@
 <template>
     <aside>
-        <h2><slot>For more info, contact us at: info@plottwizts.com</slot></h2>
+                <h2><slot>{{ t('contactInfoBlurb') }}</slot></h2>
     </aside>
 </template>
+<script>
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+
+export default {
+    data() {
+        return { currentLanguage: 'en' }
+    },
+    methods: {
+        t(key) {
+            return getTranslation(key, this.currentLanguage)
+        },
+        onLanguageChanged(e) {
+            this.currentLanguage = e.detail.language
+        }
+    },
+    mounted() {
+        this.currentLanguage = getCurrentLanguage()
+        window.addEventListener('languageChanged', this.onLanguageChanged)
+    },
+    beforeUnmount() {
+        window.removeEventListener('languageChanged', this.onLanguageChanged)
+    }
+}
+</script>
 <style>
     aside{
         padding-top: 50px;

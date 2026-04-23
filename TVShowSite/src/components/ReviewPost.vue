@@ -9,7 +9,17 @@
             <img class="square-img" :src="getEpisodePictureUrl(review.episode_picture)" alt="Episode image" />
             <div class="image-overlay"></div>
           </div>
-          <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
+          <div class="series-title-row">
+            <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
+            <span
+              v-if="showMachineTranslatedTitleIcon"
+              class="machine-translation-icon"
+              :title="t('machineTranslatedTitleTooltip')"
+              :data-tooltip="t('machineTranslatedTitleTooltip')"
+              aria-label="machine translated title"
+            ><SvgIcon name="translate" :size="14" /></span>
+          </div>
+          <p v-if="showSeriesOriginalTitle" class="series-title-original">{{ review.original_series_title }}</p>
           <h2 class="season-episode">{{ formatSeasonEpisode(review) }}</h2>
           <div class="avg-rating-card">
             <p class="avg-label">{{ t('communityRating') }}</p>
@@ -98,8 +108,17 @@
 
           <div class="content-section">
             <h2 class="episode-title">{{ review.episode_title || 'Episode Title' }}</h2>
-            <h1 class="review-title">{{ review.review_title }}</h1>
-            <p class="review-text">{{ review.review_text }}</p>
+            <h1 class="review-title">{{ displayReviewTitle }}</h1>
+            <p class="review-text">{{ displayReviewText }}</p>
+            <div v-if="showTranslateReviewButton || translatingReview || translationError || showTranslatedReview" class="translate-review-panel">
+              <button class="translate-review-btn" @click="toggleReviewTranslation" :disabled="translatingReview" type="button">
+                <SvgIcon name="translate" :size="16" />
+                <span>{{ showTranslatedReview ? t('showOriginalText') : t('translateReviewText') }}</span>
+              </button>
+              <p v-if="translatingReview" class="translation-note">{{ t('translating') }}</p>
+              <p v-else-if="showTranslatedReview && (translatedReviewTitle || translatedReviewText)" class="translation-note">{{ t('showingMachineTranslatedReview') }}</p>
+              <p v-else-if="translationError" class="translation-note translation-note-error">{{ t('translationUnavailable') }}</p>
+            </div>
           </div>
 
           <div class="bottom-section">
@@ -238,7 +257,13 @@ export default {
       showDeleteCommentModal: null,
       userRole: '',
       auth: null,
-      currentLanguage: 'en'
+      currentLanguage: 'en',
+      translatedReviewTitle: '',
+      translatedReviewText: '',
+      translatedForLanguage: '',
+      translatingReview: false,
+      translationError: false,
+      showTranslatedReview: false
     };
   },
    computed: {
@@ -252,6 +277,39 @@ export default {
     canDeleteReview() {
       if (!this.isLoggedIn) return false;
       return this.currentUsername === this.review.username || this.userRole === 'admin';
+    },
+    isLatvian() {
+      return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
+    },
+    showSeriesOriginalTitle() {
+      const localized = (this.review?.series_title || '').trim();
+      const original = (this.review?.original_series_title || '').trim();
+      return this.isLatvian && original && localized && original !== localized;
+    },
+    showMachineTranslatedTitleIcon() {
+      return this.isLatvian && !!this.review?.machine_translated_series_title;
+    },
+    currentAppLanguage() {
+      return this.isLatvian ? 'lv' : 'en';
+    },
+    reviewLanguage() {
+      const raw = String(this.review?.review_language || '').toLowerCase();
+      return raw === 'lv' || raw === 'en' ? raw : 'unknown';
+    },
+    showTranslateReviewButton() {
+      return this.reviewLanguage === 'unknown' || this.reviewLanguage !== this.currentAppLanguage;
+    },
+    displayReviewTitle() {
+      if (this.showTranslatedReview && this.translatedReviewTitle) {
+        return this.translatedReviewTitle;
+      }
+      return this.review?.review_title || '';
+    },
+    displayReviewText() {
+      if (this.showTranslatedReview && this.translatedReviewText) {
+        return this.translatedReviewText;
+      }
+      return this.review?.review_text || '';
     }
   },
   methods: {
@@ -272,7 +330,7 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return '';
       const d = new Date(dateStr);
-      return d.toLocaleDateString(undefined, {
+      return d.toLocaleDateString(this.isLatvian ? 'lv-LV' : 'en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -406,7 +464,7 @@ export default {
         this.showDeleteModal = false;
       } catch (e) {
         console.error('Error deleting review:', e);
-        alert(e.message || 'An error occurred while deleting the review');
+        alert(e.message || this.t('reviewDeleteError'));
       }
     },
 
@@ -430,7 +488,7 @@ export default {
         this.showDeleteCommentModal = null;
       } catch (e) {
         console.error('Error deleting comment:', e);
-        alert(e.message || 'An error occurred while deleting the comment');
+        alert(e.message || this.t('commentDeleteError'));
       }
     },
 
@@ -512,24 +570,111 @@ export default {
       } catch (e) {
         console.error('Error posting comment:', e);
       }
+    },
+    async toggleReviewTranslation() {
+      if (this.showTranslatedReview) {
+        this.showTranslatedReview = false;
+        return;
+      }
+
+      await this.translateReviewText();
+      if (this.translatedReviewTitle || this.translatedReviewText) {
+        this.showTranslatedReview = true;
+      }
+    },
+    async translateReviewText() {
+      const title = (this.review?.review_title || '').trim();
+      const text = (this.review?.review_text || '').trim();
+      const targetLanguage = this.currentAppLanguage;
+      const sourceLanguage = this.reviewLanguage === 'unknown'
+        ? (targetLanguage === 'lv' ? 'en' : 'lv')
+        : this.reviewLanguage;
+
+      if (!title && !text) return;
+      if (!this.showTranslateReviewButton && !this.showTranslatedReview) return;
+      if ((this.translatedReviewTitle || this.translatedReviewText) && this.translatedForLanguage === targetLanguage) return;
+
+      this.translatingReview = true;
+      this.translationError = false;
+
+      try {
+        const requestTranslate = async (value) => {
+          if (!value) return '';
+          const res = await fetch('/api/translate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              text: value,
+              sourceLanguage,
+              targetLanguage
+            })
+          });
+
+          if (!res.ok) {
+            throw new Error('Translate failed');
+          }
+
+          const data = await res.json();
+          return data?.translatedText || '';
+        };
+
+        const [translatedTitle, translatedBody] = await Promise.all([
+          requestTranslate(title),
+          requestTranslate(text)
+        ]);
+
+        this.translatedReviewTitle = translatedTitle;
+        this.translatedReviewText = translatedBody;
+        this.translatedForLanguage = targetLanguage;
+      } catch (error) {
+        console.error('Review translation failed:', error);
+        this.translationError = true;
+      } finally {
+        this.translatingReview = false;
+      }
+    },
+    async maybeTranslateReview() {
+      if (!this.showTranslatedReview) return;
+      await this.translateReviewText();
+    }
+  },
+
+  watch: {
+    currentLanguage() {
+      this.maybeTranslateReview();
+    },
+    'review.review_text'() {
+      this.translatedReviewTitle = '';
+      this.translatedReviewText = '';
+      this.translatedForLanguage = '';
+      this.translationError = false;
+      this.showTranslatedReview = false;
+    },
+    'review.review_title'() {
+      this.translatedReviewTitle = '';
+      this.translatedReviewText = '';
+      this.translatedForLanguage = '';
+      this.translationError = false;
+      this.showTranslatedReview = false;
     }
   },
 
   async mounted() {
     this.loading = true;
     this.currentLanguage = getCurrentLanguage();
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
-    });
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
     this.checkLoginStatus();
     if (this.isLoggedIn && this.auth?.user?.id) {
       await this.fetchUserReaction();
     }
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>
@@ -644,6 +789,71 @@ export default {
   line-height: 1.3;
 }
 
+.series-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.series-title-original {
+  margin: 0;
+  font-size: 13px;
+  color: var(--subtitle-color);
+  text-align: center;
+}
+
+.machine-translation-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(112, 233, 116, 0.6);
+  color: var(--accent-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  position: relative;
+  background: rgba(18, 24, 18, 0.86);
+  transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.machine-translation-icon:hover {
+  transform: translateY(-1px);
+  background: rgba(24, 34, 24, 0.96);
+  border-color: var(--accent-color);
+}
+
+.machine-translation-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 180px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(10, 14, 10, 0.96);
+  border: 1px solid rgba(112, 233, 116, 0.35);
+  color: var(--text-color);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 20;
+  white-space: normal;
+}
+
+.machine-translation-icon:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
 .season-episode {
   font-size: 14px;
   color: var(--subtitle-color);
@@ -681,6 +891,51 @@ export default {
 .avg-score span {
   font-size: 18px;
   opacity: 0.8;
+}
+
+.translation-note {
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-size: 12px;
+  color: var(--subtitle-color);
+  font-style: italic;
+}
+
+.translation-note-error {
+  color: #e38f8f;
+}
+
+.translate-review-panel {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.translate-review-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(112, 233, 116, 0.14);
+  border: 1px solid rgba(112, 233, 116, 0.35);
+  color: var(--accent-color);
+  padding: 5px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-height: 32px;
+}
+
+.translate-review-btn:hover:not(:disabled) {
+  background: rgba(112, 233, 116, 0.22);
+}
+
+.translate-review-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 /* Right Container */
@@ -1402,6 +1657,15 @@ button {
 
   .content-section {
     gap: 10px;
+  }
+
+  .translate-review-panel {
+    padding-top: 4px;
+  }
+
+  .translate-review-btn {
+    font-size: 0.74rem;
+    padding: 5px 8px;
   }
 
   .review-text {

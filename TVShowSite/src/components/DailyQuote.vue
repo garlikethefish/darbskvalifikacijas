@@ -62,11 +62,13 @@
 </style>
 <script>
 import axios from 'axios';
+import { getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   data() {
     return {
-      quote: null
+      quote: null,
+      currentLanguage: 'en'
     };
   },
   computed: {
@@ -83,22 +85,48 @@ export default {
       return text;
     }
   },
-  mounted() {
-    const cachedQuote = localStorage.getItem('dailyQuote_v4');
-    const cachedTime = localStorage.getItem('quoteTimestamp_v4');
-    if (cachedQuote && cachedTime && (Date.now() - parseInt(cachedTime)) < 24 * 60 * 60 * 1000) {
-      this.quote = JSON.parse(cachedQuote);
-    } else {
-      axios.get('api/daily-quote')
-        .then(res => {
-          this.quote = res.data;
-          localStorage.setItem('dailyQuote_v4', JSON.stringify(this.quote));
-          localStorage.setItem('quoteTimestamp_v4', Date.now().toString());
-        })
-        .catch(err => {
-          console.error('Error fetching daily quote:', err);
-        });
+  methods: {
+    getQuoteCacheKeys(lang) {
+      return {
+        quote: `dailyQuote_v5_${lang}`,
+        ts: `quoteTimestamp_v5_${lang}`
+      };
+    },
+    async loadQuote(lang) {
+      const keys = this.getQuoteCacheKeys(lang);
+      const cachedQuote = localStorage.getItem(keys.quote);
+      const cachedTime = localStorage.getItem(keys.ts);
+      const isFresh = cachedQuote && cachedTime && (Date.now() - parseInt(cachedTime, 10)) < 24 * 60 * 60 * 1000;
+
+      if (isFresh) {
+        this.quote = JSON.parse(cachedQuote);
+        return;
+      }
+
+      const res = await axios.get('/api/daily-quote', {
+        params: { lang }
+      });
+      this.quote = res.data;
+      localStorage.setItem(keys.quote, JSON.stringify(this.quote));
+      localStorage.setItem(keys.ts, Date.now().toString());
     }
+  },
+  mounted() {
+    this.currentLanguage = getCurrentLanguage();
+    this.loadQuote(this.currentLanguage).catch(err => {
+      console.error('Error fetching daily quote:', err);
+    });
+
+    this._languageChangedHandler = (e) => {
+      this.currentLanguage = e.detail.language;
+      this.loadQuote(this.currentLanguage).catch(err => {
+        console.error('Error fetching daily quote:', err);
+      });
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>

@@ -773,6 +773,9 @@ export default {
   },
   methods: {
     t(key) { return getTranslation(key, this.currentLanguage); },
+    tFormat(key, vars = {}) {
+      return this.t(key).replace(/\{(\w+)\}/g, (_, token) => (vars[token] ?? `{${token}}`));
+    },
     formatDate(dateString) {
       if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -804,9 +807,12 @@ export default {
       const action = newRole === 'admin' ? 'promote' : 'demote';
       this.confirmDialog = {
         show: true,
-        title: `${action === 'promote' ? 'Promote' : 'Demote'} User`,
-        message: `Are you sure you want to ${action} "${user.username}" ${action === 'promote' ? 'to admin' : 'from admin'}?`,
-        actionText: action === 'promote' ? 'Promote' : 'Demote',
+        title: action === 'promote' ? this.t('promoteUser') : this.t('demoteUser'),
+        message: this.tFormat('confirmRoleChangeTemplate', {
+          username: user.username,
+          roleAction: action === 'promote' ? this.t('promoteToAdmin') : this.t('demoteFromAdmin')
+        }),
+        actionText: action === 'promote' ? this.t('promote') : this.t('demote'),
         action: async () => {
           try {
             const res = await fetch(`/api/admin/users/${user.id}/role`, {
@@ -818,7 +824,7 @@ export default {
             user.role = newRole;
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error updating role: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -827,9 +833,11 @@ export default {
       const banning = !user.is_banned;
       this.confirmDialog = {
         show: true,
-        title: banning ? 'Ban User' : 'Unban User',
-        message: `Are you sure you want to ${banning ? 'ban' : 'unban'} "${user.username}"?`,
-        actionText: banning ? 'Ban' : 'Unban',
+        title: banning ? this.t('banUserTitle') : this.t('unbanUserTitle'),
+        message: banning
+          ? this.tFormat('confirmBanUserTemplate', { username: user.username })
+          : this.tFormat('confirmUnbanUserTemplate', { username: user.username }),
+        actionText: banning ? this.t('ban') : this.t('unban'),
         action: async () => {
           try {
             const res = await fetch(`/api/admin/users/${user.id}/ban`, {
@@ -841,7 +849,7 @@ export default {
             user.is_banned = banning ? 1 : 0;
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -849,9 +857,9 @@ export default {
     confirmDeleteUser(user) {
       this.confirmDialog = {
         show: true,
-        title: 'Delete User',
-        message: `Permanently delete "${user.username}" and all their data? This cannot be undone.`,
-        actionText: 'Delete',
+        title: this.t('deleteUserTitle'),
+        message: this.t('deleteUserMessage'),
+        actionText: this.t('delete'),
         action: async () => {
           try {
             const res = await fetch(`/api/admin/users/${user.id}`, {
@@ -863,7 +871,7 @@ export default {
             this.filterUsers();
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -894,14 +902,14 @@ export default {
       this.newBadge.questions.splice(idx, 1);
     },
     async createBadge() {
-      if (!this.newBadge.title.trim()) return alert('Title is required');
-      if (!this.newBadge.icon_emoji.trim()) return alert('Icon emoji is required');
-      if (this.newBadge.questions.length === 0) return alert('Add at least one question');
+      if (!this.newBadge.title.trim()) return alert(this.t('titleRequired'));
+      if (!this.newBadge.icon_emoji.trim()) return alert(this.t('iconEmojiRequired'));
+      if (this.newBadge.questions.length === 0) return alert(this.t('addAtLeastOneQuestion'));
       
       for (let i = 0; i < this.newBadge.questions.length; i++) {
         const q = this.newBadge.questions[i];
         if (!q.question_text || !q.option_a || !q.option_b || !q.correct_answer) {
-          return alert(`Question ${i + 1} is incomplete. Fill in question text, at least options A and B, and select a correct answer.`);
+          return alert(this.tFormat('questionIncompleteTemplate', { index: i + 1 }));
         }
       }
 
@@ -917,9 +925,9 @@ export default {
         this.showCreateBadge = false;
         this.newBadge = { title: '', description: '', icon_emoji: '', questions: [] };
         await this.fetchBadges();
-        alert('Badge quiz created successfully!');
+        alert(this.t('badgeQuizCreatedSuccessfully'));
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(`${this.t('errorPrefix')} ${err.message}`);
       } finally {
         this.isCreatingBadge = false;
       }
@@ -927,9 +935,9 @@ export default {
     confirmDeleteBadge(badge) {
       this.confirmDialog = {
         show: true,
-        title: 'Delete Badge Quiz',
-        message: `Delete "${badge.title}"? This removes the quiz and all earned badges for it.`,
-        actionText: 'Delete',
+        title: this.t('deleteBadge'),
+        message: this.tFormat('confirmDeleteBadgeQuizTemplate', { title: badge.title }),
+        actionText: this.t('delete'),
         action: async () => {
           try {
             const res = await fetch(`/api/admin/quizzes/${badge.id}`, {
@@ -940,7 +948,7 @@ export default {
             this.allBadges = this.allBadges.filter(b => b.id !== badge.id);
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -966,9 +974,9 @@ export default {
     confirmDeleteReview(review) {
       this.confirmDialog = {
         show: true,
-        title: 'Delete Review',
-        message: `Delete review "${review.review_title}" by ${review.username}?`,
-        actionText: 'Delete',
+        title: this.t('deleteReview'),
+        message: this.tFormat('confirmDeleteReviewTemplate', { title: review.review_title, username: review.username }),
+        actionText: this.t('delete'),
         action: async () => {
           try {
             const res = await fetch(`/api/reviews/${review.id}`, {
@@ -980,7 +988,7 @@ export default {
             this.filterReviews();
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -997,7 +1005,7 @@ export default {
       }
     },
     async addQuote() {
-      if (!this.newQuote.text.trim()) return alert('Quote text is required');
+      if (!this.newQuote.text.trim()) return alert(this.t('quoteTextRequired'));
       try {
         const res = await fetch('/api/admin/quotes', {
           method: 'POST',
@@ -1006,9 +1014,9 @@ export default {
         });
         if (!res.ok) throw new Error('Failed');
         this.newQuote = { text: '', author: '' };
-        alert('Quote added!');
+        alert(this.t('quoteAdded'));
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
 
@@ -1076,7 +1084,7 @@ export default {
         const data = await res.json();
         this.adminQuizForm.quiz_image = data.filename;
       } catch (err) {
-        this.adminQuizError = 'Image upload failed: ' + err.message;
+        this.adminQuizError = `${this.t('failedToUploadImage')}: ${err.message}`;
       }
     },
     async handleAdminBadgeImageUpload(event, targetObj, field) {
@@ -1094,22 +1102,22 @@ export default {
         const data = await res.json();
         targetObj[field] = data.filename;
       } catch (err) {
-        this.adminQuizError = 'Badge image upload failed: ' + err.message;
+        this.adminQuizError = `${this.t('failedToUploadBadgeImage')}: ${err.message}`;
       }
     },
     async saveAdminQuiz() {
       this.adminQuizError = '';
       const f = this.adminQuizForm;
-      if (!f.title.trim()) { this.adminQuizError = 'Title is required.'; return; }
-      if (!f.questions.length) { this.adminQuizError = 'Add at least one question.'; return; }
+      if (!f.title.trim()) { this.adminQuizError = this.t('titleRequired'); return; }
+      if (!f.questions.length) { this.adminQuizError = this.t('addAtLeastOneQuestion'); return; }
       for (const q of f.questions) {
-        if (!q.question_text.trim()) { this.adminQuizError = 'All questions must have text.'; return; }
-        if (q.options.filter(o => o.trim()).length < 2) { this.adminQuizError = 'Each question needs at least 2 options.'; return; }
-        if (!q.correct_answer) { this.adminQuizError = 'Select correct answer for each question.'; return; }
+        if (!q.question_text.trim()) { this.adminQuizError = this.t('allQuestionsMustHaveText'); return; }
+        if (q.options.filter(o => o.trim()).length < 2) { this.adminQuizError = this.t('eachQuestionAtLeastTwoOptions'); return; }
+        if (!q.correct_answer) { this.adminQuizError = this.t('selectCorrectAnswerEachQuestion'); return; }
       }
       let resolvedCategory = f.category;
       if (f.category === '__custom__') {
-        if (!f.newCategoryLabel.trim()) { this.adminQuizError = 'Custom category name is required.'; return; }
+        if (!f.newCategoryLabel.trim()) { this.adminQuizError = this.t('customCategoryNameRequired'); return; }
         resolvedCategory = f.newCategoryLabel.trim().toLowerCase().replace(/\s+/g, '_');
         if (!this.quizFormCategories.find(c => c.key === resolvedCategory))
           this.quizFormCategories.push({ key: resolvedCategory, label: f.newCategoryLabel.trim() });
@@ -1174,12 +1182,12 @@ export default {
         const data = await res.json();
         this.badgeFormData.image = data.filename;
       } catch (err) {
-        this.badgeFormError = 'Image upload failed: ' + err.message;
+        this.badgeFormError = `${this.t('failedToUploadImage')}: ${err.message}`;
       }
     },
     async saveNewStandaloneBadge() {
       this.badgeFormError = '';
-      if (!this.badgeFormData.name.trim()) { this.badgeFormError = 'Badge name is required.'; return; }
+      if (!this.badgeFormData.name.trim()) { this.badgeFormError = this.t('badgeNameRequired'); return; }
       try {
         this.badgeFormSaving = true;
         const res = await fetch('/api/admin/standalone-badges', {
@@ -1199,22 +1207,22 @@ export default {
       }
     },
     awardStandaloneBadge(badge) {
-      const uid = prompt(`Enter user ID to award "${badge.name}" to:`);
+      const uid = prompt(this.t('enterUserIdToAwardBadge'));
       if (!uid || isNaN(Number(uid))) return;
       fetch(`/api/admin/standalone-badges/${badge.id}/award`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ userId: Number(uid) })
       }).then(r => r.json()).then(data => {
-        alert(data.message === 'Badge awarded' ? 'Badge awarded successfully!' : (data.message || 'Error awarding badge'));
-      }).catch(() => alert('Error awarding badge'));
+        alert(data.message === 'Badge awarded' ? this.t('badgeAwardedSuccessfully') : (data.message || this.t('errorAwardingBadge')));
+      }).catch(() => alert(this.t('errorAwardingBadge')));
     },
     confirmDeleteStandaloneBadge(badge) {
       this.confirmDialog = {
         show: true,
-        title: 'Delete Badge',
-        message: `Delete "${badge.name}"? This removes it from all users who earned it.`,
-        actionText: 'Delete',
+        title: this.t('deleteBadge'),
+        message: this.tFormat('confirmDeleteBadgeTemplate', { name: badge.name }),
+        actionText: this.t('delete'),
         action: async () => {
           try {
             const res = await fetch(`/api/admin/standalone-badges/${badge.id}`, {
@@ -1225,7 +1233,7 @@ export default {
             this.allStandaloneBadges = this.allStandaloneBadges.filter(b => b.id !== badge.id);
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -1249,13 +1257,13 @@ export default {
     },
     async saveNewCosmetic() {
       if (!this.cosmeticFormData.name || !this.cosmeticFormData.effect_key) {
-        this.cosmeticFormError = 'Name and effect are required';
+        this.cosmeticFormError = this.t('nameAndEffectRequired');
         return;
       }
       try {
         JSON.parse(this.cosmeticFormData.config);
       } catch {
-        this.cosmeticFormError = 'Config must be valid JSON';
+        this.cosmeticFormError = this.t('configMustBeValidJson');
         return;
       }
       this.cosmeticFormSaving = true;
@@ -1288,9 +1296,9 @@ export default {
     deleteCosmetic(id) {
       this.confirmDialog = {
         show: true,
-        title: 'Delete Cosmetic',
-        message: 'This will permanently delete this cosmetic and remove it from all users.',
-        actionText: 'Delete',
+        title: this.t('deleteCosmetic'),
+        message: this.t('deleteCosmeticMessage'),
+        actionText: this.t('delete'),
         action: async () => {
           try {
             const res = await fetch(`/api/admin/cosmetics/${id}`, {
@@ -1301,14 +1309,14 @@ export default {
             await this.fetchCosmetics();
             this.confirmDialog.show = false;
           } catch (err) {
-            alert('Error: ' + err.message);
+            alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
     },
     async linkCosmeticSource() {
       if (!this.cosmeticSourceForm.cosmetic_id) {
-        alert('Select a cosmetic');
+        alert(this.t('selectCosmetic'));
         return;
       }
       const body = {
@@ -1316,7 +1324,7 @@ export default {
         source_type: this.cosmeticSourceForm.source_type
       };
       if (body.source_type === 'quiz') {
-        if (!this.cosmeticSourceForm.quiz_id) { alert('Select a quiz'); return; }
+        if (!this.cosmeticSourceForm.quiz_id) { alert(this.t('selectQuiz')); return; }
         body.quiz_id = this.cosmeticSourceForm.quiz_id;
         body.min_score = this.cosmeticSourceForm.min_score;
       } else {
@@ -1332,7 +1340,7 @@ export default {
         if (!res.ok) throw new Error('Failed to link source');
         await this.fetchCosmetics();
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
     async deleteCosmeticSource(id) {
@@ -1344,12 +1352,12 @@ export default {
         if (!res.ok) throw new Error('Failed');
         await this.fetchCosmetics();
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
     async awardCosmeticToUser() {
       if (!this.cosmeticAwardForm.cosmetic_id || !this.cosmeticAwardForm.userId) {
-        alert('Select a cosmetic and enter a user ID');
+        alert(this.t('selectCosmeticAndUserId'));
         return;
       }
       try {
@@ -1362,10 +1370,10 @@ export default {
           const err = await res.json();
           throw new Error(err.error || 'Failed to award');
         }
-        alert('Cosmetic awarded successfully!');
+        alert(this.t('cosmeticAwardedSuccessfully'));
         this.cosmeticAwardForm = { cosmetic_id: '', userId: '' };
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     }
   },

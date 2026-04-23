@@ -76,6 +76,8 @@
 </template>
 
 <script>
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+
 export default {
   name: 'AvatarMaker',
   props: {
@@ -130,6 +132,7 @@ export default {
         }
       ],
       isSaving: false,
+      currentLanguage: 'en',
       requiredCategories: ['background', 'body_color', 'body_outline', 'eyes'],
       optionalCategories: ['background_gradient']
     };
@@ -143,6 +146,9 @@ export default {
     }
   },
   methods: {
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    },
     getPartUrl(category, filename) {
       if (!filename) return '';
       return `/assets/profile_parts/${category}/${filename}`;
@@ -263,13 +269,14 @@ export default {
         this.$emit('saved', uploadData.profilePicture);
       } catch (err) {
         console.error('Failed to save avatar:', err);
-        alert('Error saving avatar. Please try again.');
+        alert(this.t('avatarSaveError'));
       } finally {
         this.isSaving = false;
       }
     }
   },
   mounted() {
+    this.currentLanguage = getCurrentLanguage();
     this.loadAvailableParts();
     this.loadAvatarConfig();
   }

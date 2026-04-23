@@ -7,7 +7,7 @@
       class="follow-btn"
     >
       <span class="icon"><SvgIcon name="star" :size="18" /></span>
-      <span>Follow Show</span>
+      <span>{{ t('followShowCta') }}</span>
     </button>
     <button 
       v-else
@@ -16,13 +16,14 @@
       class="unfollow-btn"
     >
       <span class="icon"><SvgIcon name="star" :size="18" /></span>
-      <span>Following</span>
+      <span>{{ t('followingCta') }}</span>
     </button>
   </div>
 </template>
 
 <script>
 import SvgIcon from '@/components/SvgIcon.vue'
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 
 export default {
   components: { SvgIcon },
@@ -35,10 +36,14 @@ export default {
   data() {
     return {
       isFollowing: false,
-      isLoading: false
+      isLoading: false,
+      currentLanguage: 'en'
     };
   },
   methods: {
+    t(key) {
+      return getTranslation(key, this.currentLanguage);
+    },
     async checkFollowStatus() {
       if (!localStorage.getItem('auth')) return;
 
@@ -53,7 +58,7 @@ export default {
     },
     async followShow() {
       if (!localStorage.getItem('auth')) {
-        alert('Please login to follow shows');
+        alert(this.t('pleaseLoginToFollowShows'));
         return;
       }
 
@@ -76,7 +81,7 @@ export default {
         }
       } catch (error) {
         console.error('Error following show:', error);
-        alert('Error following show');
+        alert(this.t('errorFollowingShow'));
       } finally {
         this.isLoading = false;
       }
@@ -103,14 +108,24 @@ export default {
         }
       } catch (error) {
         console.error('Error unfollowing show:', error);
-        alert('Error unfollowing show');
+        alert(this.t('errorUnfollowingShow'));
       } finally {
         this.isLoading = false;
       }
     }
   },
   mounted() {
+    this.currentLanguage = getCurrentLanguage();
+    window.addEventListener('languageChanged', this.handleLanguageChanged);
     this.checkFollowStatus();
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', this.handleLanguageChanged);
+  },
+  created() {
+    this.handleLanguageChanged = (e) => {
+      this.currentLanguage = e.detail.language;
+    };
   }
 };
 </script>

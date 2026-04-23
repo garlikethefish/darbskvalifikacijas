@@ -308,7 +308,7 @@ export default {
       if (!await this.validateLoginForm()) return;
 
       try {
-        const response = await fetch('http://localhost:3000/api/login', {
+        const response = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.loginForm),
@@ -335,7 +335,7 @@ export default {
       if (!await this.validateRegisterForm()) return;
 
       try {
-        const response = await fetch('http://localhost:3000/api/register', {
+        const response = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -356,7 +356,7 @@ export default {
       }
     },
     forgotPassword() {
-      alert(this.currentLanguage === 'en' ? 'Password reset functionality will be implemented soon.' : 'Paroles atiestatīšanas funkcionalitāte drīzumā tiks ieviesta.');
+      alert(this.t('forgotPasswordSoon'));
     }
   },
   mounted() {

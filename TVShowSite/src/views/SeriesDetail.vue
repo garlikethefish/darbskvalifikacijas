@@ -4,8 +4,17 @@
       <div class="hero-band">
         <div class="hero-inner">
           <h1 v-if="loading">{{ t('loading') }}</h1>
-          <h1 v-else-if="series">{{ series.title }}</h1>
+          <h1 v-else-if="series" class="hero-title-row">
+            <span>{{ series.title }}</span>
+            <span
+              v-if="showMachineTranslatedTitleIcon"
+              class="machine-translation-icon"
+              :title="t('machineTranslatedTitleTooltip')"
+              aria-label="machine translated title"
+            >i</span>
+          </h1>
           <h1 v-else>{{ t('seriesDetails') }}</h1>
+          <p v-if="series && showEnglishSubtitle" class="english-subtitle">{{ series.english_title }}</p>
           <p class="subtitle">{{ yearRangeSubtitle }}</p>
         </div>
       </div>
@@ -48,7 +57,16 @@
         </div>
 
         <div class="info-section">
-          <h1>{{ series.title }}</h1>
+          <h1 class="title-row">
+            <span>{{ series.title }}</span>
+            <span
+              v-if="showMachineTranslatedTitleIcon"
+              class="machine-translation-icon"
+              :title="t('machineTranslatedTitleTooltip')"
+              aria-label="machine translated title"
+            >i</span>
+          </h1>
+          <p v-if="showEnglishSubtitle" class="english-subtitle">{{ series.english_title }}</p>
           
           <div class="meta">
             <span v-if="series.release_year" class="meta-item">
@@ -134,6 +152,17 @@ export default {
     };
   },
   computed: {
+    isLatvian() {
+      return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
+    },
+    showEnglishSubtitle() {
+      const localized = (this.series?.title || '').trim();
+      const english = (this.series?.english_title || '').trim();
+      return this.isLatvian && english && localized && english !== localized;
+    },
+    showMachineTranslatedTitleIcon() {
+      return this.isLatvian && !!this.series?.machine_translated_title;
+    },
     yearRangeSubtitle() {
       if (!this.series) return '';
       const start = this.series.first_air_year;
@@ -154,7 +183,9 @@ export default {
     async fetchSeriesDetails() {
       const seriesId = this.$route.params.id;
       try {
-        const res = await axios.get(`/api/tmdb/series-details/${seriesId}`);
+        const res = await axios.get(`/api/tmdb/series-details/${seriesId}`, {
+          params: { lang: this.currentLanguage }
+        });
         
         // Extract genre names from genre objects if necessary
         let genres = res.data.genres || [];
@@ -165,7 +196,9 @@ export default {
         // Extract just the series metadata (not episodes)
         this.series = {
           id: res.data.id,
-          title: res.data.title || res.data.original_name || 'Unknown',
+          title: res.data.name || res.data.title || res.data.original_name || 'Unknown',
+          english_title: res.data.english_name || res.data.original_name || res.data.name || '',
+          machine_translated_title: !!res.data.machine_translated_title,
           description: res.data.description || res.data.overview || '',
           release_year: res.data.release_year || (res.data.first_air_date ? new Date(res.data.first_air_date).getFullYear() : null),
           first_air_year: res.data.first_air_date ? new Date(res.data.first_air_date).getFullYear() : null,
@@ -187,14 +220,16 @@ export default {
         this.fetchSeriesTrailer(seriesId);
       } catch (err) {
         console.error('Failed to load series details:', err);
-        this.error = 'Failed to load series details.';
+        this.error = this.t('failedToLoadSeriesDetails');
       } finally {
         this.loading = false;
       }
     },
     async fetchSeriesTrailer(seriesId) {
       try {
-        const res = await axios.get(`/api/tmdb/series-videos/${seriesId}`);
+        const res = await axios.get(`/api/tmdb/series-videos/${seriesId}`, {
+          params: { lang: this.currentLanguage }
+        });
         this.trailerKey = res.data?.key || null;
       } catch (err) {
         console.error('Failed to load trailer:', err);
@@ -210,7 +245,9 @@ export default {
     },
     async fetchSeriesReviews(seriesId) {
       try {
-        const res = await axios.get(`/api/reviews?seriesId=${seriesId}`);
+        const res = await axios.get(`/api/reviews`, {
+          params: { seriesId, lang: this.currentLanguage }
+        });
         this.seriesReviews = res.data || [];
       } catch (err) {
         console.error('Failed to load reviews:', err);
@@ -225,16 +262,15 @@ export default {
     this.currentLanguage = getCurrentLanguage();
     this.fetchSeriesDetails();
 
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+      this.loading = true;
+      this.fetchSeriesDetails();
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>
@@ -321,12 +357,44 @@ export default {
   animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
 }
 
+.hero-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .hero-inner .subtitle {
   margin: 0;
   color: var(--subtitle-color);
   font-size: clamp(0.95rem, 1.6vw, 1.1rem);
   opacity: 0.95;
   animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) 100ms both;
+}
+
+.english-subtitle {
+  margin: -4px 0 10px;
+  color: var(--subtitle-color);
+  font-size: 0.95rem;
+}
+
+.title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.machine-translation-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(112, 233, 116, 0.6);
+  color: var(--accent-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
 }
 
 @keyframes heroIntro {

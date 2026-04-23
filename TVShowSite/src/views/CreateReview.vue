@@ -36,7 +36,7 @@
         <div v-if="loadingEpisodes" class="loading-text">{{ t('loadingEpisodes') }}</div>
         <div v-else class="episodes-grid">
           <div v-for="season in episodesBySeason" :key="season.season_number" class="season-block">
-            <h3>Season {{ season.season_number }}</h3>
+            <h3>{{ t('seasonLabel') }} {{ season.season_number }}</h3>
             <div class="episode-grid">
               <div class="modal" v-if="isReviewModalOpen" @click.self="closeReviewModal">
                 <div class="modal-content">
@@ -125,7 +125,7 @@ export default {
     },
     async fetchTopSeries() {
       try {
-        const res = await fetch("/api/tmdb/top-series");
+        const res = await fetch(`/api/tmdb/top-series?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
         this.seriesList = data.sort((a, b) => a.title.localeCompare(b.title));
         this.filteredSeries = [...this.seriesList];
@@ -142,7 +142,7 @@ export default {
 
       try {
         const res = await fetch(
-          `/api/tmdb/search-series?query=${encodeURIComponent(this.searchQuery)}`
+          `/api/tmdb/search-series?query=${encodeURIComponent(this.searchQuery)}&lang=${encodeURIComponent(this.currentLanguage)}`
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -161,7 +161,7 @@ export default {
 
       try {
         // Single request to fetch all seasons + episodes
-        const res = await fetch(`/api/tmdb/series-details/${series.id}`);
+        const res = await fetch(`/api/tmdb/series-details/${series.id}?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
         this.episodesBySeason = data.seasons || [];
       } catch (err) {
@@ -231,7 +231,7 @@ export default {
           throw new Error(data.error || "Failed to post review");
         }
 
-        alert("Review posted successfully!");
+        alert(this.t('reviewPostedSuccessfully'));
         this.$router.push(`/profile/${auth?.user?.id}`);
       } catch (err) {
         console.error("Failed to submit review:", err);
@@ -255,16 +255,15 @@ export default {
       }
     });
 
-    window.addEventListener('languageChanged', (e) => {
+    this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
+      this.fetchTopSeries();
       this.$forceUpdate();
-    });
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
   },
   beforeUnmount() {
-    window.removeEventListener('languageChanged', (e) => {
-      this.currentLanguage = e.detail.language;
-      this.$forceUpdate();
-    });
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>

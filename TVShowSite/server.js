@@ -118,29 +118,253 @@ const db = mysql.createConnection(dbConfig);
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.VITE_TMDB_API_KEY;
 
+function resolveTmdbLanguage(raw) {
+  const value = String(raw || '').toLowerCase();
+  if (value.startsWith('lv')) return 'lv-LV';
+  return 'en-US';
+}
+
+function resolveAppLanguage(raw) {
+  const value = String(raw || '').toLowerCase();
+  return value.startsWith('lv') ? 'lv' : 'en';
+}
+
+function hasMeaningfulText(value) {
+  if (typeof value !== 'string') return false;
+  const text = value.trim();
+  if (!text) return false;
+  if (/^[.\u2026\-\s]+$/.test(text)) return false;
+  return true;
+}
+
+function normalizeOverview(value) {
+  return hasMeaningfulText(value) ? value.trim() : '';
+}
+
+function shouldAutoTranslateForLatvian(primaryValue, fallbackValue) {
+  const primary = typeof primaryValue === 'string' ? primaryValue.trim() : '';
+  const fallback = typeof fallbackValue === 'string' ? fallbackValue.trim() : '';
+
+  if (!hasMeaningfulText(primary) && hasMeaningfulText(fallback)) return true;
+  if (hasMeaningfulText(primary) && hasMeaningfulText(fallback) && primary === fallback) return true;
+  return false;
+}
+
+function cleanQuoteText(rawText) {
+  let text = String(rawText || '');
+  text = text.replace(/\[.*?\]/g, '');
+  const colonIndex = text.indexOf(':');
+  if (colonIndex !== -1) {
+    text = text.substring(colonIndex + 1).trim();
+  }
+  return text.trim();
+}
+
+function detectReviewLanguage(...parts) {
+  const text = parts
+    .filter((value) => typeof value === 'string')
+    .join(' ')
+    .trim()
+    .toLowerCase();
+
+  if (!text) return 'unknown';
+
+  const latvianChars = (text.match(/[āčēģīķļņšūž]/g) || []).length;
+  const englishWords = (text.match(/\b(the|and|this|that|with|for|was|were|have|has|episode|show|great|good|bad|really|very|not|but)\b/g) || []).length;
+  const latvianWords = (text.match(/\b(šis|bija|ļoti|labs|slikts|epizode|seriāls|šovs|man|tev|viņš|viņa|nav|bet|un|par|ar|kā)\b/g) || []).length;
+
+  if (latvianChars > 0 || latvianWords > englishWords + 1) {
+    return 'lv';
+  }
+
+  if (englishWords > latvianWords) {
+    return 'en';
+  }
+
+  return 'unknown';
+}
+
+async function translateTextToLatvian(text) {
+  return translateTextWithMyMemory(text, 'en', 'lv');
+}
+
+async function translateTextToEnglish(text) {
+  return translateTextWithMyMemory(text, 'lv', 'en');
+}
+
+async function translateTextWithMyMemory(text, sourceLanguage, targetLanguage) {
+  if (!hasMeaningfulText(text)) return text;
+  const cacheKey = `${sourceLanguage}|${targetLanguage}|${text}`;
+  if (!global.__machineTranslationCache) {
+    global.__machineTranslationCache = new Map();
+  }
+  if (global.__machineTranslationCache.has(cacheKey)) {
+    return global.__machineTranslationCache.get(cacheKey);
+  }
+
+  const sourceText = text.trim();
+
+  try {
+    const response = await axios.get('https://api.mymemory.translated.net/get', {
+      params: {
+        q: text,
+        langpair: `${sourceLanguage}|${targetLanguage}`
+      }
+    });
+    const translated = response.data?.responseData?.translatedText;
+    const normalized = hasMeaningfulText(translated) ? translated.trim() : '';
+    if (normalized && normalized !== sourceText) {
+      global.__machineTranslationCache.set(cacheKey, normalized);
+      return normalized;
+    }
+  } catch {}
+
+  try {
+    const fallbackResponse = await axios.get('https://translate.googleapis.com/translate_a/single', {
+      params: {
+        client: 'gtx',
+        sl: sourceLanguage,
+        tl: targetLanguage,
+        dt: 't',
+        q: text
+      }
+    });
+
+    const chunks = Array.isArray(fallbackResponse.data?.[0]) ? fallbackResponse.data[0] : [];
+    const translated = chunks
+      .map((part) => (Array.isArray(part) ? String(part[0] || '') : ''))
+      .join('')
+      .trim();
+
+    const result = hasMeaningfulText(translated) && translated !== sourceText ? translated : sourceText;
+    global.__machineTranslationCache.set(cacheKey, result);
+    return result;
+  } catch {
+    global.__machineTranslationCache.set(cacheKey, sourceText);
+    return sourceText;
+  }
+}
+
+function canAutoTranslateField(field) {
+  if (typeof field !== 'string') return false;
+  return !['name', 'title', 'original_name', 'original_title'].includes(field);
+}
+
+function normalizeTitleForCompare(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function resolveLatvianTitleWithFallback(primaryTitle, englishTitle) {
+  const primary = hasMeaningfulText(primaryTitle) ? String(primaryTitle).trim() : '';
+  const english = hasMeaningfulText(englishTitle) ? String(englishTitle).trim() : '';
+
+  const shouldTranslateTitle = shouldAutoTranslateForLatvian(primary, english);
+
+  if (primary && !shouldTranslateTitle) {
+    return {
+      title: primary,
+      englishTitle: english || primary,
+      machineTranslatedTitle: false
+    };
+  }
+
+  if (!english) {
+    return {
+      title: '',
+      englishTitle: '',
+      machineTranslatedTitle: false
+    };
+  }
+
+  const translated = await translateTextToLatvian(english);
+  if (!hasMeaningfulText(translated)) {
+    return {
+      title: primary || english,
+      englishTitle: english,
+      machineTranslatedTitle: false
+    };
+  }
+
+  const translatedTitle = translated.trim();
+  if (normalizeTitleForCompare(translatedTitle) === normalizeTitleForCompare(english)) {
+    return {
+      title: primary || english,
+      englishTitle: english,
+      machineTranslatedTitle: false
+    };
+  }
+
+  return {
+    title: translatedTitle,
+    englishTitle: english,
+    machineTranslatedTitle: true
+  };
+}
+
+async function tmdbGet(path, params = {}, language = 'en-US') {
+  return axios.get(`${TMDB_BASE}${path}`, {
+    params: {
+      api_key: TMDB_KEY,
+      language,
+      ...params
+    }
+  });
+}
+
+async function tmdbGetWithFallback(path, params = {}, language = 'en-US', fields = ['name', 'overview']) {
+  const primary = await tmdbGet(path, params, language);
+  if (!language.startsWith('lv')) return primary;
+
+  const primaryData = primary.data || {};
+  const needsFallback = fields.some((field) => !hasMeaningfulText(primaryData[field]));
+  if (!needsFallback) return primary;
+
+  const fallback = await tmdbGet(path, params, 'en-US');
+  const fallbackData = fallback.data || {};
+  const merged = { ...fallbackData, ...primaryData };
+  for (const field of (fields || [])) {
+    const primaryValue = primaryData[field];
+    const fallbackValue = fallbackData[field];
+
+    let resolvedValue = hasMeaningfulText(primaryValue)
+      ? primaryValue
+      : (hasMeaningfulText(fallbackValue) ? fallbackValue : '');
+
+    if (canAutoTranslateField(field) && shouldAutoTranslateForLatvian(primaryValue, fallbackValue) && hasMeaningfulText(fallbackValue)) {
+      resolvedValue = await translateTextToLatvian(fallbackValue);
+    }
+
+    merged[field] = hasMeaningfulText(resolvedValue) ? resolvedValue : '';
+  }
+
+  return { ...primary, data: merged };
+}
+
 function getConnection() {
   return mysql.createConnection(dbConfig);
 }
-let cachedGenres = null;
-let genreCacheTime = 0;
+const cachedGenresByLang = {};
+const genreCacheTimeByLang = {};
 const GENRE_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
-async function getGenreMap() {
-  if (cachedGenres && Date.now() - genreCacheTime < GENRE_CACHE_TTL) {
-    return cachedGenres;
+async function getGenreMap(language = 'en-US') {
+  if (cachedGenresByLang[language] && Date.now() - (genreCacheTimeByLang[language] || 0) < GENRE_CACHE_TTL) {
+    return cachedGenresByLang[language];
   }
 
-  const res = await axios.get(`${TMDB_BASE}/genre/tv/list`, {
-    params: { api_key: TMDB_KEY }
-  });
+  const res = await tmdbGet('/genre/tv/list', {}, language);
 
-  cachedGenres = {};
+  cachedGenresByLang[language] = {};
   res.data.genres.forEach(g => {
-    cachedGenres[g.id] = g.name;
+    cachedGenresByLang[language][g.id] = g.name;
   });
 
-  genreCacheTime = Date.now();
-  return cachedGenres;
+  genreCacheTimeByLang[language] = Date.now();
+  return cachedGenresByLang[language];
 }
 
 function requireAuth(req, res, next) {
@@ -212,8 +436,9 @@ async function checkAndAwardMilestones(userId) {
 }
 
 // Build recommendations for a given user id. Returns an array of recommendation objects.
-async function buildDiscoverForUser(userId) {
-  const genreMap = await getGenreMap();
+async function buildDiscoverForUser(userId, language = 'en-US') {
+  const genreMap = await getGenreMap(language);
+  const isLatvian = language.startsWith('lv');
 
   // 1. Get all series the user reviewed (count likes globally)
   // Previously this query only returned rows when rating >= 7 OR
@@ -242,9 +467,7 @@ async function buildDiscoverForUser(userId) {
     for (const source of sources) {
       for (let page = 1; page <= 3; page++) {
         try {
-          const r = await axios.get(`${TMDB_BASE}/tv/${source}`, {
-            params: { api_key: TMDB_KEY, page }
-          });
+          const r = await tmdbGet(`/tv/${source}`, { page }, language);
           fallbackResults.push(...(r.data.results || []));
         } catch (e) {}
         if (fallbackResults.length >= 120) break;
@@ -269,7 +492,9 @@ async function buildDiscoverForUser(userId) {
       const stars = Math.min(5, Math.max(1, Math.round(((score - 40) / 55) * 4) + 1));
 
       const genres = (show.genre_ids || []).map(id => genreMap[id]).filter(Boolean);
-      const because = genres.length ? `Popular ${genres[0]} pick` : 'Popular pick';
+      const because = genres.length
+        ? (isLatvian ? `Populārs ${genres[0]} ieteikums` : `Popular ${genres[0]} pick`)
+        : (isLatvian ? 'Populāra izvēle' : 'Popular pick');
 
       return {
         id: show.id,
@@ -293,9 +518,7 @@ async function buildDiscoverForUser(userId) {
 
   await Promise.all(
     rows.map(async row => {
-      const tmdbRes = await axios.get(`${TMDB_BASE}/tv/${row.tmdb_series_id}`, {
-        params: { api_key: TMDB_KEY }
-      });
+      const tmdbRes = await tmdbGetWithFallback(`/tv/${row.tmdb_series_id}`, {}, language, ['name', 'overview']);
 
       sourceSeries.push({
         id: row.tmdb_series_id,
@@ -325,14 +548,11 @@ async function buildDiscoverForUser(userId) {
   for (const gid of topGenreIds) {
     for (let page = 1; page <= 3; page++) {
       try {
-        const discoverRes = await axios.get(`${TMDB_BASE}/discover/tv`, {
-          params: {
-            api_key: TMDB_KEY,
-            with_genres: gid,
-            sort_by: 'popularity.desc',
-            page
-          }
-        });
+        const discoverRes = await tmdbGet('/discover/tv', {
+          with_genres: gid,
+          sort_by: 'popularity.desc',
+          page
+        }, language);
         results.push(...discoverRes.data.results);
       } catch (e) {
         // ignore individual failures and continue
@@ -347,7 +567,7 @@ async function buildDiscoverForUser(userId) {
   // wildcard
   let wildcard = null;
   try {
-    const wildcardRes = await axios.get(`${TMDB_BASE}/tv/trending/week`, { params: { api_key: TMDB_KEY } });
+    const wildcardRes = await tmdbGet('/trending/tv/week', {}, language);
     const wildcardCandidate = wildcardRes.data.results.find(s => !likedSeriesIds.includes(s.id));
     if (wildcardCandidate) {
       wildcard = {
@@ -397,7 +617,7 @@ async function buildDiscoverForUser(userId) {
         }
       }
 
-      let because = 'Recommended for you';
+      let because = isLatvian ? 'Ieteikts jums' : 'Recommended for you';
       let becauseIsTitle = false;
       if (candidates.length && bestOverlap > 0) {
         const titles = [...new Set(candidates.map(c => c.title).filter(Boolean))];
@@ -412,7 +632,7 @@ async function buildDiscoverForUser(userId) {
       } else if (show.genre_ids && show.genre_ids.length) {
         const firstGenre = genreMap[show.genre_ids[0]];
         if (firstGenre) {
-          because = `shows like ${firstGenre}`;
+          because = isLatvian ? `šovi kā ${firstGenre}` : `shows like ${firstGenre}`;
           becauseIsTitle = false;
         }
       }
@@ -442,33 +662,71 @@ async function buildDiscoverForUser(userId) {
 }
 
 // Fetch episode info from TMDB
-async function fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber) {
-  const url = `${TMDB_BASE}/tv/${seriesId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=${TMDB_KEY}`;
-  const res = await axios.get(url);
+async function fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber, language = 'en-US') {
+  const res = await tmdbGetWithFallback(
+    `/tv/${seriesId}/season/${seasonNumber}/episode/${episodeNumber}`,
+    {},
+    language,
+    ['name', 'overview']
+  );
   return res.data; // includes episode title, air_date, still_path, etc.
 }
 
 // Daily quote
 app.get('/api/daily-quote', async (req, res) => {
   try {
+    const language = resolveTmdbLanguage(req.query.lang);
     let response;
-    let cleanedText;
+    let cleanedText = '';
     do {
       response = await axios.get('https://quotes.jepcd.com/quotes?short=true');
-      let text = response.data.text;
-      // Remove brackets
-      text = text.replace(/\[.*?\]/g, '');
-      // Remove before colon
-      const colonIndex = text.indexOf(':');
-      if (colonIndex !== -1) {
-        text = text.substring(colonIndex + 1).trim();
-      }
-      cleanedText = text;
+      cleanedText = cleanQuoteText(response.data?.text);
     } while (cleanedText.split(' ').length > 10);
-    res.json({ text: response.data.text, series: response.data.show });
+
+    let text = cleanedText;
+    if (language.startsWith('lv')) {
+      text = await translateTextToLatvian(cleanedText);
+    }
+
+    res.json({ text, series: response.data?.show || '' });
   } catch (error) {
     console.error('Error fetching quote:', error);
     res.status(500).json({ error: 'Failed to fetch daily quote' });
+  }
+});
+
+app.post('/api/translate', async (req, res) => {
+  try {
+    const text = typeof req.body?.text === 'string' ? req.body.text : '';
+    const sourceLanguage = resolveAppLanguage(req.body?.sourceLanguage);
+    const targetLanguage = resolveAppLanguage(req.body?.targetLanguage);
+
+    if (!hasMeaningfulText(text)) {
+      return res.status(400).json({ message: 'Text is required' });
+    }
+
+    if (sourceLanguage === targetLanguage) {
+      return res.json({
+        translatedText: text,
+        sourceLanguage,
+        targetLanguage
+      });
+    }
+
+    if (sourceLanguage === 'en' && targetLanguage === 'lv') {
+      const translatedText = await translateTextToLatvian(text);
+      return res.json({ translatedText, sourceLanguage, targetLanguage });
+    }
+
+    if (sourceLanguage === 'lv' && targetLanguage === 'en') {
+      const translatedText = await translateTextToEnglish(text);
+      return res.json({ translatedText, sourceLanguage, targetLanguage });
+    }
+
+    return res.status(400).json({ message: 'Unsupported language pair' });
+  } catch (error) {
+    console.error('Translate error:', error);
+    res.status(500).json({ message: 'Failed to translate text' });
   }
 });
 
@@ -513,7 +771,8 @@ app.post('/api/login', (req, res) => {
 
 app.get('/api/discover', requireAuth, async (req, res) => {
   try {
-    const recs = await buildDiscoverForUser(req.userId);
+    const language = resolveTmdbLanguage(req.query.lang);
+    const recs = await buildDiscoverForUser(req.userId, language);
     res.json(recs);
   } catch (err) {
     console.error('Discover error:', err);
@@ -527,7 +786,8 @@ app.get('/api/discover/emulate/:userId', async (req, res) => {
   if (!userId || isNaN(userId)) return res.status(400).json({ message: 'Invalid user id' });
 
   try {
-    const recs = await buildDiscoverForUser(userId);
+    const language = resolveTmdbLanguage(req.query.lang);
+    const recs = await buildDiscoverForUser(userId, language);
     res.json(recs);
   } catch (err) {
     console.error('Emulate discover error:', err);
@@ -538,7 +798,9 @@ app.get('/api/discover/emulate/:userId', async (req, res) => {
 // Public discover for development/testing (no auth required)
 app.get('/api/discover/public', async (req, res) => {
   try {
-    const genreMap = await getGenreMap();
+    const language = resolveTmdbLanguage(req.query.lang);
+    const isLatvian = language.startsWith('lv');
+    const genreMap = await getGenreMap(language);
 
     // Build a larger, varied fallback pool (top-rated + popular)
     let fallbackResults = [];
@@ -546,9 +808,7 @@ app.get('/api/discover/public', async (req, res) => {
     for (const source of sources) {
       for (let page = 1; page <= 3; page++) {
         try {
-          const r = await axios.get(`${TMDB_BASE}/tv/${source}`, {
-            params: { api_key: TMDB_KEY, page }
-          });
+          const r = await tmdbGet(`/tv/${source}`, { page }, language);
           fallbackResults.push(...(r.data.results || []));
         } catch (e) {
           // ignore page fetch errors and continue
@@ -577,7 +837,9 @@ app.get('/api/discover/public', async (req, res) => {
       const stars = Math.min(5, Math.max(1, Math.round(((score - 40) / 55) * 4) + 1));
 
       const genres = (show.genre_ids || []).map(id => genreMap[id]).filter(Boolean);
-      const because = genres.length ? `Popular ${genres[0]} pick` : 'Popular pick';
+      const because = genres.length
+        ? (isLatvian ? `Populārs ${genres[0]} ieteikums` : `Popular ${genres[0]} pick`)
+        : (isLatvian ? 'Populāra izvēle' : 'Popular pick');
 
       return {
         id: show.id,
@@ -654,7 +916,8 @@ app.get('/api/tmdb/episode', async (req, res) => {
   if (!seriesId || !seasonNumber || !episodeNumber) return res.status(400).json({ error: 'Missing parameters' });
 
   try {
-    const data = await fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber);
+    const language = resolveTmdbLanguage(req.query.lang);
+    const data = await fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber, language);
     res.json(data);
   } catch (err) {
     console.error('TMDB fetch error:', err.message);
@@ -666,6 +929,8 @@ app.get('/api/tmdb/episode', async (req, res) => {
 // Get all reviews with TMDB episode info
 app.get('/api/reviews', async (req, res) => {
   const { seriesId, userId } = req.query;
+  const language = resolveTmdbLanguage(req.query.lang);
+  const isLatvian = language.startsWith('lv');
 
   try {
     // Step 1: Fetch reviews from DB (still using user info and review stats)
@@ -712,13 +977,33 @@ app.get('/api/reviews', async (req, res) => {
 
     const seriesIds = [...new Set(reviewRows.map(r => r.tmdb_series_id))];
     const seriesTitles = {};
+    const originalSeriesTitles = {};
+    const machineTranslatedSeriesTitles = {};
 
     await Promise.all(
       seriesIds.map(async id => {
-        const res = await axios.get(`${TMDB_BASE}/tv/${id}`, {
-          params: { api_key: TMDB_KEY }
-        });
-        seriesTitles[id] = res.data.name;
+        const [localizedRes, englishRes] = await Promise.all([
+          tmdbGetWithFallback(`/tv/${id}`, {}, language, ['name', 'overview']),
+          isLatvian ? tmdbGet(`/tv/${id}`, {}, 'en-US') : Promise.resolve(null)
+        ]);
+
+        const localizedTitle = localizedRes?.data?.name;
+        const englishTitle = englishRes?.data?.name;
+
+        if (isLatvian) {
+          const resolved = await resolveLatvianTitleWithFallback(localizedTitle, englishTitle);
+          seriesTitles[id] = resolved.title || 'Unknown Series';
+          originalSeriesTitles[id] = resolved.englishTitle || seriesTitles[id];
+          machineTranslatedSeriesTitles[id] = resolved.machineTranslatedTitle;
+        } else {
+          seriesTitles[id] = hasMeaningfulText(localizedTitle)
+            ? localizedTitle
+            : (hasMeaningfulText(englishTitle) ? englishTitle : 'Unknown Series');
+          originalSeriesTitles[id] = hasMeaningfulText(englishTitle)
+            ? englishTitle
+            : seriesTitles[id];
+          machineTranslatedSeriesTitles[id] = false;
+        }
       })
     );
 
@@ -729,14 +1014,19 @@ app.get('/api/reviews', async (req, res) => {
     const reviewsWithEpisodes = await Promise.all(
     reviewRows.map(async review => {
       try {
-        const epRes = await axios.get(
-          `${TMDB_BASE}/tv/${review.tmdb_series_id}/season/${review.season_number}/episode/${review.episode_number}`,
-          { params: { api_key: TMDB_KEY } }
+        const epRes = await tmdbGetWithFallback(
+          `/tv/${review.tmdb_series_id}/season/${review.season_number}/episode/${review.episode_number}`,
+          {},
+          language,
+          ['name', 'overview']
         );
 
         return {
           ...review,
+          review_language: detectReviewLanguage(review.review_title, review.review_text),
           series_title: seriesTitles[review.tmdb_series_id] || 'Unknown Series',
+          original_series_title: originalSeriesTitles[review.tmdb_series_id] || seriesTitles[review.tmdb_series_id] || 'Unknown Series',
+          machine_translated_series_title: !!machineTranslatedSeriesTitles[review.tmdb_series_id],
           episode_title: epRes.data.name,
           episode_picture: epRes.data.still_path
             ? `https://image.tmdb.org/t/p/w500${epRes.data.still_path}`
@@ -745,7 +1035,10 @@ app.get('/api/reviews', async (req, res) => {
       } catch {
         return {
           ...review,
+          review_language: detectReviewLanguage(review.review_title, review.review_text),
           series_title: seriesTitles[review.tmdb_series_id] || 'Unknown Series',
+          original_series_title: originalSeriesTitles[review.tmdb_series_id] || seriesTitles[review.tmdb_series_id] || 'Unknown Series',
+          machine_translated_series_title: !!machineTranslatedSeriesTitles[review.tmdb_series_id],
           episode_title: `S${review.season_number}E${review.episode_number}`,
           episode_picture: null
         };
@@ -764,6 +1057,7 @@ app.get('/api/reviews', async (req, res) => {
 // GET /api/user-reviews/:userId
 app.get('/api/user-reviews/:userId', async (req, res) => {
   const userId = req.params.userId;
+  const language = resolveTmdbLanguage(req.query.lang);
 
   try {
     db.query('SELECT * FROM reviews WHERE user_id = ? ORDER BY date DESC', [userId], async (err, reviews) => {
@@ -782,16 +1076,12 @@ app.get('/api/user-reviews/:userId', async (req, res) => {
 
         // Fetch series info once
         if (!seriesTitles[seriesId]) {
-          const seriesRes = await axios.get(`https://api.themoviedb.org/3/tv/${seriesId}`, {
-            params: { api_key: process.env.VITE_TMDB_API_KEY }
-          });
+          const seriesRes = await tmdbGetWithFallback(`/tv/${seriesId}`, {}, language, ['name', 'overview']);
           seriesTitles[seriesId] = seriesRes.data.name;
         }
 
         // Fetch season info once
-        const seasonRes = await axios.get(`https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNumber}`, {
-          params: { api_key: process.env.VITE_TMDB_API_KEY }
-        });
+        const seasonRes = await tmdbGetWithFallback(`/tv/${seriesId}/season/${seasonNumber}`, {}, language, ['name', 'overview']);
 
         seasonRes.data.episodes.forEach(ep => {
           episodesData[`${seriesId}-${seasonNumber}-${ep.episode_number}`] = ep;
@@ -1900,9 +2190,8 @@ app.delete('/api/admin/standalone-badges/:id', requireAuth, requireAdmin, async 
 app.get('/api/tmdb/series-seasons/:id', async (req, res) => {
   const seriesId = req.params.id;
   try {
-    const response = await axios.get(`https://api.themoviedb.org/3/tv/${seriesId}`, {
-      params: { api_key: process.env.VITE_TMDB_API_KEY }
-    });
+    const language = resolveTmdbLanguage(req.query.lang);
+    const response = await tmdbGetWithFallback(`/tv/${seriesId}`, {}, language, ['name', 'overview']);
     res.json(response.data); // this includes series info + seasons
   } catch (err) {
     console.error('TMDB fetch error:', err.message);
@@ -1913,26 +2202,47 @@ app.get('/api/tmdb/series-seasons/:id', async (req, res) => {
 
 app.get('/api/tmdb/top-series', async (req, res) => {
   try {
+    const language = resolveTmdbLanguage(req.query.lang);
+    const isLatvian = language.startsWith('lv');
     // 1. Fetch the genre list from TMDB
-    const genreRes = await axios.get('https://api.themoviedb.org/3/genre/tv/list', {
-      params: { api_key: process.env.VITE_TMDB_API_KEY, language: 'en-US' }
-    });
+    const genreRes = await tmdbGet('/genre/tv/list', {}, language);
     const genreMap = {};
     genreRes.data.genres.forEach(g => { genreMap[g.id] = g.name; });
 
     // 2. Fetch the popular TV shows (first page)
-    const response = await axios.get('https://api.themoviedb.org/3/tv/popular', {
-      params: { api_key: process.env.VITE_TMDB_API_KEY, language: 'en-US', page: 1 }
-    });
+    const response = await tmdbGet('/tv/popular', { page: 1 }, language);
+    let enById = new Map();
+    if (isLatvian) {
+      const enResponse = await tmdbGet('/tv/popular', { page: 1 }, 'en-US');
+      enById = new Map((enResponse.data.results || []).map((s) => [s.id, s]));
+    }
 
     // 3. Take top 12 shows and map genre IDs to names
-    const shows = response.data.results.slice(0, 12).map(show => ({
-      id: show.id,
-      title: show.name,
-      description: show.overview,
-      release_year: show.first_air_date ? parseInt(show.first_air_date.slice(0, 4)) : null,
-      series_picture: show.poster_path,
-      genres: show.genre_ids.map(id => genreMap[id] || id) // map to text
+    const shows = await Promise.all(response.data.results.slice(0, 12).map(async (show) => {
+      const enShow = enById.get(show.id) || {};
+
+      const localizedTitle = hasMeaningfulText(show.name) ? show.name.trim() : '';
+      const englishTitle = hasMeaningfulText(enShow.name) ? enShow.name.trim() : '';
+      const resolvedTitle = isLatvian
+        ? await resolveLatvianTitleWithFallback(localizedTitle, englishTitle)
+        : { title: localizedTitle || englishTitle || '', englishTitle: englishTitle || localizedTitle || '', machineTranslatedTitle: false };
+
+      let description = normalizeOverview(show.overview);
+      const enOverview = normalizeOverview(enShow.overview);
+      if (isLatvian && shouldAutoTranslateForLatvian(show.overview, enShow.overview) && hasMeaningfulText(enOverview)) {
+        description = normalizeOverview(await translateTextToLatvian(enOverview));
+      }
+
+      return {
+        id: show.id,
+        title: resolvedTitle.title,
+        english_title: resolvedTitle.englishTitle || resolvedTitle.title,
+        machine_translated_title: !!resolvedTitle.machineTranslatedTitle,
+        description,
+        release_year: show.first_air_date ? parseInt(show.first_air_date.slice(0, 4)) : null,
+        series_picture: show.poster_path,
+        genres: show.genre_ids.map(id => genreMap[id] || id)
+      };
     }));
 
     res.json(shows);
@@ -1948,22 +2258,49 @@ app.get('/api/tmdb/top-series', async (req, res) => {
 app.get('/api/tmdb/series-details/:id', async (req, res) => {
   const seriesId = req.params.id;
   try {
-    const seriesRes = await axios.get(`https://api.themoviedb.org/3/tv/${seriesId}`, {
-      params: { api_key: process.env.VITE_TMDB_API_KEY }
-    });
+    const language = resolveTmdbLanguage(req.query.lang);
+    const isLatvian = language.startsWith('lv');
+    const genreMap = await getGenreMap(language);
+    const [seriesRes, englishSeriesRes] = await Promise.all([
+      tmdbGetWithFallback(`/tv/${seriesId}`, {}, language, ['name', 'overview']),
+      isLatvian ? tmdbGet(`/tv/${seriesId}`, {}, 'en-US') : Promise.resolve(null)
+    ]);
 
     // Fetch episodes for all seasons
     const seasonsWithEpisodes = await Promise.all(
       (seriesRes.data.seasons || []).map(async season => {
-        const epRes = await axios.get(
-          `https://api.themoviedb.org/3/tv/${seriesId}/season/${season.season_number}`,
-          { params: { api_key: process.env.VITE_TMDB_API_KEY } }
+        const epRes = await tmdbGetWithFallback(
+          `/tv/${seriesId}/season/${season.season_number}`,
+          {},
+          language,
+          ['name', 'overview']
         );
         return { ...season, episodes: epRes.data.episodes || [] };
       })
     );
 
-    res.json({ ...seriesRes.data, seasons: seasonsWithEpisodes });
+    const seriesGenres = (seriesRes.data?.genres || []).map((genre) => ({
+      ...genre,
+      name: genreMap[genre.id] || genre.name
+    }));
+
+    const resolvedTitle = isLatvian
+      ? await resolveLatvianTitleWithFallback(seriesRes.data?.name, englishSeriesRes?.data?.name)
+      : {
+        title: seriesRes.data?.name || '',
+        englishTitle: englishSeriesRes?.data?.name || seriesRes.data?.name || '',
+        machineTranslatedTitle: false
+      };
+
+    const seriesData = {
+      ...seriesRes.data,
+      name: resolvedTitle.title || seriesRes.data?.name || '',
+      genres: seriesGenres,
+      english_name: resolvedTitle.englishTitle || seriesRes.data?.name || '',
+      machine_translated_title: !!resolvedTitle.machineTranslatedTitle,
+      overview: normalizeOverview(seriesRes.data?.overview)
+    };
+    res.json({ ...seriesData, seasons: seasonsWithEpisodes });
 
   } catch (err) {
     console.error('TMDB fetch error:', err.message);
@@ -1974,9 +2311,8 @@ app.get('/api/tmdb/series-details/:id', async (req, res) => {
 app.get('/api/tmdb/series-videos/:id', async (req, res) => {
   const seriesId = req.params.id;
   try {
-    const videosRes = await axios.get(`https://api.themoviedb.org/3/tv/${seriesId}/videos`, {
-      params: { api_key: process.env.VITE_TMDB_API_KEY, language: 'en-US' }
-    });
+    const language = resolveTmdbLanguage(req.query.lang);
+    const videosRes = await tmdbGet(`/tv/${seriesId}/videos`, {}, language);
 
     const videos = videosRes.data?.results || [];
     const channelHints = ['TV Promos', 'Rotten Tomatoes', 'Paramount Plus'];
@@ -2001,20 +2337,74 @@ app.get('/api/tmdb/search-series', async (req, res) => {
   if (!query) return res.json([]); // return empty array if no query
 
   try {
-    const response = await axios.get('https://api.themoviedb.org/3/search/tv', {
-      params: { api_key: process.env.VITE_TMDB_API_KEY, query, language: 'en-US', page: 1 }
-    });
+    const language = resolveTmdbLanguage(req.query.lang);
+    const isLatvian = language.startsWith('lv');
+    const response = await tmdbGet('/search/tv', { query, page: 1 }, language);
+    let enById = new Map();
+    if (isLatvian) {
+      const enResponse = await tmdbGet('/search/tv', { query, page: 1 }, 'en-US');
+      enById = new Map((enResponse.data.results || []).map((s) => [s.id, s]));
+    }
 
-    const results = response.data.results.map(show => ({
-      id: show.id,
-      title: show.name,
-      series_picture: show.poster_path
+    const results = await Promise.all(response.data.results.map(async (show) => {
+      const enShow = enById.get(show.id) || {};
+      const localizedTitle = hasMeaningfulText(show.name) ? show.name.trim() : '';
+      const englishTitle = hasMeaningfulText(enShow.name) ? enShow.name.trim() : '';
+      const resolvedTitle = isLatvian
+        ? await resolveLatvianTitleWithFallback(localizedTitle, englishTitle)
+        : { title: localizedTitle || englishTitle || '', englishTitle: englishTitle || localizedTitle || '', machineTranslatedTitle: false };
+
+      return {
+        id: show.id,
+        title: resolvedTitle.title,
+        english_title: resolvedTitle.englishTitle || resolvedTitle.title,
+        machine_translated_title: !!resolvedTitle.machineTranslatedTitle,
+        series_picture: show.poster_path
+      };
     }));
 
     res.json(results);
   } catch (err) {
     console.error('TMDB search error:', err.message);
     res.status(500).json({ message: 'Failed to search series' });
+  }
+});
+
+// Fetch lightweight series metadata used across profile/statistics/quizzes
+app.get('/api/tmdb/series/:id', async (req, res) => {
+  try {
+    const language = resolveTmdbLanguage(req.query.lang);
+    const isLatvian = language.startsWith('lv');
+    const [response, englishResponse, genreMap] = await Promise.all([
+      tmdbGetWithFallback(`/tv/${req.params.id}`, {}, language, ['name', 'overview']),
+      isLatvian ? tmdbGet(`/tv/${req.params.id}`, {}, 'en-US') : Promise.resolve(null),
+      getGenreMap(language)
+    ]);
+
+    const genres = (response.data?.genres || []).map((genre) => ({
+      ...genre,
+      name: genreMap[genre.id] || genre.name
+    }));
+
+    const resolvedTitle = isLatvian
+      ? await resolveLatvianTitleWithFallback(response.data?.name, englishResponse?.data?.name)
+      : {
+        title: response.data?.name || '',
+        englishTitle: englishResponse?.data?.name || response.data?.name || '',
+        machineTranslatedTitle: false
+      };
+
+    res.json({
+      ...response.data,
+      name: resolvedTitle.title || response.data?.name || '',
+      genres,
+      english_name: resolvedTitle.englishTitle || response.data?.name || '',
+      machine_translated_title: !!resolvedTitle.machineTranslatedTitle,
+      overview: normalizeOverview(response.data?.overview)
+    });
+  } catch (err) {
+    console.error('TMDB series fetch error:', err.message);
+    res.status(err.response?.status || 500).json({ message: 'Failed to fetch series' });
   }
 });
 
@@ -2075,6 +2465,8 @@ app.get('/api/users/:userId/public-profile', async (req, res) => {
 // Get single review with all details
 app.get('/api/reviews/:reviewId', async (req, res) => {
   const { reviewId } = req.params;
+  const language = resolveTmdbLanguage(req.query.lang);
+  const isLatvian = language.startsWith('lv');
 
   try {
     const [reviews] = await db.promise().query(
@@ -2088,6 +2480,7 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
     if (reviews.length === 0) return res.status(404).json({ message: 'Review not found' });
 
     const review = reviews[0];
+    review.review_language = detectReviewLanguage(review.review_title, review.review_text);
 
     // Get total user reviews
     const [userReviews] = await db.promise().query(
@@ -2096,14 +2489,25 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
     );
 
     // Get TMDB series details
-    const seriesRes = await axios.get(`${TMDB_BASE}/tv/${review.tmdb_series_id}`, {
-      params: { api_key: TMDB_KEY }
-    });
+    const [seriesRes, englishSeriesRes] = await Promise.all([
+      tmdbGetWithFallback(`/tv/${review.tmdb_series_id}`, {}, language, ['name', 'overview']),
+      isLatvian ? tmdbGet(`/tv/${review.tmdb_series_id}`, {}, 'en-US') : Promise.resolve(null)
+    ]);
+
+    const resolvedSeriesTitle = isLatvian
+      ? await resolveLatvianTitleWithFallback(seriesRes.data?.name, englishSeriesRes?.data?.name)
+      : {
+        title: seriesRes.data?.name || '',
+        englishTitle: englishSeriesRes?.data?.name || seriesRes.data?.name || '',
+        machineTranslatedTitle: false
+      };
 
     // Get episode details
-    const episodeRes = await axios.get(
-      `${TMDB_BASE}/tv/${review.tmdb_series_id}/season/${review.season_number}/episode/${review.episode_number}`,
-      { params: { api_key: TMDB_KEY } }
+    const episodeRes = await tmdbGetWithFallback(
+      `/tv/${review.tmdb_series_id}/season/${review.season_number}/episode/${review.episode_number}`,
+      {},
+      language,
+      ['name', 'overview']
     );
 
     // Get comments
@@ -2117,7 +2521,13 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
 
     res.json({
       review,
-      seriesInfo: seriesRes.data,
+      seriesInfo: {
+        ...seriesRes.data,
+        name: resolvedSeriesTitle.title || seriesRes.data?.name || '',
+        english_name: resolvedSeriesTitle.englishTitle || seriesRes.data?.name || '',
+        machine_translated_title: !!resolvedSeriesTitle.machineTranslatedTitle,
+        overview: normalizeOverview(seriesRes.data?.overview)
+      },
       episodeInfo: episodeRes.data,
       userReviewCount: userReviews[0].count,
       comments

@@ -5,6 +5,7 @@
       <div class="hero-band">
         <div class="hero-inner">
           <h1>{{ seriesInfo?.name || t('series') }}</h1>
+          <p v-if="showSeriesEnglishSubtitle" class="english-subtitle">{{ seriesInfo?.english_name }}</p>
           <p class="subtitle">{{ t('season') }} {{ review.season_number }} {{ t('episode') }} {{ review.episode_number }} — {{ episodeInfo?.name || `${t('episode')} ${review.episode_number}` }}</p>
         </div>
       </div>
@@ -43,10 +44,15 @@
 
       <!-- Review Title and Text -->
       <div class="review-content">
-        <div class="section-header">
-          <h2>{{ review.review_title }}</h2>
-        </div>
-        <p class="review-text">{{ review.review_text }}</p>
+        <SectionHeader>{{ review.review_title }}</SectionHeader>
+        <label v-if="showTranslateReviewToggle" class="translate-toggle">
+          <input type="checkbox" v-model="translateReviewText">
+          <span>{{ t('machineTranslateReviews') }}</span>
+        </label>
+        <p class="review-text">{{ displayedReviewText }}</p>
+        <p v-if="translateReviewText && translatingReviewText" class="translation-note">{{ t('translating') }}</p>
+        <p v-else-if="translateReviewText && translatedReviewText" class="translation-note">{{ t('showingMachineTranslatedReview') }}</p>
+        <p v-else-if="translateReviewText && translationError" class="translation-note translation-note-error">{{ t('translationUnavailable') }}</p>
 
         <!-- Episode Still -->
         <img v-if="episodeInfo?.still_path" :src="`https://image.tmdb.org/t/p/w500${episodeInfo.still_path}`" :alt="episodeInfo?.name" class="episode-still">
@@ -64,9 +70,7 @@
 
       <!-- Comments Section -->
       <div class="comments-section">
-        <div class="section-header">
-          <h2><SvgIcon name="chat" :size="22" /> {{ t('comments') }} ({{ comments.length }})</h2>
-        </div>
+        <SectionHeader><SvgIcon name="chat" :size="22" /> {{ t('comments') }} ({{ comments.length }})</SectionHeader>
 
         <!-- Add comment form -->
         <div v-if="auth?.loggedIn" class="comment-form">
@@ -101,9 +105,7 @@
 
       <!-- Series Info Card -->
       <div class="series-card" v-if="seriesInfo">
-        <div class="section-header">
-          <h2>{{ t('aboutSeries') }} {{ seriesInfo.name }}</h2>
-        </div>
+        <SectionHeader>{{ t('aboutSeries') }} {{ seriesInfo.name }}</SectionHeader>
         <div class="series-details">
           <p><strong>{{ t('status') }}:</strong> {{ seriesInfo.status }}</p>
           <p><strong>{{ t('seasons') }}:</strong> {{ seriesInfo.number_of_seasons }}</p>
@@ -124,11 +126,12 @@
 </template>
 
 <script>
-import { getTranslation } from '@/services/translations.js'
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 import SvgIcon from '@/components/SvgIcon.vue'
+import SectionHeader from '@/components/SectionHeader.vue'
 
 export default {
-  components: { SvgIcon },
+  components: { SvgIcon, SectionHeader },
   data() {
     return {
       review: null,
@@ -138,21 +141,53 @@ export default {
       newComment: '',
       isLiked: false,
       isDisliked: false,
-      auth: null
+      auth: null,
+      currentLanguage: 'en',
+      translateReviewText: false,
+      translatedReviewText: '',
+      translatedForLanguage: '',
+      translatingReviewText: false,
+      translationError: false
     };
+  },
+  computed: {
+    isLatvian() {
+      return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
+    },
+    currentAppLanguage() {
+      return this.isLatvian ? 'lv' : 'en';
+    },
+    reviewLanguage() {
+      const raw = String(this.review?.review_language || '').toLowerCase();
+      return raw === 'lv' || raw === 'en' ? raw : 'unknown';
+    },
+    showTranslateReviewToggle() {
+      return this.reviewLanguage === 'unknown' || this.reviewLanguage !== this.currentAppLanguage;
+    },
+    showSeriesEnglishSubtitle() {
+      const localized = (this.seriesInfo?.name || '').trim();
+      const english = (this.seriesInfo?.english_name || '').trim();
+      return this.isLatvian && english && localized && english !== localized;
+    },
+    displayedReviewText() {
+      if (this.translateReviewText && this.translatedReviewText) {
+        return this.translatedReviewText;
+      }
+      return this.review?.review_text || '';
+    }
   },
   methods: {
     t(key) {
-      return getTranslation(key, this.auth?.language || 'en');
+      return getTranslation(key, this.currentLanguage);
     },
     async fetchReviewData() {
       const reviewId = this.$route.params.reviewId;
       try {
-        const res = await fetch(`/api/reviews/${reviewId}`);
+        const res = await fetch(`/api/reviews/${reviewId}?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
         
         if (!res.ok) {
-          alert('Review not found');
+          alert(this.t('reviewNotFound'));
           this.$router.push('/reviews');
           return;
         }
@@ -168,12 +203,12 @@ export default {
         }
       } catch (err) {
         console.error('Error fetching review:', err);
-        alert('Failed to load review');
+        alert(this.t('failedToLoadReview'));
       }
     },
     async toggleLike() {
       if (!this.auth?.loggedIn) {
-        alert('Please login to react');
+        alert(this.t('pleaseLoginToReact'));
         return;
       }
 
@@ -198,7 +233,7 @@ export default {
     },
     async toggleDislike() {
       if (!this.auth?.loggedIn) {
-        alert('Please login to react');
+        alert(this.t('pleaseLoginToReact'));
         return;
       }
 
@@ -244,13 +279,91 @@ export default {
     },
     formatDate(dateString) {
       const date = new Date(dateString);
-      return date.toLocaleDateString();
+      return date.toLocaleDateString(this.currentLanguage === 'lv' ? 'lv-LV' : 'en-US');
+    },
+    async maybeTranslateReviewText() {
+      if (!this.showTranslateReviewToggle) {
+        if (this.translateReviewText) {
+          this.translateReviewText = false;
+        }
+        this.translationError = false;
+        return;
+      }
+
+      if (!this.translateReviewText) {
+        this.translationError = false;
+        return;
+      }
+
+      const text = (this.review?.review_text || '').trim();
+      const targetLanguage = this.currentAppLanguage;
+      const sourceLanguage = this.reviewLanguage === 'unknown'
+        ? (targetLanguage === 'lv' ? 'en' : 'lv')
+        : this.reviewLanguage;
+
+      if (!text) return;
+      if (this.translatedReviewText && this.translatedForLanguage === targetLanguage) return;
+
+      this.translatingReviewText = true;
+      this.translationError = false;
+
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text, sourceLanguage, targetLanguage })
+        });
+
+        if (!res.ok) {
+          throw new Error('Translate failed');
+        }
+
+        const data = await res.json();
+        this.translatedReviewText = data?.translatedText || '';
+        this.translatedForLanguage = targetLanguage;
+      } catch (error) {
+        console.error('Review detail translation failed:', error);
+        this.translationError = true;
+      } finally {
+        this.translatingReviewText = false;
+      }
+    }
+  },
+  watch: {
+    translateReviewText: {
+      immediate: true,
+      handler() {
+        this.maybeTranslateReviewText();
+      }
+    },
+    currentLanguage() {
+      this.maybeTranslateReviewText();
+    },
+    review: {
+      deep: true,
+      handler() {
+        this.translatedReviewText = '';
+        this.translatedForLanguage = '';
+        this.translationError = false;
+        this.maybeTranslateReviewText();
+      }
     }
   },
   mounted() {
     const authData = localStorage.getItem('auth');
     this.auth = authData ? JSON.parse(authData) : null;
+    this.currentLanguage = getCurrentLanguage();
+    this._languageChangedHandler = (e) => {
+      this.currentLanguage = e.detail.language;
+      this.fetchReviewData();
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
     this.fetchReviewData();
+  },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
 };
 </script>
@@ -329,6 +442,12 @@ export default {
   animation: heroIntro 880ms cubic-bezier(0.2, 0.9, 0.25, 1) 100ms both;
 }
 
+.english-subtitle {
+  margin: -4px 0 10px;
+  color: var(--subtitle-color);
+  font-size: 0.95rem;
+}
+
 @keyframes heroIntro {
   0%   { opacity: 0; transform: translateY(8px) scale(0.992); filter: blur(4px); }
   60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0); }
@@ -346,26 +465,6 @@ export default {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* Section Header */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 15px;
-  border-bottom: 2px solid var(--accent-color);
-}
-
-.section-header h2 {
-  color: var(--accent-color);
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 /* Review Header */
@@ -478,6 +577,35 @@ export default {
   color: var(--text-color);
   line-height: 1.8;
   margin: 0 0 1rem 0;
+}
+
+.translate-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.translate-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-color);
+}
+
+.translation-note {
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  color: var(--subtitle-color);
+  font-style: italic;
+}
+
+.translation-note-error {
+  color: #e38f8f;
 }
 
 .episode-still {
