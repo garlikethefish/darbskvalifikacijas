@@ -11,11 +11,13 @@ import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const PORT = process.env.PORT || 3000;
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 
 // Serve static files for profile pictures
 app.use('/assets/user_pfp', express.static(path.join(__dirname, 'src/assets/user_pfp')));
@@ -27,6 +29,8 @@ app.use('/assets/default_pfp_icons', express.static(path.join(__dirname, 'src/as
 
 // Serve static files for avatar parts
 app.use('/assets/profile_parts', express.static(path.join(__dirname, 'src/assets/profile_parts')));
+
+// ...existing code...
 
 // Configure multer for quiz image uploads
 const quizImageStorage = multer.diskStorage({
@@ -3627,6 +3631,15 @@ app.post('/api/admin/quotes', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log('Backend running on http://localhost:3000');
+
+// Serve frontend (SPA fallback) - keep only at the end
+app.use(express.static(path.join(__dirname, "dist")));
+
+// Catch-all: serve index.html for SPA (Express 5 compatible)
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
+
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });
