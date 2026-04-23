@@ -10,14 +10,22 @@
             <div class="image-overlay"></div>
           </div>
           <div class="series-title-row">
-            <h1 class="series-title">{{ review.series_title || 'Series Title' }}</h1>
+            <h1 class="series-title">{{ displaySeriesTitle }}</h1>
             <span
               v-if="showMachineTranslatedTitleIcon"
               class="machine-translation-icon"
-              :title="t('machineTranslatedTitleTooltip')"
-              :data-tooltip="t('machineTranslatedTitleTooltip')"
               aria-label="machine translated title"
-            ><SvgIcon name="translate" :size="14" /></span>
+              @mouseenter="showTooltip"
+              @mouseleave="hideTooltip"
+              @focus="showTooltip"
+              @blur="hideTooltip"
+              tabindex="0"
+            >
+              <SvgIcon name="translate" :size="14" />
+              <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
+                {{ t('machineTranslatedTitleTooltip') }}
+              </Tooltip>
+            </span>
           </div>
           <p v-if="showSeriesOriginalTitle" class="series-title-original">{{ review.original_series_title }}</p>
           <h2 class="season-episode">{{ formatSeasonEpisode(review) }}</h2>
@@ -228,12 +236,12 @@
 
 <script>
 import SvgIcon from './SvgIcon.vue';
+import Tooltip from './Tooltip.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
-
 
 export default {
   name: 'ReviewPost',
-  components: { SvgIcon },
+  components: { SvgIcon, Tooltip },
   props: {
     review: {
       type: Object,
@@ -263,7 +271,12 @@ export default {
       translatedForLanguage: '',
       translatingReview: false,
       translationError: false,
-      showTranslatedReview: false
+      showTranslatedReview: false,
+      tooltip: {
+        show: false,
+        x: 0,
+        y: 0
+      }
     };
   },
    computed: {
@@ -281,13 +294,23 @@ export default {
     isLatvian() {
       return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
     },
+    isTheBoys() {
+      const english = (this.review?.original_series_title || this.review?.series_title || '').trim().toLowerCase();
+      return english === 'the boys';
+    },
     showSeriesOriginalTitle() {
       const localized = (this.review?.series_title || '').trim();
       const original = (this.review?.original_series_title || '').trim();
+      if (this.isLatvian && this.isTheBoys) return false;
       return this.isLatvian && original && localized && original !== localized;
     },
     showMachineTranslatedTitleIcon() {
+      if (this.isLatvian && this.isTheBoys) return false;
       return this.isLatvian && !!this.review?.machine_translated_series_title;
+    },
+    displaySeriesTitle() {
+      if (this.isLatvian && this.isTheBoys) return 'Zēni';
+      return this.review?.series_title || '';
     },
     currentAppLanguage() {
       return this.isLatvian ? 'lv' : 'en';
@@ -326,7 +349,25 @@ export default {
     getEpisodePictureUrl(url) {
       return url || new URL('../assets/series_images/basic_series.png', import.meta.url).href;
     },
-
+    showTooltip(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const tooltipWidth = 220;
+      const tooltipHeight = 60;
+      let x = rect.left + rect.width / 2 - tooltipWidth / 2;
+      x = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, x));
+      let y = rect.bottom + 10;
+      if (y + tooltipHeight > window.innerHeight) {
+        y = rect.top - tooltipHeight - 10;
+      }
+      this.tooltip = {
+        show: true,
+        x,
+        y
+      };
+    },
+    hideTooltip() {
+      this.tooltip.show = false;
+    },
     formatDate(dateStr) {
       if (!dateStr) return '';
       const d = new Date(dateStr);
@@ -743,20 +784,6 @@ export default {
   width: auto;
 }
 
-.series-image-wrapper::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(112, 233, 116, 0.3) 0%, transparent 100%);
-  border-radius: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.review-container:hover .series-image-wrapper::after {
-  opacity: 1;
-}
-
 .image-overlay {
   position: absolute;
   inset: 0;
@@ -824,34 +851,6 @@ export default {
   transform: translateY(-1px);
   background: rgba(24, 34, 24, 0.96);
   border-color: var(--accent-color);
-}
-
-.machine-translation-icon::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 180px;
-  max-width: 220px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(10, 14, 10, 0.96);
-  border: 1px solid rgba(112, 233, 116, 0.35);
-  color: var(--text-color);
-  font-size: 0.75rem;
-  line-height: 1.35;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 20;
-  white-space: normal;
-}
-
-.machine-translation-icon:hover::after {
-  opacity: 1;
-  visibility: visible;
 }
 
 .season-episode {

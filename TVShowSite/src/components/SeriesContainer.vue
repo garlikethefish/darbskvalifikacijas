@@ -3,14 +3,22 @@
     <img :src="getSeriesPictureUrl(series.series_picture)" alt="Series">
     <div class="title-block">
       <div class="title-row">
-        <div class="series-card-title">{{ series.title }}</div>
+        <div class="series-card-title">{{ displayTitle }}</div>
         <span
           v-if="showMachineTranslatedBadge"
           class="machine-translation-icon"
-          :title="t('machineTranslatedTitleTooltip')"
-          :data-tooltip="t('machineTranslatedTitleTooltip')"
           aria-label="machine translated title"
-        ><SvgIcon name="translate" :size="14" /></span>
+          @mouseenter="showTooltip"
+          @mouseleave="hideTooltip"
+          @focus="showTooltip"
+          @blur="hideTooltip"
+          tabindex="0"
+        >
+          <SvgIcon name="translate" :size="14" />
+          <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
+            {{ t('machineTranslatedTitleTooltip') }}
+          </Tooltip>
+        </span>
       </div>
       <div v-if="showEnglishSubtitle" class="card-subtitle">{{ series.english_title }}</div>
     </div>
@@ -28,28 +36,48 @@
 
 <script>
 import SvgIcon from './SvgIcon.vue';
+import Tooltip from './Tooltip.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
-  components: { SvgIcon },
+  components: { SvgIcon, Tooltip },
   props: {
     series: { type: Object, required: true }
   },
   data() {
     return {
-      currentLanguage: 'en'
+      currentLanguage: 'en',
+      tooltip: {
+        show: false,
+        x: 0,
+        y: 0
+      }
     };
   },
   computed: {
     isLatvian() {
       return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
     },
+    isTheBoys() {
+      // Exclusion for The Boys
+      const english = (this.series?.english_title || this.series?.title || '').trim().toLowerCase();
+      return english === 'the boys';
+    },
     showMachineTranslatedBadge() {
+      // Exclude The Boys from machine translation badge
+      if (this.isLatvian && this.isTheBoys) return false;
       return this.isLatvian && !!(this.series?.machine_translated_title || this.series?.machine_translated_series_title);
+    },
+    displayTitle() {
+      // Show 'Zēni' for The Boys in Latvian
+      if (this.isLatvian && this.isTheBoys) return 'Zēni';
+      return this.series?.title || '';
     },
     showEnglishSubtitle() {
       const localized = (this.series?.title || '').trim();
       const english = (this.series?.english_title || '').trim();
+      // Exclude The Boys from subtitle logic
+      if (this.isLatvian && this.isTheBoys) return false;
       return this.isLatvian && english && localized && english !== localized;
     },
     shortDescription() {
@@ -67,6 +95,26 @@ export default {
     getSeriesPictureUrl(path) {
       if (!path) return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
       return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
+    },
+    showTooltip(e) {
+      // Position tooltip below or above the icon, depending on space
+      const rect = e.currentTarget.getBoundingClientRect();
+      const tooltipWidth = 220;
+      const tooltipHeight = 60;
+      let x = rect.left + rect.width / 2 - tooltipWidth / 2;
+      x = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, x));
+      let y = rect.bottom + 10;
+      if (y + tooltipHeight > window.innerHeight) {
+        y = rect.top - tooltipHeight - 10;
+      }
+      this.tooltip = {
+        show: true,
+        x,
+        y
+      };
+    },
+    hideTooltip() {
+      this.tooltip.show = false;
     }
   },
   mounted() {
@@ -166,33 +214,7 @@ export default {
   border-color: var(--accent-color);
 }
 
-.machine-translation-icon::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 180px;
-  max-width: 220px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(10, 14, 10, 0.96);
-  border: 1px solid rgba(112, 233, 116, 0.35);
-  color: var(--text-color);
-  font-size: 0.75rem;
-  line-height: 1.35;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 20;
-  white-space: normal;
-}
-
-.machine-translation-icon:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
+/* Tooltip is now handled by Tooltip.vue */
 
 .card-subtitle {
   margin-top: 2px;
