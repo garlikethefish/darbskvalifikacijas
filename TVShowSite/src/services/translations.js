@@ -311,9 +311,12 @@ export const translations = {
     releaseYear: 'Release Year',
     seasons: 'Seasons',
     synopsis: 'Synopsis',
+    readMore: 'Read more',
+    readLess: 'Read less',
     noDescriptionAvailable: 'No description available.',
     writeReview: 'Write Review',
     homeReviewButton: 'Review',
+    loginRequiredToReview: 'Please log in to write a review.',
     seeAllReviews: 'See All Reviews',
     trailer: 'Trailer',
     playTrailer: 'Play trailer',
@@ -343,6 +346,7 @@ export const translations = {
     markShowWatched: 'Mark entire show as watched',
     allSeasons: 'All Seasons',
     episodesWatched: 'episodes watched',
+    watchedStatusLoginPrompt: 'Log in to track your watched episodes and seasons.',
 
     // Admin Panel
     adminPanel: 'Admin Panel',
@@ -901,9 +905,12 @@ export const translations = {
     releaseYear: 'Izlaides Gads',
     seasons: 'Sezonas',
     synopsis: 'Kopsavilkums',
+    readMore: 'Lasīt vairāk',
+    readLess: 'Lasīt mazāk',
     noDescriptionAvailable: 'Apraksts nav pieejams.',
     writeReview: 'Rakstīt Recenziju',
     homeReviewButton: 'Recenzēt',
+    loginRequiredToReview: 'Lūdzu, piesakieties, lai rakstītu recenziju.',
     seeAllReviews: 'Skatīt Visas Recenzijas',
     trailer: 'Treileris',
     playTrailer: 'Atskaņot treileri',
@@ -933,6 +940,7 @@ export const translations = {
     markShowWatched: 'Atzīmēt visu šovu kā noskatītu',
     allSeasons: 'Visas Sezonas',
     episodesWatched: 'epizodes noskatītas',
+    watchedStatusLoginPrompt: 'Lai atzīmētu noskatītās sērijas un sezonas, lūdzu, piesakieties.',
 
     // Admin Panel
     adminPanel: 'Administrēšanas Panelis',
@@ -1181,15 +1189,19 @@ export const translations = {
 };
 
 export const getTranslation = (key, language = 'en') => {
-  const lang = translations[language] || translations.en;
+  const raw = String(language || 'en').toLowerCase();
+  const langCode = raw.startsWith('lv') ? 'lv' : 'en';
+  const lang = translations[langCode] || translations.en;
   return lang[key] || key;
 };
 
 export const getCurrentLanguage = () => {
-  return localStorage.getItem('language') || 'en';
+  const raw = localStorage.getItem('language') || 'en';
+  return String(raw).toLowerCase().startsWith('lv') ? 'lv' : 'en';
 };
 
 export const setLanguage = (lang) => {
   localStorage.setItem('language', lang);
+  return lang;
 };
 

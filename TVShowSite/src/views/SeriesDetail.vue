@@ -5,13 +5,22 @@
         <div class="hero-inner">
           <h1 v-if="loading">{{ t('loading') }}</h1>
           <h1 v-else-if="series" class="hero-title-row">
-            <span>{{ series.title }}</span>
+            <span>{{ displayTitle }}</span>
             <span
               v-if="showMachineTranslatedTitleIcon"
               class="machine-translation-icon"
-              :title="t('machineTranslatedTitleTooltip')"
               aria-label="machine translated title"
-            >i</span>
+              @mouseenter="showTooltip"
+              @mouseleave="hideTooltip"
+              @focus="showTooltip"
+              @blur="hideTooltip"
+              tabindex="0"
+            >
+              <SvgIcon name="translate" :size="14" />
+              <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
+                {{ t('machineTranslatedTitleTooltip') }}
+              </Tooltip>
+            </span>
           </h1>
           <h1 v-else>{{ t('seriesDetails') }}</h1>
           <p v-if="series && showEnglishSubtitle" class="english-subtitle">{{ series.english_title }}</p>
@@ -58,13 +67,22 @@
 
         <div class="info-section">
           <h1 class="title-row">
-            <span>{{ series.title }}</span>
+            <span>{{ displayTitle }}</span>
             <span
               v-if="showMachineTranslatedTitleIcon"
               class="machine-translation-icon"
-              :title="t('machineTranslatedTitleTooltip')"
               aria-label="machine translated title"
-            >i</span>
+              @mouseenter="showTooltip"
+              @mouseleave="hideTooltip"
+              @focus="showTooltip"
+              @blur="hideTooltip"
+              tabindex="0"
+            >
+              <SvgIcon name="translate" :size="14" />
+              <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
+                {{ t('machineTranslatedTitleTooltip') }}
+              </Tooltip>
+            </span>
           </h1>
           <p v-if="showEnglishSubtitle" class="english-subtitle">{{ series.english_title }}</p>
           
@@ -82,12 +100,24 @@
 
           <div v-if="series.genres && series.genres.length" class="genres">
             <strong>{{ t('genre') }}:</strong>
-            <span v-for="genre in series.genres" :key="genre" class="genre-tag">{{ genre }}</span>
+            <span
+              v-for="genre in normalizedGenres"
+              :key="genre.id || genre.name"
+              class="genre-tag"
+            >
+              {{ genre.name }}
+            </span>
           </div>
 
           <div class="description">
             <h2>{{ t('synopsis') }}</h2>
-            <p>{{ series.description || t('noDescriptionAvailable') }}</p>
+            <p v-if="!showFullDescription">{{ truncatedDescription }}</p>
+            <p v-else>{{ series.description || t('noDescriptionAvailable') }}</p>
+            <div v-if="series.description && series.description.length > 500" class="read-more-toggle">
+              <button class="btn btn-secondary read-more-btn" @click="toggleDescription">
+                {{ showFullDescription ? t('readLess') : t('readMore') }}
+              </button>
+            </div>
           </div>
 
           <div class="actions">
@@ -102,12 +132,20 @@
         </div>
       </div>
 
-      <!-- Watched Status Component -->
-      <WatchedStatus 
-        v-if="series && fullSeriesData"
-        :seriesId="series.id"
-        :seriesData="fullSeriesData"
-      />
+      <!-- Watched Status Component or Login Prompt -->
+      <template v-if="series && fullSeriesData">
+        <WatchedStatus 
+          v-if="isLoggedIn"
+          :seriesId="series.id"
+          :seriesData="fullSeriesData"
+        />
+        <div v-else class="locked-watched-status">
+          <div class="locked-message">
+            <span class="locked-icon" aria-label="locked">🔒</span>
+            {{ t('watchedStatusLoginPrompt') }}
+          </div>
+        </div>
+      </template>
 
       <div v-if="seriesReviews.length > 0" class="reviews-section">
         <h2>{{ t('communityReviews') }}</h2>
@@ -134,11 +172,13 @@ import axios from 'axios';
 import ReviewPost from '@/components/ReviewPost.vue';
 import WatchedStatus from '@/components/WatchedStatus.vue';
 import FollowShow from '@/components/FollowShow.vue';
+import Tooltip from '@/components/Tooltip.vue';
+import SvgIcon from '@/components/SvgIcon.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   name: 'SeriesDetail',
-  components: { ReviewPost, WatchedStatus, FollowShow },
+  components: { ReviewPost, WatchedStatus, FollowShow, Tooltip, SvgIcon },
   data() {
     return {
       series: null,
@@ -148,12 +188,27 @@ export default {
       error: null,
       currentLanguage: 'en',
       trailerKey: null,
-      showTrailer: false
+      showTrailer: false,
+      tooltip: {
+        show: false,
+        x: 0,
+        y: 0
+      }
+      ,
+      showFullDescription: false
     };
   },
   computed: {
     isLatvian() {
       return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
+    },
+    isTheBoys() {
+      const english = (this.series?.english_title || this.series?.title || '').trim().toLowerCase();
+      return english === 'the boys';
+    },
+    displayTitle() {
+      if (this.isLatvian && this.isTheBoys) return 'Zēni';
+      return this.series?.title || '';
     },
     showEnglishSubtitle() {
       const localized = (this.series?.title || '').trim();
@@ -170,6 +225,31 @@ export default {
       if (start && end) return start === end ? `${start}` : `${start}-${end}`;
       if (start) return `${start}-present`;
       return '';
+    },
+    isLoggedIn() {
+      try {
+        const auth = JSON.parse(localStorage.getItem('auth'));
+        return !!(auth && auth.loggedIn && auth.user && auth.user.id);
+      } catch {
+        return false;
+      }
+    }
+    ,
+    normalizedGenres() {
+      const raw = this.series?.genres || [];
+      return raw.map(g => {
+        if (!g) return { id: null, name: '' };
+        if (typeof g === 'string') return { id: null, name: g };
+        // g is likely an object from TMDB: { id, name }
+        return { id: g.id || null, name: g.name || String(g) };
+      });
+    },
+    truncatedDescription() {
+      const raw = this.series?.description || this.t('noDescriptionAvailable');
+      if (!raw) return '';
+      const max = 500;
+      if (raw.length <= max) return raw;
+      return raw.slice(0, max - 3) + '...';
     }
   },
   methods: {
@@ -180,19 +260,39 @@ export default {
       if (!path) return new URL('../assets/series_images/basic_series.png', import.meta.url).href;
       return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
     },
+    showTooltip(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const tooltipWidth = 220;
+      const tooltipHeight = 60;
+      let x = rect.left + rect.width / 2 - tooltipWidth / 2;
+      x = Math.max(8, Math.min(window.innerWidth - tooltipWidth - 8, x));
+      let y = rect.bottom + 10;
+      if (y + tooltipHeight > window.innerHeight) {
+        y = rect.top - tooltipHeight - 10;
+      }
+      this.tooltip = {
+        show: true,
+        x,
+        y
+      };
+    },
+    hideTooltip() {
+      this.tooltip.show = false;
+    },
+    toggleDescription() {
+      this.showFullDescription = !this.showFullDescription;
+    },
     async fetchSeriesDetails() {
       const seriesId = this.$route.params.id;
       try {
         const res = await axios.get(`/api/tmdb/series-details/${seriesId}`, {
           params: { lang: this.currentLanguage }
         });
-        
         // Extract genre names from genre objects if necessary
         let genres = res.data.genres || [];
         if (genres.length > 0 && typeof genres[0] === 'object' && genres[0].name) {
           genres = genres.map(g => g.name);
         }
-        
         // Extract just the series metadata (not episodes)
         this.series = {
           id: res.data.id,
@@ -208,13 +308,11 @@ export default {
           number_of_seasons: res.data.number_of_seasons || 0,
           number_of_episodes: res.data.number_of_episodes || 0
         };
-
         // Store full series data with seasons for WatchedStatus component
         this.fullSeriesData = {
           ...this.series,
           seasons: res.data.seasons || []
         };
-        
         // Fetch reviews for this series
         this.fetchSeriesReviews(seriesId);
         this.fetchSeriesTrailer(seriesId);
@@ -242,7 +340,8 @@ export default {
     },
     closeTrailer() {
       this.showTrailer = false;
-    },
+    }
+    ,
     async fetchSeriesReviews(seriesId) {
       try {
         const res = await axios.get(`/api/reviews`, {
@@ -272,7 +371,7 @@ export default {
   beforeUnmount() {
     window.removeEventListener('languageChanged', this._languageChangedHandler);
   }
-};
+}
 </script>
 
 <style scoped>
@@ -296,6 +395,10 @@ export default {
   box-shadow: var(--hero-shadow);
   position: relative;
   overflow: hidden;
+}
+.read-more-toggle{
+  display: flex;
+  justify-content: center;
 }
 
 .hero-band::after {
@@ -375,6 +478,7 @@ export default {
   margin: -4px 0 10px;
   color: var(--subtitle-color);
   font-size: 0.95rem;
+  text-align: left;
 }
 
 .title-row {
@@ -383,11 +487,12 @@ export default {
   gap: 8px;
 }
 
+
 .machine-translation-icon {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid rgba(112, 233, 116, 0.6);
+  border: 2px solid rgb(255, 255, 255);
   color: var(--accent-color);
   display: inline-flex;
   align-items: center;
@@ -395,6 +500,16 @@ export default {
   font-size: 11px;
   font-weight: 700;
   cursor: help;
+  pointer-events: auto;
+  position: relative;
+  background: rgba(15, 20, 15, 0.72);
+  transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.machine-translation-icon:hover {
+  transform: translateY(-1px);
+  background: rgba(24, 34, 24, 0.92);
+  border-color: var(--accent-color);
 }
 
 @keyframes heroIntro {
@@ -715,6 +830,12 @@ export default {
   box-shadow: 0 0 12px rgba(112, 233, 116, 0.2);
 }
 
+.read-more-btn {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+}
+
 @keyframes cardFloat {
   0% { opacity: 0; transform: translateY(14px) scale(0.985); }
   60% { opacity: 1; transform: translateY(-2px) scale(1.01); }
@@ -793,6 +914,29 @@ export default {
   font-size: 1.5rem;
   color: var(--subtitle-color);
   margin-bottom: 1.5rem;
+}
+
+.locked-watched-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+}
+.locked-message {
+  background: rgba(112, 233, 116, 0.08);
+  border: 1.5px solid rgba(112, 233, 116, 0.18);
+  border-radius: 10px;
+  padding: 1.2rem 2rem;
+  color: var(--subtitle-color);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+.locked-icon {
+  font-size: 1.5rem;
+  color: var(--accent-color);
 }
 
 @media (max-width: 768px) {

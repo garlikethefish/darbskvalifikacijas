@@ -321,7 +321,8 @@ export default {
           loggedIn: true,
           user: data.user
         }));
-        this.$router.push('/').then(() => {
+        const nextPath = this.$route.query.next ? decodeURIComponent(this.$route.query.next) : '/';
+        this.$router.push(nextPath).then(() => {
           nextTick(() => {
             location.reload();
           });

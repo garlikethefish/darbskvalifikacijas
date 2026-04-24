@@ -24,9 +24,17 @@
     </div>
     <div class="caption-text">{{ shortDescription }}</div>
 
-    <router-link :to="`/create-review?seriesId=${series.id}`">
-      <button class="hover-button">{{ t('homeReviewButton') }}</button>
-    </router-link>
+    <button class="hover-button" @click="handleReviewClick($event)">{{ t('homeReviewButton') }}</button>
+    <LoginPromptModal
+      :show="loginPromptVisible"
+      :x="promptX"
+      :y="promptY"
+      :message="t('loginRequiredToReview')"
+      :confirmText="t('login')"
+      :cancelText="t('cancel')"
+      @confirm="onLoginConfirm"
+      @cancel="onLoginCancel"
+    />
 
     <router-link :to="`/series/${series.id}`">
       <button class="modal-button">{{ t('homeMoreButton') }}</button>
@@ -37,10 +45,11 @@
 <script>
 import SvgIcon from './SvgIcon.vue';
 import Tooltip from './Tooltip.vue';
+import LoginPromptModal from './LoginPromptModal.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
-  components: { SvgIcon, Tooltip },
+  components: { SvgIcon, Tooltip, LoginPromptModal },
   props: {
     series: { type: Object, required: true }
   },
@@ -51,7 +60,10 @@ export default {
         show: false,
         x: 0,
         y: 0
-      }
+      },
+      loginPromptVisible: false,
+      promptX: null,
+      promptY: null
     };
   },
   computed: {
@@ -115,6 +127,32 @@ export default {
     },
     hideTooltip() {
       this.tooltip.show = false;
+    }
+    ,
+    handleReviewClick(e) {
+      try {
+        const auth = JSON.parse(localStorage.getItem('auth'));
+        if (auth && auth.loggedIn && auth.user && auth.user.id) {
+          this.$router.push(`/create-review?seriesId=${this.series.id}`);
+          return;
+        }
+      } catch (err) {
+        // ignore parse error and treat as not logged in
+      }
+
+      // Not logged in - show custom prompt near the button
+      const rect = e.currentTarget.getBoundingClientRect();
+      this.promptX = rect.left + rect.width / 2;
+      this.promptY = rect.bottom + 10;
+      this.loginPromptVisible = true;
+    },
+    onLoginConfirm() {
+      this.loginPromptVisible = false;
+      const next = encodeURIComponent(`/create-review?seriesId=${this.series.id}`);
+      this.$router.push(`/login?next=${next}`);
+    },
+    onLoginCancel() {
+      this.loginPromptVisible = false;
     }
   },
   mounted() {

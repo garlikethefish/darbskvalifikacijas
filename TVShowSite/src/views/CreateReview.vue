@@ -50,24 +50,24 @@
                   <label>{{ t('reviewTitle') }}</label>
                   <input v-model="review.title" type="text" />
 
+
                   <label>{{ t('description') }}</label>
                   <textarea v-model="review.description"></textarea>
 
                   <label>{{ t('rating') }}</label>
-                    <div class="rating-circles">
-                      <div
-                        v-for="n in 5"
-                        :key="n"
-                        class="circle"
-                        :class="{ selected: review.rating === n, hover: hoverRating === n }"
-                        @click="review.rating = n"
-                        @mouseenter="hoverRating = n"
-                        @mouseleave="hoverRating = null"
-                      >
-                        {{ n }}
-                      </div>
+                  <div class="rating-circles">
+                    <div
+                      v-for="n in 5"
+                      :key="n"
+                      class="circle"
+                      :class="{ selected: review.rating === n, hover: hoverRating === n }"
+                      @click="review.rating = n"
+                      @mouseenter="hoverRating = n"
+                      @mouseleave="hoverRating = null"
+                    >
+                      {{ n }}
                     </div>
-
+                  </div>
 
                   <button @click="submitReview">{{ t('postReview') }}</button>
                 </div>
@@ -80,12 +80,10 @@
               >
                 <div class="episode-image-wrapper">
                   <img :src="getEpisodePictureUrl(episode.still_path)" />
-
                   <div class="episode-badge">
                     E{{ String(episode.episode_number).padStart(2, "0") }}
                   </div>
                 </div>
-
                 <div class="episode-meta">
                   <p class="episode-title">{{ episode.name }}</p>
                 </div>
@@ -99,8 +97,7 @@
 </template>
 
 <script>
-import axios from 'axios'
-import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
+import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   name: "CreateReview",
@@ -116,7 +113,8 @@ export default {
       loadingEpisodes: false,
       hoverRating: 0,
       isReviewModalOpen: false,
-      currentLanguage: 'en'
+      currentLanguage: 'en',
+      openModalOnSeriesSelect: false // flag to open modal after series select
     };
   },
   methods: {
@@ -133,13 +131,11 @@ export default {
         console.error("Failed to fetch top series:", err);
       }
     },
-
     async searchSeries() {
       if (!this.searchQuery.trim()) {
         this.filteredSeries = [...this.seriesList];
         return;
       }
-
       try {
         const res = await fetch(
           `/api/tmdb/search-series?query=${encodeURIComponent(this.searchQuery)}&lang=${encodeURIComponent(this.currentLanguage)}`
@@ -152,15 +148,12 @@ export default {
         this.filteredSeries = [];
       }
     },
-
     async selectSeries(series) {
       this.selectedSeries = series;
       this.selectedEpisode = null;
       this.episodesBySeason = [];
       this.loadingEpisodes = true;
-
       try {
-        // Single request to fetch all seasons + episodes
         const res = await fetch(`/api/tmdb/series-details/${series.id}?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
         this.episodesBySeason = data.seasons || [];
@@ -171,12 +164,10 @@ export default {
         this.loadingEpisodes = false;
       }
     },
-
     getSeriesPictureUrl(path) {
       if (!path) return new URL("../assets/series_images/basic_series.png", import.meta.url).href;
       return path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w500${path}`;
     },
-
     getEpisodePictureUrl(path) {
       if (!path) return new URL("../assets/series_images/basic_series.png", import.meta.url).href;
       return path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w300${path}`;
@@ -184,23 +175,20 @@ export default {
     selectEpisode(episode) {
       this.selectedEpisode = episode;
       this.isReviewModalOpen = true;
-      this.review.rating = null; // reset rating when selecting new episode
+      this.review.rating = null;
       this.review.title = "";
       this.review.description = "";
     },
-
     closeReviewModal() {
       this.isReviewModalOpen = false;
-      this.review.rating = null; // reset rating when closing modal
+      this.review.rating = null;
       this.hoverRating = null;
       this.review.title = "";
       this.review.description = "";
     },
-
     async submitReview() {
       const auth = JSON.parse(localStorage.getItem("auth"));
       if (!auth?.user || !this.selectedEpisode || !this.selectedSeries) return;
-
       const payload = {
         tmdb_series_id: this.selectedSeries.id,
         season_number: this.selectedEpisode.season_number,
@@ -209,7 +197,6 @@ export default {
         review_title: this.review.title,
         review_text: this.review.description
       };
-
       try {
         const res = await fetch("/api/reviews", {
           method: "POST",
@@ -219,18 +206,15 @@ export default {
           },
           body: JSON.stringify(payload)
         });
-
         let data = {};
         try {
           data = await res.json();
         } catch {
           throw new Error("Invalid server response");
         }
-
         if (!res.ok) {
           throw new Error(data.error || "Failed to post review");
         }
-
         alert(this.t('reviewPostedSuccessfully'));
         this.$router.push(`/profile/${auth?.user?.id}`);
       } catch (err) {
@@ -238,27 +222,30 @@ export default {
         alert(err.message);
       }
     }
-
   },
   mounted() {
     this.currentLanguage = getCurrentLanguage();
     this.fetchTopSeries();
-
-    // Pre-select series if passed via query parameter
     this.$nextTick(() => {
       const seriesId = this.$route.query.seriesId;
       if (seriesId) {
-        const series = this.seriesList.find(s => s.id == seriesId);
-        if (series) {
-          this.selectSeries(series);
-        }
+        this.openModalOnSeriesSelect = true;
+        const trySelect = () => {
+          const series = this.seriesList.find(s => s.id == seriesId);
+          if (series) {
+            this.selectSeries(series).then(() => {
+              this.isReviewModalOpen = true;
+            });
+          } else {
+            setTimeout(trySelect, 100);
+          }
+        };
+        trySelect();
       }
     });
-
     this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
       this.fetchTopSeries();
-      this.$forceUpdate();
     };
     window.addEventListener('languageChanged', this._languageChangedHandler);
   },

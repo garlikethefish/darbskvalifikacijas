@@ -198,7 +198,15 @@ async function translateTextToEnglish(text) {
 
 async function translateTextWithMyMemory(text, sourceLanguage, targetLanguage) {
   if (!hasMeaningfulText(text)) return text;
-  const cacheKey = `${sourceLanguage}|${targetLanguage}|${text}`;
+
+  // Some public translation endpoints have query-length limits (≈500 chars).
+  // Truncate long inputs to that size and append ellipsis so we don't exceed limits
+  // and don't get an error string returned as the translated text.
+  const MAX_Q_LEN = 500;
+  const sourceText = String(text || '').trim();
+  const requestText = sourceText.length > MAX_Q_LEN ? sourceText.slice(0, MAX_Q_LEN - 3) + '...' : sourceText;
+
+  const cacheKey = `${sourceLanguage}|${targetLanguage}|${requestText}`;
   if (!global.__machineTranslationCache) {
     global.__machineTranslationCache = new Map();
   }
@@ -206,12 +214,10 @@ async function translateTextWithMyMemory(text, sourceLanguage, targetLanguage) {
     return global.__machineTranslationCache.get(cacheKey);
   }
 
-  const sourceText = text.trim();
-
   try {
     const response = await axios.get('https://api.mymemory.translated.net/get', {
       params: {
-        q: text,
+        q: requestText,
         langpair: `${sourceLanguage}|${targetLanguage}`
       }
     });
@@ -230,7 +236,7 @@ async function translateTextWithMyMemory(text, sourceLanguage, targetLanguage) {
         sl: sourceLanguage,
         tl: targetLanguage,
         dt: 't',
-        q: text
+        q: requestText
       }
     });
 
@@ -355,17 +361,74 @@ const cachedGenresByLang = {};
 const genreCacheTimeByLang = {};
 const GENRE_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
+// Static fallback translations for common TMDB TV genres to Latvian.
+// These ensure predictable localized labels without relying on third-party translation for short genre names.
+const STATIC_GENRE_TRANSLATIONS_LV = {
+  'Action & Adventure': 'Darbība un piedzīvojumi',
+  'Animation': 'Animācija',
+  'Comedy': 'Komedija',
+  'Crime': 'Noziegums',
+  'Documentary': 'Dokumentālais',
+  'Drama': 'Drāma',
+  'Family': 'Ģimenes',
+  'Kids': 'Bērniem',
+  'Mystery': 'Mistērija',
+  'News': 'Ziņas',
+  'Reality': 'Realitāte',
+  'Sci-Fi & Fantasy': 'Zinātniskā fantastika',
+  'Soap': 'Seriāls',
+  'Talk': 'Sarunu šovs',
+  'War & Politics': 'Karš un politika',
+  'Western': 'Rietumu'
+};
+
 async function getGenreMap(language = 'en-US') {
   if (cachedGenresByLang[language] && Date.now() - (genreCacheTimeByLang[language] || 0) < GENRE_CACHE_TTL) {
     return cachedGenresByLang[language];
   }
 
   const res = await tmdbGet('/genre/tv/list', {}, language);
+  const genresList = res.data.genres || [];
 
   cachedGenresByLang[language] = {};
-  res.data.genres.forEach(g => {
-    cachedGenresByLang[language][g.id] = g.name;
-  });
+
+  // If requesting Latvian, TMDB may still return English names for some genres.
+  // Fetch English names and auto-translate any genres that are identical to English.
+  if (String(language || '').toLowerCase().startsWith('lv')) {
+    let enMap = {};
+    try {
+      const enRes = await tmdbGet('/genre/tv/list', {}, 'en-US');
+      (enRes.data.genres || []).forEach(g => { enMap[g.id] = g.name; });
+    } catch (err) {
+      enMap = {};
+    }
+
+    for (const g of genresList) {
+      let name = g.name || '';
+      const enName = enMap[g.id] || '';
+
+      // Prefer a static translation if available for short genre labels
+      if (enName && STATIC_GENRE_TRANSLATIONS_LV[enName]) {
+        name = STATIC_GENRE_TRANSLATIONS_LV[enName];
+      } else if (enName && name && name === enName) {
+        // Only attempt machine translation when TMDB returned English text for the Latvian request
+        try {
+          const translated = await translateTextToLatvian(enName);
+          if (hasMeaningfulText(translated)) {
+            name = translated.trim();
+          }
+        } catch (err) {
+          // ignore translation errors and fall back to original name
+        }
+      }
+
+      cachedGenresByLang[language][g.id] = name;
+    }
+  } else {
+    genresList.forEach(g => {
+      cachedGenresByLang[language][g.id] = g.name;
+    });
+  }
 
   genreCacheTimeByLang[language] = Date.now();
   return cachedGenresByLang[language];
@@ -2208,10 +2271,8 @@ app.get('/api/tmdb/top-series', async (req, res) => {
   try {
     const language = resolveTmdbLanguage(req.query.lang);
     const isLatvian = language.startsWith('lv');
-    // 1. Fetch the genre list from TMDB
-    const genreRes = await tmdbGet('/genre/tv/list', {}, language);
-    const genreMap = {};
-    genreRes.data.genres.forEach(g => { genreMap[g.id] = g.name; });
+    // 1. Fetch the genre map (handles Latvian auto-translation and caching)
+    const genreMap = await getGenreMap(language);
 
     // 2. Fetch the popular TV shows (first page)
     const response = await tmdbGet('/tv/popular', { page: 1 }, language);
