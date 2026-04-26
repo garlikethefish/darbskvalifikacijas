@@ -180,12 +180,18 @@
           <div class="sd-title">{{ t('yourPersonalStats') }}</div>
           <div class="sd-sub">{{ isLoggedIn ? (hasEnoughReviews ? t('yourViewingJourney') : t('reviewsNeeded')) : t('signInToUnlock') }}</div>
         </div>
+        <div v-if="isLoggedIn && hasEnoughReviews" style="margin-left:12px">
+          <button class="pdf-btn" :disabled="generatingPdf" @click="downloadStatsPdf">
+            <span v-if="generatingPdf">{{ t('Generating') || 'Generating...' }}</span>
+            <span v-else>{{ t('Download PDF') || 'Download PDF' }}</span>
+          </button>
+        </div>
         <div v-if="!isLoggedIn" class="sd-lock"><SvgIcon name="lock" :size="16" /></div>
       </div>
     </div>
 
     <!-- ── Bottom Row ── -->
-    <div class="bot-row">
+    <div class="bot-row" id="userExportArea">
       <div class="panel panel-profit reveal" data-delay="0">
         <div class="panel-hd">
           <span class="panel-title">{{ isLoggedIn ? t('yourTopShowsByReviewCount') : t('yourPersonalStats') }}</span>
@@ -254,6 +260,8 @@ import { Chart, registerables } from 'chart.js';
 import axios from 'axios';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 import SvgIcon from '@/components/SvgIcon.vue';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 Chart.register(...registerables);
 
 export default {
@@ -262,6 +270,7 @@ export default {
     return {
       isLoggedIn: false,
       hasEnoughReviews: false,
+        generatingPdf: false,
       siteStats: {},
       userStats: {},
       donutChart: null,
@@ -548,6 +557,174 @@ export default {
         titleFont: { size: 13, weight: '700' },
         bodyFont: { size: 12 },
       };
+    },
+
+    async downloadStatsPdf() {
+      if (!this.isLoggedIn || !this.hasEnoughReviews) return;
+      try {
+        this.generatingPdf = true;
+        await this.$nextTick();
+
+        const auth = JSON.parse(localStorage.getItem('auth') || '{}');
+        const username = auth?.user?.username || 'user';
+        const filename = `TVshow-Personal-Stats-${username}-${new Date().toISOString().slice(0,10)}.pdf`;
+
+        // Build a clean, printable export element (white background, tidy layout)
+        const exportEl = document.createElement('div');
+        exportEl.style.boxSizing = 'border-box';
+        exportEl.style.padding = '22px';
+        exportEl.style.background = '#ffffff';
+        exportEl.style.color = '#111';
+        exportEl.style.width = '1000px';
+        exportEl.style.fontFamily = 'Helvetica, Arial, sans-serif';
+        exportEl.style.fontSize = '13px';
+
+        // Header
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.marginBottom = '12px';
+        header.innerHTML = `
+          <div>
+            <div style="font-size:20px;font-weight:800;color:#2b6f47">${this.t('yourPersonalStats')}</div>
+            <div style="font-size:12px;color:#666;margin-top:6px">${this.t('yourViewingJourney')}</div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#666">${username}<br>${new Date().toLocaleDateString()}</div>
+        `;
+        exportEl.appendChild(header);
+
+        // User KPI row (simple cards)
+        const kpiRow = document.createElement('div');
+        kpiRow.style.display = 'flex';
+        kpiRow.style.gap = '12px';
+        kpiRow.style.marginBottom = '14px';
+
+        const us = this.userStats || {};
+        const makeKpi = (label, value, color) => {
+          const card = document.createElement('div');
+          card.style.flex = '1';
+          card.style.padding = '10px';
+          card.style.borderRadius = '10px';
+          card.style.background = '#f6fff7';
+          card.style.border = '1px solid rgba(0,0,0,0.06)';
+          card.innerHTML = `<div style="font-weight:800;font-size:16px;color:${color}">${value}</div><div style="font-size:11px;color:#444;margin-top:6px">${label}</div>`;
+          return card;
+        };
+
+        kpiRow.appendChild(makeKpi(this.t('yourFavorite') || 'Favorite', `${this.formatRating(us.highestRated)}/5`, '#2b6f47'));
+        kpiRow.appendChild(makeKpi(this.t('mostWatched') || 'Most Watched', `${us.mostReviewed?.review_count || 0}`, '#177f6b'));
+        kpiRow.appendChild(makeKpi(this.t('notYourStyle') || 'Not your style', `${this.formatRating(us.lowestRated)}/5`, '#c96b2b'));
+        exportEl.appendChild(kpiRow);
+
+        // Helper: render an existing canvas to a dataURL at higher resolution
+        // Preserves chart contrast by painting the chart panel background
+        const canvasToDataUrl = (canvas, targetWidth = 920) => {
+          if (!canvas) return null;
+          const rect = canvas.getBoundingClientRect();
+          const cssW = Math.max(1, Math.round(rect.width));
+          const cssH = Math.max(1, Math.round(rect.height));
+          const scale = Math.max(2, Math.ceil(targetWidth / cssW));
+          const temp = document.createElement('canvas');
+          temp.width = cssW * scale;
+          temp.height = cssH * scale;
+          const tctx = temp.getContext('2d');
+
+          // Determine a solid background color from the nearest panel (fallback to dark)
+          let bgColor = '#06140a';
+          try {
+            const panelEl = canvas.closest && canvas.closest('.panel') || canvas.parentElement || document.body;
+            const cs = window.getComputedStyle(panelEl);
+            let styleBg = cs && (cs.backgroundColor || cs.getPropertyValue('background-color')) || '';
+            if (styleBg && styleBg !== 'transparent') {
+              const m = styleBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9\.]+))?\)/);
+              if (m) {
+                const r = parseInt(m[1], 10), g = parseInt(m[2], 10), b = parseInt(m[3], 10);
+                bgColor = `rgb(${r}, ${g}, ${b})`;
+              } else {
+                bgColor = styleBg;
+              }
+            }
+          } catch (e) {
+            /* ignore and use fallback */
+          }
+
+          tctx.fillStyle = bgColor;
+          tctx.fillRect(0, 0, temp.width, temp.height);
+
+          // draw using the canvas's internal pixel size to preserve clarity
+          const srcW = canvas.width || cssW;
+          const srcH = canvas.height || cssH;
+          tctx.drawImage(canvas, 0, 0, srcW, srcH, 0, 0, temp.width, temp.height);
+          return temp.toDataURL('image/png');
+        };
+
+        // Attach charts (profit + userBar) as high-res images
+        const chartIds = ['profitChart', 'userBarChart'];
+        for (const id of chartIds) {
+          const c = this.$el.querySelector(`#${id}`);
+          if (c) {
+            const dataUrl = canvasToDataUrl(c, 920);
+            if (dataUrl) {
+              const img = new Image();
+              img.src = dataUrl;
+              img.style.width = '100%';
+              img.style.display = 'block';
+              img.style.marginBottom = '12px';
+              exportEl.appendChild(img);
+            }
+          }
+        }
+
+        // Place the export element off-screen for rendering
+        exportEl.style.position = 'fixed';
+        exportEl.style.left = '-9999px';
+        document.body.appendChild(exportEl);
+
+        // Allow images to settle
+        await new Promise(r => setTimeout(r, 120));
+
+        // Render exportEl to a canvas and then split into A4 pages if needed
+        const rendered = await html2canvas(exportEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        const imgData = rendered.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfW = pdf.internal.pageSize.getWidth() - 20; // margin
+        const pdfH = pdf.internal.pageSize.getHeight() - 20;
+
+        const imgWpx = rendered.width;
+        const imgHpx = rendered.height;
+        const pxToPt = pdfW / imgWpx; // scale factor from canvas px to PDF pt
+        const renderedHeightPt = imgHpx * pxToPt;
+
+        if (renderedHeightPt <= pdfH) {
+          pdf.addImage(imgData, 'PNG', 10, 10, pdfW, renderedHeightPt);
+        } else {
+          // slice vertically into pages
+          let position = 0;
+          const pageHeightPx = Math.floor(pdfH / pxToPt);
+          while (position < imgHpx) {
+            const sliceH = Math.min(pageHeightPx, imgHpx - position);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = imgWpx;
+            sliceCanvas.height = sliceH;
+            const sctx = sliceCanvas.getContext('2d');
+            sctx.drawImage(rendered, 0, position, imgWpx, sliceH, 0, 0, imgWpx, sliceH);
+            const sliceData = sliceCanvas.toDataURL('image/png');
+            const sliceHpt = sliceH * pxToPt;
+            pdf.addImage(sliceData, 'PNG', 10, 10, pdfW, sliceHpt);
+            position += sliceH;
+            if (position < imgHpx) pdf.addPage();
+          }
+        }
+
+        pdf.save(filename);
+        document.body.removeChild(exportEl);
+      } catch (err) {
+        console.error('PDF generation failed', err);
+        alert(this.t('pdfFailed') || 'Failed to generate PDF');
+      } finally {
+        this.generatingPdf = false;
+      }
     },
 
     initParallax() {
@@ -1195,6 +1372,12 @@ div {
 .chart-wrap { height: 230px; position: relative; }
 .chart-wrap canvas { width: 100% !important; height: 100% !important; }
 .chart-bar-wrap { height: 160px; margin-top: 14px; }
+
+/* PDF download button */
+.panel-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.pdf-btn { padding: 0.45rem 0.9rem; background: linear-gradient(135deg, var(--gradient-start), var(--medium-bg-color)); color: var(--text-color); border-radius: 10px; font-weight: 700; border: 1px solid rgba(112,233,116,0.18); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.15s; }
+.pdf-btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
+.pdf-btn:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
 
 /* Profit panel — inherits glass from .panel */
 

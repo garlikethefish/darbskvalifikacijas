@@ -89,14 +89,21 @@
     <div v-else-if="filteredAndSortedReviews.length === 0" class="no-reviews">
       <p>{{ t('noReviewsFound') }}</p>
     </div>
-    <div v-else :class="['reviews-container', `layout-${layoutMode}`]">
-      <ReviewPost
-        v-for="review in filteredAndSortedReviews"
+    <div v-else :class="['reviews-container', `layout-${layoutMode}`]" ref="reviewsContainer">
+      <div
+        v-for="(review, idx) in visibleReviewsList"
         :key="review.id"
-        :review="review"
-        @review-deleted="handleReviewDeleted"
-      />
+        class="review-item"
+        :style="{'--i': idx}"
+      >
+        <ReviewPost
+          :review="review"
+          @review-deleted="handleReviewDeleted"
+        />
+      </div>
     </div>
+
+    <div ref="reviewsSentinel" class="scroll-sentinel" aria-hidden="true"></div>
   </div>
 </template>
 
@@ -137,7 +144,22 @@ export default {
         episodes: 'Episode',
         ratings: 'Rating'
       }
+      ,visibleReviews: 9
     };
+  },
+  watch: {
+    filteredAndSortedReviews() {
+      if (this.visibleReviews > this.filteredAndSortedReviews.length) {
+        const cols = this.computeColsReviews();
+        const initial = Math.max(1, cols) * 3;
+        this.visibleReviews = Math.min(initial, this.filteredAndSortedReviews.length);
+      }
+      if (this.filteredAndSortedReviews.length > this.visibleReviews) {
+        this.setupReviewsObserver();
+      } else {
+        this.teardownReviewsObserver();
+      }
+    }
   },
   computed: {
     sortOptions() {
@@ -209,6 +231,9 @@ export default {
 
       return filtered;
     }
+    ,visibleReviewsList() {
+      return this.filteredAndSortedReviews.slice(0, this.visibleReviews);
+    }
   },
   methods: {
     t(key) {
@@ -232,6 +257,8 @@ export default {
       this.filterOptions.users = Array.from(users).sort();
       this.filterOptions.series = Array.from(series).sort();
       this.filterOptions.episodes = Array.from(episodes).sort();
+      // ensure visibleReviews isn't larger than available
+      this.visibleReviews = Math.min(this.visibleReviews || 0, this.filteredAndSortedReviews.length || 0) || this.visibleReviews;
     },
     async fetchReviews() {
       this.loading = true;
@@ -242,13 +269,66 @@ export default {
         });
         this.reviews = res.data;
         this.updateFilterOptions();
+        this.$nextTick(() => {
+          const cols = this.computeColsReviews();
+          const initial = Math.max(1, cols) * 3;
+          this.visibleReviews = Math.min(initial, this.filteredAndSortedReviews.length);
+          this.setupReviewsObserver();
+        });
       } catch (err) {
         console.error('Failed to load reviews:', err);
         this.error = this.t('failedToLoadReview');
       } finally {
         this.loading = false;
       }
-    }
+    },
+    computeColsReviews() {
+      const container = this.$refs.reviewsContainer;
+      const minCard = 600; // matches CSS min width
+      const gap = 24; // grid gap as in CSS
+      if (container) {
+        const gridWidth = container.clientWidth;
+        return Math.max(1, Math.floor((gridWidth + gap) / (minCard + gap)));
+      }
+      return this.layoutMode === 'single' ? 1 : 1;
+    },
+    loadMoreReviews() {
+      const cols = this.computeColsReviews() || 1;
+      const remainder = this.visibleReviews % cols;
+      let toAdd = 0;
+      if (remainder !== 0) {
+        toAdd += (cols - remainder);
+        toAdd += cols * 3;
+      } else {
+        toAdd += cols * 3;
+      }
+      this.visibleReviews = Math.min(this.visibleReviews + toAdd, this.filteredAndSortedReviews.length);
+    },
+    setupReviewsObserver() {
+      if (this._reviewsObserver) return;
+      const options = { root: null, rootMargin: '300px', threshold: 0.5 };
+      this._reviewsObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            if (this.visibleReviews < this.filteredAndSortedReviews.length) {
+              this.loadMoreReviews();
+            } else {
+              this._reviewsObserver.disconnect();
+            }
+          }
+        }
+      }, options);
+      this.$nextTick(() => {
+        const el = this.$refs.reviewsSentinel;
+        if (el) this._reviewsObserver.observe(el);
+      });
+    },
+    teardownReviewsObserver() {
+      if (this._reviewsObserver) {
+        this._reviewsObserver.disconnect();
+        this._reviewsObserver = null;
+      }
+    },
   },
   mounted() {
     this.currentLanguage = getCurrentLanguage();
@@ -271,6 +351,7 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('languageChanged', this._languageChangedHandler);
+    this.teardownReviewsObserver();
   }
 };
 </script>
@@ -671,4 +752,31 @@ export default {
     height: 240px;
   }
 }
+
+.review-item {
+  animation: fadeUp 360ms cubic-bezier(.16,.84,.24,1) both;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-delay: calc(var(--i) * 36ms);
+}
+
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) rotateX(10deg) scale(0.985);
+    filter: blur(4px) saturate(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) rotateX(3deg) scale(1.01);
+    filter: blur(0) saturate(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg) scale(1);
+    filter: blur(0) saturate(1);
+  }
+}
+
+.scroll-sentinel { width: 1px; height: 1px; }
 </style>

@@ -105,6 +105,8 @@
           </div>
         </div>
 
+        <div ref="sentinel" class="scroll-sentinel" aria-hidden="true"></div>
+
         <div class="load-more-wrap" v-if="recommendations.length > visible">
           <button class="load-more" @click="loadMore">{{ t('loadMore') }}</button>
         </div>
@@ -175,6 +177,36 @@ export default {
         this.loading = false;
       }
     },
+    setupObserver() {
+      if (this._observer) return;
+      const options = { root: null, rootMargin: '200px', threshold: 0.5 };
+      this._observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const len = this.filteredRecommendations.length;
+            if (this.visible < len && !this._loadingMore) {
+              this._loadingMore = true;
+              this.loadMore();
+              this.$nextTick(() => { this._loadingMore = false; });
+            } else if (this.visible >= len) {
+              this._observer.disconnect();
+            }
+          }
+        }
+      }, options);
+
+      this.$nextTick(() => {
+        const el = this.$refs.sentinel;
+        if (el) this._observer.observe(el);
+      });
+    },
+    teardownObserver() {
+      if (this._observer) {
+        this._observer.disconnect();
+        this._observer = null;
+      }
+      this._loadingMore = false;
+    },
     loadMore() {
       // Add two full rows per click (fill partial row first if needed)
       const cols = this.computeCols() || 1;
@@ -220,6 +252,10 @@ export default {
         window.addEventListener('resize', this.updateColumns);
         this._hasResize = true;
       }
+      // make sure observer is active if more items available
+      this.$nextTick(() => {
+        if (this.filteredRecommendations.length > this.visible) this.setupObserver();
+      });
     }
 
     ,clearFilters() {
@@ -227,6 +263,10 @@ export default {
       this.selectedRating = 0;
       // reset visible to initial count (but not greater than filtered length)
       this.visible = Math.min(10, this.filteredRecommendations.length || 10);
+    }
+    ,ensureVisibleWithinFiltered() {
+      this.visible = Math.min(this.visible, this.filteredRecommendations.length || 10);
+      if (this.filteredRecommendations.length > this.visible) this.setupObserver();
     }
   },
 
@@ -244,9 +284,17 @@ export default {
     }
   },
 
+  watch: {
+    filteredRecommendations() {
+      this.ensureVisibleWithinFiltered();
+    }
+  },
+
   async mounted() {
     this.currentLanguage = getCurrentLanguage();
     await this.loadRecommendations();
+    // start intersection observer for autoload
+    this.setupObserver();
 
     this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
@@ -259,6 +307,7 @@ export default {
   beforeUnmount() {
     window.removeEventListener('resize', this.updateColumns);
     window.removeEventListener('languageChanged', this._languageChangedHandler);
+    this.teardownObserver();
   }
 };
 </script>
@@ -771,4 +820,5 @@ export default {
   transform: translateY(-2px);
 }
 
+.scroll-sentinel { width: 1px; height: 1px; }
 </style>

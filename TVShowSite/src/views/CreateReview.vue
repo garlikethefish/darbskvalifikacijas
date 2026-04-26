@@ -114,7 +114,7 @@ export default {
       hoverRating: 0,
       isReviewModalOpen: false,
       currentLanguage: 'en',
-      openModalOnSeriesSelect: false // flag to open modal after series select
+      // note: when navigated here from a series page we will preselect via query param
     };
   },
   methods: {
@@ -179,6 +179,38 @@ export default {
       this.review.title = "";
       this.review.description = "";
     },
+    async selectSeriesById(seriesId) {
+      this.selectedSeries = null;
+      this.selectedEpisode = null;
+      this.episodesBySeason = [];
+      this.loadingEpisodes = true;
+      try {
+        const res = await fetch(`/api/tmdb/series-details/${seriesId}?lang=${encodeURIComponent(this.currentLanguage)}`);
+        if (!res.ok) throw new Error('Failed to fetch series');
+        const data = await res.json();
+        const seriesObj = {
+          id: data.id,
+          title: data.name || data.title || '',
+          series_picture: data.series_picture || data.poster_path || data.poster || ''
+        };
+        // ensure the series appears in the list so it can be visibly selected
+        if (!this.seriesList.find(s => s.id == seriesObj.id)) {
+          this.seriesList.unshift(seriesObj);
+          this.filteredSeries = [...this.seriesList];
+        }
+        this.selectedSeries = seriesObj;
+        this.episodesBySeason = data.seasons || [];
+        // scroll to episodes section for better UX
+        this.$nextTick(() => {
+          const el = document.querySelector('.episode-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      } catch (err) {
+        console.error('Failed to fetch series by id:', err);
+      } finally {
+        this.loadingEpisodes = false;
+      }
+    },
     closeReviewModal() {
       this.isReviewModalOpen = false;
       this.review.rating = null;
@@ -229,15 +261,14 @@ export default {
     this.$nextTick(() => {
       const seriesId = this.$route.query.seriesId;
       if (seriesId) {
-        this.openModalOnSeriesSelect = true;
+        // Preselect the series and load episodes without opening the review modal
         const trySelect = () => {
           const series = this.seriesList.find(s => s.id == seriesId);
           if (series) {
-            this.selectSeries(series).then(() => {
-              this.isReviewModalOpen = true;
-            });
+            this.selectSeries(series);
           } else {
-            setTimeout(trySelect, 100);
+            // If not found in the top list, fetch details directly by id
+            this.selectSeriesById(seriesId);
           }
         };
         trySelect();
