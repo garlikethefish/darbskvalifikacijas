@@ -55,7 +55,7 @@ export default {
   border-radius: 8px;
   padding: 6px 12px;
   margin-right: 15px;
-  width: 10%;
+  width: auto;
 }
 
 .lang-btn {
