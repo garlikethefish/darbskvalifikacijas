@@ -1,33 +1,29 @@
 <template>
   <div class="series-detail">
-    <header class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1 v-if="loading">{{ t('loading') }}</h1>
-          <h1 v-else-if="series" class="hero-title-row">
-            <span>{{ displayTitle }}</span>
-            <span
-              v-if="showMachineTranslatedTitleIcon"
-              class="machine-translation-icon"
-              aria-label="machine translated title"
-              @mouseenter="showTooltip"
-              @mouseleave="hideTooltip"
-              @focus="showTooltip"
-              @blur="hideTooltip"
-              tabindex="0"
-            >
-              <SvgIcon name="translate" :size="14" />
-              <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
-                {{ t('machineTranslatedTitleTooltip') }}
-              </Tooltip>
-            </span>
-          </h1>
-          <h1 v-else>{{ t('seriesDetails') }}</h1>
-          <p v-if="series && showEnglishSubtitle" class="english-subtitle">{{ series.english_title }}</p>
-          <p class="subtitle">{{ yearRangeSubtitle }}</p>
-        </div>
-      </div>
-    </header>
+    <HeroBand variant="series">
+      <h1 v-if="loading">{{ t('loading') }}</h1>
+      <h1 v-else-if="series" class="hero-title-row">
+        <span>{{ displayTitle }}</span>
+        <span
+          v-if="showMachineTranslatedTitleIcon"
+          class="machine-translation-icon"
+          aria-label="machine translated title"
+          @mouseenter="showTooltip"
+          @mouseleave="hideTooltip"
+          @focus="showTooltip"
+          @blur="hideTooltip"
+          tabindex="0"
+        >
+          <SvgIcon name="translate" :size="14" />
+          <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
+            {{ t('machineTranslatedTitleTooltip') }}
+          </Tooltip>
+        </span>
+      </h1>
+      <h1 v-else>{{ t('seriesDetails') }}</h1>
+      <p v-if="series && showEnglishSubtitle" class="english-subtitle">{{ series.english_title }}</p>
+      <p class="subtitle">{{ yearRangeSubtitle }}</p>
+    </HeroBand>
 
     <div v-if="loading" class="load">
       <div class="spinner"></div>
@@ -49,7 +45,7 @@
           </button>
         </div>
 
-        <!-- Video Modal -->
+        <!-- Video modālais logs -->
         <div v-if="showTrailer && trailerKey" class="video-modal" @click="closeTrailer">
           <div class="modal-content" @click.stop>
             <button class="close-btn" @click="closeTrailer" aria-label="Close video">&times;</button>
@@ -132,7 +128,7 @@
         </div>
       </div>
 
-      <!-- Watched Status Component or Login Prompt -->
+      <!-- Noskatīšanās statusa komponents vai pieteikšanās aicinājums -->
       <template v-if="series && fullSeriesData">
         <WatchedStatus 
           v-if="isLoggedIn"
@@ -174,11 +170,12 @@ import WatchedStatus from '@/components/WatchedStatus.vue';
 import FollowShow from '@/components/FollowShow.vue';
 import Tooltip from '@/components/Tooltip.vue';
 import SvgIcon from '@/components/SvgIcon.vue';
+import HeroBand from '@/components/HeroBand.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   name: 'SeriesDetail',
-  components: { ReviewPost, WatchedStatus, FollowShow, Tooltip, SvgIcon },
+  components: { ReviewPost, WatchedStatus, FollowShow, Tooltip, SvgIcon, HeroBand },
   data() {
     return {
       series: null,
@@ -240,7 +237,7 @@ export default {
       return raw.map(g => {
         if (!g) return { id: null, name: '' };
         if (typeof g === 'string') return { id: null, name: g };
-        // g is likely an object from TMDB: { id, name }
+        // g, visticamāk, ir objekts no TMDB: { id, name }
         return { id: g.id || null, name: g.name || String(g) };
       });
     },
@@ -288,12 +285,12 @@ export default {
         const res = await axios.get(`/api/tmdb/series-details/${seriesId}`, {
           params: { lang: this.currentLanguage }
         });
-        // Extract genre names from genre objects if necessary
+        // Ja nepieciešams, izgūst žanru nosaukumus no žanru objektiem
         let genres = res.data.genres || [];
         if (genres.length > 0 && typeof genres[0] === 'object' && genres[0].name) {
           genres = genres.map(g => g.name);
         }
-        // Extract just the series metadata (not episodes)
+        // Izgūst tikai seriāla metadatus (ne sērijas)
         this.series = {
           id: res.data.id,
           title: res.data.name || res.data.title || res.data.original_name || 'Unknown',
@@ -308,12 +305,12 @@ export default {
           number_of_seasons: res.data.number_of_seasons || 0,
           number_of_episodes: res.data.number_of_episodes || 0
         };
-        // Store full series data with seasons for WatchedStatus component
+        // Saglabā pilnus seriāla datus ar sezonām WatchedStatus komponentam
         this.fullSeriesData = {
           ...this.series,
           seasons: res.data.seasons || []
         };
-        // Fetch reviews for this series
+        // Iegūst šī seriāla atsauksmes
         this.fetchSeriesReviews(seriesId);
         this.fetchSeriesTrailer(seriesId);
       } catch (err) {
@@ -380,7 +377,7 @@ export default {
   margin: 0;
 }
 
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   margin-bottom: 2rem;
   overflow: hidden;
@@ -604,7 +601,7 @@ export default {
   display: block;
 }
 
-/* Video Modal */
+/* Video modālais logs */
 .video-modal {
   position: fixed;
   inset: 0;

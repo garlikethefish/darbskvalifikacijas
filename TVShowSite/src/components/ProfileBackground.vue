@@ -129,7 +129,7 @@ export default {
       this.animFrameId = requestAnimationFrame(() => this.animate());
     },
 
-    // --- STARS ---
+    // --- ZVAIGZNES ---
     renderStars(ctx, w, h) {
       const color = this.config.color || '255, 255, 200';
       for (const p of this.particles) {
@@ -149,7 +149,7 @@ export default {
       }
     },
 
-    // --- BUBBLES ---
+    // --- BURBUĻI ---
     renderBubbles(ctx, w, h) {
       const color = this.config.color || '150, 220, 255';
       for (const p of this.particles) {
@@ -169,7 +169,7 @@ export default {
       }
     },
 
-    // --- FIREFLIES ---
+    // --- JĀŅTĀRPIŅI ---
     renderFireflies(ctx, w, h) {
       const color = this.config.color || '200, 255, 100';
       for (const p of this.particles) {
@@ -193,7 +193,7 @@ export default {
       }
     },
 
-    // --- INTERACTIVE DOTS ---
+    // --- INTERAKTĪVIE PUNKTI ---
     renderDots(ctx, w, h) {
       const dotColor = this.config.dotColor || '#70e974';
       const animSpeed = this.config.animationSpeed || 0.005;
@@ -222,7 +222,7 @@ export default {
       this.time += animSpeed;
     },
 
-    // --- WAVES ---
+    // --- VIĻŅI ---
     renderWaves(ctx, w, h) {
       const color = this.config.color || '112, 233, 116';
       const waves = this.config.waveCount || 4;
@@ -241,7 +241,7 @@ export default {
       }
     },
 
-    // --- GRID ---
+    // --- REŽĢIS ---
     renderGrid(ctx, w, h) {
       const color = this.config.color || '80, 200, 200';
       const spacing = this.config.gridSpacing || 40;
@@ -262,7 +262,7 @@ export default {
         ctx.stroke();
       }
 
-      // Glow at intersections near mouse
+      // Spīdums krustpunktos pie peles
       for (let x = 0; x < w; x += spacing) {
         for (let y = 0; y < h; y += spacing) {
           const dx = x - this.mouse.x;
@@ -279,7 +279,7 @@ export default {
       }
     },
 
-    // --- SMOOTH WAVY CANVAS ---
+    // --- VIENMĒRĪGI VIĻŅAINS AUDEKLS ---
     getMouseInfluence(x, y) {
       const dx = x - this.mouse.x;
       const dy = y - this.mouse.y;
@@ -295,7 +295,7 @@ export default {
       const lineOpacity = cfg.lineOpacity || 0.8;
       const t = this.time * 0.25;
 
-      // Primary horizontal lines (reduced from 30 to 16, step 6 instead of 3)
+      // Primārās horizontālās līnijas (samazinātas no 30 uz 16, solis 6 nevis 3)
       const numPrimary = 16;
       for (let i = 0; i < numPrimary; i++) {
         const yPos = (i / numPrimary) * h;
@@ -318,7 +318,7 @@ export default {
         ctx.stroke();
       }
 
-      // Secondary vertical lines (reduced from 20 to 10, step 6)
+      // Sekundārās vertikālās līnijas (samazinātas no 20 uz 10, solis 6)
       const numSecondary = 10;
       for (let i = 0; i < numSecondary; i++) {
         const xPos = (i / numSecondary) * w;
@@ -341,7 +341,7 @@ export default {
         ctx.stroke();
       }
 
-      // Accent diagonal lines (reduced from 12 to 6, steps from 80 to 40)
+      // Akcenta diagonālās līnijas (samazinātas no 12 uz 6, soļi no 80 uz 40)
       const numAccent = 6;
       for (let i = 0; i < numAccent; i++) {
         const offset = (i / numAccent) * w * 1.5 - w * 0.25;
@@ -366,7 +366,7 @@ export default {
       }
     },
 
-    // --- FLOWING RIBBONS ---
+    // --- PLŪSTOŠAS LENTES ---
     ribbonDeform(x, y, t, progress) {
       const mouseInfl = this.getMouseInfluence(x, y);
       const wave1 = Math.sin(progress * Math.PI * 4 + t * 0.01) * 30;
@@ -390,7 +390,7 @@ export default {
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 0.5;
 
-      // Vertical lines
+      // Vertikālās līnijas
       for (let i = 0; i < gridDensity; i++) {
         const x = ribbonOffset + (i / gridDensity) * ribbonWidth;
         ctx.beginPath();
@@ -404,7 +404,7 @@ export default {
         ctx.stroke();
       }
 
-      // Horizontal lines
+      // Horizontālās līnijas
       for (let j = 0; j < gridDensity; j++) {
         const progress = (j / gridDensity) * 1.2 - 0.1;
         const y = progress * h;

@@ -86,10 +86,10 @@ export default {
     }
   },
   mounted() {
-    // set default user theme to the one user has chosen
+    // Iestata noklusējuma lietotāja motīvu uz lietotāja izvēlēto
     const initUserTheme = this.getMediaPreference();
     this.setTheme(initUserTheme);
-    // check login status from localStorage on load
+    // Ielādes laikā pārbauda pieteikšanās statusu no localStorage
     const auth = localStorage.getItem('auth');
     if (auth) {
       const parsed = JSON.parse(auth);

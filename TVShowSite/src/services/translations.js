@@ -1,7 +1,7 @@
-// Translation service for English and Latvian
+// Tulkošanas serviss angļu un latviešu valodai
 export const translations = {
   en: {
-    // Navigation & Header
+    // Navigācija un galvene
     reviews: 'Reviews',
     about: 'About',
     discover: 'Discover',
@@ -13,7 +13,7 @@ export const translations = {
     register: 'Register',
     home: 'Home',
 
-    // Login/Register
+    // Pieteikšanās/Reģistrācija
     loginTitle: 'Welcome Back',
     loginSubtitle: 'Sign in to access your personalized TV experience',
     email: 'Email Address',
@@ -28,7 +28,7 @@ export const translations = {
     registerTitle: 'Join Our Community',
     registerSubtitle: 'Create your account to start reviewing shows',
 
-    // Validation messages
+    // Validācijas ziņojumi
     emailRequired: 'Email is required',
     emailInvalid: 'Please enter a valid email address',
     passwordRequired: 'Password is required',
@@ -43,7 +43,7 @@ export const translations = {
     loginFailed: 'Invalid email or password',
     registrationFailed: 'Registration failed. Please try again.',
 
-    // Reviews Page
+    // Atsauksmju lapa
     communityReviews: 'Community Reviews',
     discoverReviews: 'Discover what everyone\'s watching and their thoughts',
     sortBy: 'Sort by',
@@ -67,7 +67,7 @@ export const translations = {
     theirRating: 'Their Rating',
     noReviewsFound: 'No reviews found. Be the first to review!',
     
-    // Home Page
+    // Sākumlapa
     topTVShowsToday: 'Top TV Shows Today',
     randomSort: 'Random',
     titleASC: 'Title (A-Z)',
@@ -77,7 +77,7 @@ export const translations = {
     genre: 'Genre',
     year: 'Year',
     
-    // Discover Page
+    // Atklāšanas lapa
     discoverTitle: 'Discover Your Next Obsession',
     discoverSubtitle: 'Recommendations powered by your reviews.',
     unlockDiscovery: 'Unlock Your Personalized Discovery',
@@ -96,7 +96,7 @@ export const translations = {
     loadMore: 'Load more',
     scanning: 'Scanning your taste profile…',
 
-    // Statistics Page
+    // Statistikas lapa
     siteStatistics: 'Site Statistics',
     browsePopular: 'Browse the community\'s favorite shows and episodes',
     highestRated: 'Highest Rated Show',
@@ -118,7 +118,7 @@ export const translations = {
     topShowsByReviewCount: 'Top Shows by Review Count',
     yourTopShowsByReviewCount: 'Your Top Shows by Review Count',
 
-    // Other UI
+    // Cita saskarne
     loading: 'Loading...',
     noResults: 'No results found',
     error: 'Error',
@@ -134,7 +134,7 @@ export const translations = {
     english: 'English',
     latvian: 'Latviešu',
     
-    // Common UI
+    // Kopīgā saskarne
     season: 'Season',
     episode: 'Episode',
     episodes: 'Episodes',
@@ -161,13 +161,14 @@ export const translations = {
     save: 'Save',
     cancel: 'Cancel',
     favoriteShows: 'Favorite Shows',
+    noFavoriteShowsYet: 'No favorite shows yet.',
     topRatedShows: 'Top Rated Shows',
     selectShow: 'Select Show',
     noShow: 'No Show',
     selectFavoriteShow: 'Select Favorite Show',
     searchForShow: 'Search for a show...',
     
-    // CreateReview Page
+    // Atsauksmes izveides lapa
     createNewReview: 'Create New Review',
     searchTVSeries: 'Search TV series...',
     tvSeries: 'TV Series',
@@ -177,23 +178,24 @@ export const translations = {
     description: 'Description',
     postReview: 'Post Review',
     
-    // About Page
+    // Par lapu
     aboutUs: 'About Us',
     aboutText: 'This is a website dedicated to TV show reviews.',
     aboutDescription: 'We aim to provide users with the ability to journal their favorite TV show episodes as well as view others reviews.',
     satisfiedCustomer: 'one of our satisfied customers',
     oneOfOurSatisfiedCustomers: 'one of our satisfied customers',
     
-    // Contact Page
+    // Kontaktinformācijas lapa
     contactUs: 'Contact us!',
     ourSupportTeam: '<- our support team',
     readyToTechSupport: 'ready to tech support at any time!*',
     termsAndConditions: '*terms and conditions apply. will never actually tech support.',
     
-    // Quiz Page
+    // Viktorīnas lapa
     quizzes: 'Quizzes',
     testYourKnowledge: 'Test your knowledge about your favorite TV shows',
     takeQuiz: 'Take Quiz',
+    loginToTakeQuiz: 'Log in to take quizzes',
     retake: 'Retake',
     noQuizzesAvailable: 'No quizzes available yet',
     earned: 'Earned',
@@ -214,7 +216,7 @@ export const translations = {
     nextRetakeTime: 'You can retake this quiz at:',
     remaining: 'Remaining',
     completed: 'Completed',
-    // Quiz categories & filters
+    // Viktorīnu kategorijas un filtri
     dailyQuiz: 'Daily Quiz',
     allCategories: 'All',
     seriesCategory: 'Series',
@@ -232,7 +234,7 @@ export const translations = {
     directors: 'Directors',
     actors: 'Actors',
 
-    // Cosmetics
+    // Kosmētika
     cosmetics: 'Cosmetics',
     cursorTrails: 'Cursor Trails',
     backgroundEffects: 'Background Effects',
@@ -258,7 +260,7 @@ export const translations = {
     followerCount: 'Follower Count',
     quizCompletions: 'Quiz Completions',
 
-    // Additional missing keys
+    // Papildu trūkstošās atslēgas
     noSeriesMatch: 'No series match your filters.',
     admin: 'Admin',
     rateShows: 'Rate Shows',
@@ -307,7 +309,7 @@ export const translations = {
     allRightsReserved: 'All rights reserved: 2025',
     ourSocialMedia: 'Our social media',
 
-    // Series Detail
+    // Seriāla detaļas
     releaseYear: 'Release Year',
     seasons: 'Seasons',
     synopsis: 'Synopsis',
@@ -325,7 +327,7 @@ export const translations = {
     seriesNotFound: 'Series not found',
     backHome: 'Back to Home',
 
-    // Review Detail
+    // Atsauksmes detaļas
     by: 'By',
     aboutSeries: 'About',
     status: 'Status',
@@ -336,19 +338,19 @@ export const translations = {
     secretBadgeUnlocked: 'Secret Badge Unlocked!',
     newCosmeticUnlocked: 'New Cosmetic Unlocked!',
 
-    // Review Post
+    // Atsauksmes ieraksts
     seriesTitle: 'Series Title',
     episodeTitle: 'Episode Title',
     deleteComment: 'DELETE COMMENT!',
 
-    // Watched Status
+    // Noskatīšanās statuss
     watchedStatus: 'Watched Status',
     markShowWatched: 'Mark entire show as watched',
     allSeasons: 'All Seasons',
     episodesWatched: 'episodes watched',
     watchedStatusLoginPrompt: 'Log in to track your watched episodes and seasons.',
 
-    // Admin Panel
+    // Administratora panelis
     adminPanel: 'Admin Panel',
     adminSubtitle: 'Manage users, badges, reviews & site settings',
     userManagement: 'User Management',
@@ -399,7 +401,7 @@ export const translations = {
     private: 'Private',
     public: 'Public',
 
-    // Admin tabs & sections
+    // Administratora cilnes un sadaļas
     users: 'Users',
     quizzesTab: 'Quizzes',
     settingsTab: 'Settings',
@@ -512,7 +514,7 @@ export const translations = {
     view: 'View',
     seasonLabel: 'Season',
 
-    // Quizzes page
+    // Viktorīnu lapa
     secretBadgeUnlocked: 'Secret Badge Unlocked!',
     newCosmeticUnlocked: 'New Cosmetic Unlocked!',
     addBtn: '+ Add',
@@ -593,8 +595,8 @@ export const translations = {
     translating: 'Translating...',
   },
   lv: {
-    // Navigation & Header
-    reviews: 'Recenzijas',
+    // Navigācija un galvene
+    reviews: 'Atsauksmes',
     about: 'Par mums',
     discover: 'Atklāt',
     contact: 'Kontakti',
@@ -605,7 +607,7 @@ export const translations = {
     register: 'Reģistrēties',
     home: 'Sākums',
 
-    // Login/Register
+    // Pieteikšanās/Reģistrācija
     loginTitle: 'Laipni lūdzam atpakaļ',
     loginSubtitle: 'Pieslēdzieties, lai piekļūtu personalizētajam TV pieredzes',
     email: 'E-pasta adrese',
@@ -620,7 +622,7 @@ export const translations = {
     registerTitle: 'Pievienojieties mūsu kopienai',
     registerSubtitle: 'Izveidojiet savu kontu, lai sāktu vērtēt šovus',
 
-    // Validation messages
+    // Validācijas ziņojumi
     emailRequired: 'E-pasts ir obligāts',
     emailInvalid: 'Lūdzu, ievadiet derīgu e-pasta adresi',
     passwordRequired: 'Parole ir obligāta',
@@ -635,8 +637,8 @@ export const translations = {
     loginFailed: 'Nepareizs e-pasts vai parole',
     registrationFailed: 'Reģistrācija neizdevās. Lūdzu, mēģiniet vēlreiz.',
 
-    // Reviews Page
-    communityReviews: 'Kopienas Recenzijas',
+    // Atsauksmju lapa
+    communityReviews: 'Kopienas Atsauksmes',
     discoverReviews: 'Atklājiet, ko visi skatās un viņu domas',
     sortBy: 'Kārtot pēc',
     filterBy: 'Filtrēt pēc',
@@ -657,9 +659,9 @@ export const translations = {
     episodeAZ: 'Epizode (A-Z)',
     communityRating: 'Kopienas Vērtējums',
     theirRating: 'Viņu Vērtējums',
-    noReviewsFound: 'Recenzijas nav atrastas. Esiet pirmais, kas recenzē!',
+    noReviewsFound: 'Atsauksmes nav atrastas. Esiet pirmais, kas recenzē!',
 
-    // Home Page
+    // Sākumlapa
     topTVShowsToday: 'Labākie TV Šovi Šodien',
     randomSort: 'Izlases',
     titleASC: 'Nosaukums (A-Z)',
@@ -669,9 +671,9 @@ export const translations = {
     genre: 'Žanrs',
     year: 'Gads',
 
-    // Discover Page
+    // Atklāšanas lapa
     discoverTitle: 'Atklājiet Savu Nākamo Obsesiju',
-    discoverSubtitle: 'Ieteikumi, ko sniedz jūsu recenzijas.',
+    discoverSubtitle: 'Ieteikumi, ko sniedz jūsu atsauksmes.',
     unlockDiscovery: 'Atbloķējiet savu personalizēto atklāšanu',
     signInRecommendations: 'Piesakieties, lai saņemtu TV šovu ieteikumus, pamatojoties uz jūsu gaumi.',
     signIn: 'Pieslēgties',
@@ -688,14 +690,14 @@ export const translations = {
     loadMore: 'Ielādēt vairāk',
     scanning: 'Skenēju jūsu gaumes profilu…',
 
-    // Statistics Page
+    // Statistikas lapa
     siteStatistics: 'Vietnes Statistika',
     browsePopular: 'Pārlūkojiet kopienas iecienītākos šovus un epizodes',
     highestRated: 'Visvairāk Novērtētais Šovs',
     lowestRated: 'Vismazāk Novērtētais Šovs',
     mostReviewed: 'Visvairāk Recenzētais Šovs',
     communityStats: 'Kopienas Statistika',
-    totalReviews: 'Kopā Recenzijas',
+    totalReviews: 'Kopā atsauksmes',
     averageRating: 'Vidējais Vērtējums',
     yourPersonalStats: 'Jūsu Personīgā Statistika',
     yourViewingJourney: 'Jūsu skatīšanās ceļojums',
@@ -710,7 +712,7 @@ export const translations = {
     topShowsByReviewCount: 'Labākie šovi pēc atsauksmju skaita',
     yourTopShowsByReviewCount: 'Jūsu Labākie Šovi pēc atsauksmju Skaita',
 
-    // Other UI
+    // Cita saskarne
     loading: 'Ielāde...',
     noResults: 'Rezultāti nav atrasti',
     error: 'Kļūda',
@@ -726,7 +728,7 @@ export const translations = {
     english: 'English',
     latvian: 'Latviešu',
     
-    // Common UI
+    // Kopīgā saskarne
     season: 'Sezona',
     episode: 'Epizode',
     episodes: 'Epizodes',
@@ -743,49 +745,51 @@ export const translations = {
     no: 'Nē',
     loadingComments: 'Ielāde komentāri...',
     loading: 'Ielāde...',
-    noReviews: 'Nē recenzijas',
-    noReviewsYet: 'Vēl nē recenzijas.',
-    userReviews: 'Lietotāja Recenzijas',
+    noReviews: 'Nav atsauksmes',
+    noReviewsYet: 'Vēl nav atsauksmes.',
+    userReviews: 'Lietotāja Atsauksmes',
     rating: 'Vērtējums',
-    newReview: 'JAUNA RECENZIJA',
+    newReview: 'JAUNA ATSAUKSME',
     editProfile: 'Rediģēt Profilu',
     changePicture: 'Mainīt Attēlu',
     save: 'Saglabāt',
     cancel: 'Atcelt',
     favoriteShows: 'Iecienītākās Šovi',
+    noFavoriteShowsYet: 'Pagaidām nav iecienītāko šovu.',
     topRatedShows: 'Augstāk Vērtētie Šovi',
     selectShow: 'Izvēlēties Šovu',
     noShow: 'Nav Šova',
     selectFavoriteShow: 'Izvēlēties Iecienītāko Šovu',
     searchForShow: 'Meklēt šovu...',
     
-    // CreateReview Page
+    // Atsauksmes izveides lapa
     createNewReview: 'Izveidot jaunu atsauksmi',
     searchTVSeries: 'Meklēt TV sērijas...',
     tvSeries: 'TV Sērijas',
     loadingEpisodes: 'Ielāde epizodes...',
     createReview: 'Izveidot atsauksmi',
-    reviewTitle: 'Recenzijas Nosaukums',
+    reviewTitle: 'Atsauskmes Nosaukums',
     description: 'Apraksts',
     postReview: 'Pievienot atsauksmi',
     
-    // About Page
+    // Par lapu
     aboutUs: 'Par mums',
-    aboutText: 'Šī ir vietne, kur paredzēta TV šovu recenzijas.',
-    aboutDescription: 'Mēs cenšamies sniegt lietotājiem iespēju pierakstīt savus iecienītākos TV šovu epizodes un skatīt citu recenzijas.',
+    aboutText: 'Šī ir vietne, kur paredzēta TV šovu atsauksmes.',
+    aboutDescription: 'Mēs cenšamies sniegt lietotājiem iespēju pierakstīt savus iecienītākos TV šovu epizodes un skatīt citu atsauksmes.',
     satisfiedCustomer: 'viens no mūsu apmierrinātajiem klientiem',
     oneOfOurSatisfiedCustomers: 'viens no mūsu apmierrinātajiem klientiem',
     
-    // Contact Page
+    // Kontaktinformācijas lapa
     contactUs: 'Sazinieties ar mums!',
     ourSupportTeam: '<- mūsu atbalsta komanda',
     readyToTechSupport: 'gatavi sniegt tehnisko atbalstu jebkurā laikā!*',
     termsAndConditions: '*tiesību un noteikumi tiek piemēroti. nekad faktiski nesniegšim tehnisko atbalstu.',
     
-    // Quiz Page
+    // Viktorīnas lapa
     quizzes: 'Viktorīnas',
     testYourKnowledge: 'Pārbaudiet savu zināšanu par saviem iecienītākajiem TV šoviem',
     takeQuiz: 'Nokārtot Viktorīnu',
+    loginToTakeQuiz: 'Piesakieties, lai pildītu viktorīnas',
     retake: 'Nokārtot atkārtoti',
     noQuizzesAvailable: 'Vēl nav pieejamu viktorīnu',
     earned: 'Ieguvis',
@@ -808,7 +812,7 @@ export const translations = {
     nextRetakeTime: 'Jūs varat nokārtot šo viktorīnu atkārtoti:',
     remaining: 'Atliku',
     completed: 'Pabeigts',
-    // Quiz categories & filters
+    // Viktorīnu kategorijas un filtri
     dailyQuiz: 'Dienas Viktorīna',
     allCategories: 'Visas',
     seriesCategory: 'Seriāli',
@@ -826,7 +830,7 @@ export const translations = {
     directors: 'Režisori',
     actors: 'Aktieri',
 
-    // Cosmetics
+    // Kosmētika
     cosmetics: 'Kosmētika',
     cursorTrails: 'Kursora Efekti',
     backgroundEffects: 'Fona Efekti',
@@ -852,7 +856,7 @@ export const translations = {
     followerCount: 'Sekotāju Skaits',
     quizCompletions: 'Viktorīnu Izpilde',
 
-    // Additional missing keys
+    // Papildu trūkstošās atslēgas
     noSeriesMatch: 'Neviena sērija neatbilst jūsu filtriem.',
     admin: 'Admins',
     rateShows: 'Vērtēt Šovus',
@@ -897,11 +901,11 @@ export const translations = {
     searchTVShows: 'Meklēt TV šovus...',
     shows: 'šovi',
     slot: 'Vieta',
-    recentReviews: 'Jaunākās Recenzijas',
+    recentReviews: 'Jaunākās Atsauksmes',
     allRightsReserved: 'Visas tiesības aizsargātas: 2025',
     ourSocialMedia: 'Mūsu sociālie tīkli',
 
-    // Series Detail
+    // Seriāla detaļas
     releaseYear: 'Izlaides Gads',
     seasons: 'Sezonas',
     synopsis: 'Kopsavilkums',
@@ -911,7 +915,7 @@ export const translations = {
     writeReview: 'Rakstīt Atsauksmi',
     homeReviewButton: 'Recenzēt',
     loginRequiredToReview: 'Lūdzu, piesakieties, lai rakstītu atsauksmi.',
-    seeAllReviews: 'Skatīt Visas Recenzijas',
+    seeAllReviews: 'Skatīt Visas Atsauksmes',
     trailer: 'Treileris',
     playTrailer: 'Atskaņot treileri',
     trailerNotAvailable: 'Treileris nav pieejams',
@@ -919,7 +923,7 @@ export const translations = {
     seriesNotFound: 'Sērija nav atrasta',
     backHome: 'Atpakaļ uz Sākumu',
 
-    // Review Detail
+    // Atsauksmes detaļas
     by: 'Autors',
     aboutSeries: 'Par',
     status: 'Statuss',
@@ -930,21 +934,21 @@ export const translations = {
     secretBadgeUnlocked: 'Slepenā Nozīme Atbloķēta!',
     newCosmeticUnlocked: 'Jauna Kosmētika Atbloķēta!',
 
-    // Review Post
+    // Atsauksmes ieraksts
     seriesTitle: 'Sērijas Nosaukums',
     episodeTitle: 'Epizodes Nosaukums',
     deleteComment: 'DZĒST KOMENTĀRU!',
 
-    // Watched Status
+    // Noskatīšanās statuss
     watchedStatus: 'Skatīšanās Statuss',
     markShowWatched: 'Atzīmēt visu šovu kā noskatītu',
     allSeasons: 'Visas Sezonas',
     episodesWatched: 'epizodes noskatītas',
     watchedStatusLoginPrompt: 'Lai atzīmētu noskatītās sērijas un sezonas, lūdzu, piesakieties.',
 
-    // Admin Panel
+    // Administratora panelis
     adminPanel: 'Administrēšanas Panelis',
-    adminSubtitle: 'Pārvaldīt lietotājus, nozīmes, recenzijas un vietnes iestatījumus',
+    adminSubtitle: 'Pārvaldīt lietotājus, nozīmes, atsauksmes un vietnes iestatījumus',
     userManagement: 'Lietotāju Pārvaldība',
     searchUsers: 'Meklēt lietotājus...',
     totalUsers: 'Kopā Lietotāji',
@@ -993,15 +997,15 @@ export const translations = {
     private: 'Privāts',
     public: 'Publisks',
 
-    // Admin tabs & sections
+    // Administratora cilnes un sadaļas
     users: 'Lietotāji',
     quizzesTab: 'Viktorīnas',
     settingsTab: 'Iestatījumi',
     cosmeticsTab: 'Kosmētika',
     badgesTab: 'Nozīmes',
-    reviewsTab: 'Recenzijas',
+    reviewsTab: 'Atsauksmes',
     reviewManagement: 'Atsauksmju Pārvaldība',
-    searchReviews: 'Meklēt recenzijas...',
+    searchReviews: 'Meklēt atsauksmes...',
     series: 'Sērija',
     date: 'Datums',
     cosmeticsManagement: 'Kosmētikas Pārvaldība',
@@ -1043,7 +1047,7 @@ export const translations = {
     source: 'Avots',
     detail: 'Detaļas',
     siteOverview: 'Vietnes Pārskats',
-    totalReviews: 'Kopā Recenzijas',
+    totalReviews: 'Kopā Atsauksmes',
     totalComments: 'Kopā Komentāri',
     totalQuizzes: 'Kopā Viktorīnas',
     dailyQuoteManagement: 'Dienas Citātu Pārvaldība',
@@ -1106,7 +1110,7 @@ export const translations = {
     view: 'Skatīt',
     seasonLabel: 'Sezona',
 
-    // Quizzes page
+    // Viktorīnu lapa
     secretBadgeUnlocked: 'Slepenā Nozīme Atbloķēta!',
     newCosmeticUnlocked: 'Jauna Kosmētika Atbloķēta!',
     addBtn: '+ Pievienot',
@@ -1115,7 +1119,7 @@ export const translations = {
     pleaseLoginToFollowShows: 'Lūdzu, pieslēdzieties, lai sekotu šoviem',
     errorFollowingShow: 'Kļūda sekojot šovam',
     errorUnfollowingShow: 'Kļūda atsekojot šovam',
-    reviewPostedSuccessfully: 'Recenzija veiksmīgi publicēta!',
+    reviewPostedSuccessfully: 'Atsauksme veiksmīgi publicēta!',
     reviewDeleteError: 'Dzēšot atsauksmi radās kļūda',
     commentDeleteError: 'Dzēšot komentāru radās kļūda',
     forgotPasswordSoon: 'Paroles atiestatīšanas funkcionalitāte drīzumā tiks ieviesta.',
@@ -1135,15 +1139,15 @@ export const translations = {
     titleRequired: 'Nosaukums ir obligāts',
     iconEmojiRequired: 'Ikonas emoji ir obligāts',
     addAtLeastOneQuestion: 'Pievienojiet vismaz vienu jautājumu',
-    reviewNotFound: 'Recenzija nav atrasta',
+    reviewNotFound: 'Atsauksme nav atrasta',
     failedToLoadReview: 'Neizdevās ielādēt atsauksmi',
     failedToLoadSeriesDetails: 'Neizdevās ielādēt seriāla informāciju.',
     pleaseLoginToReact: 'Lūdzu, pieslēdzieties, lai reaģētu',
-    machineTranslateReviews: 'Mašīntulkot recenzijas',
+    machineTranslateReviews: 'Mašīntulkot atsauksmes',
     translateReviewText: 'Tulkot atsauksmi',
     showOriginalText: 'Rādīt oriģinālu',
     showingMachineTranslatedReview: 'Tiek rādīts mašīntulkots teksts',
-    translationUnavailable: 'Tulkojums šai recenzijai nav pieejams',
+    translationUnavailable: 'Tulkojums šai atsauksmei nav pieejams',
     machineTranslatedTitleTooltip: 'Šis nosaukums ir mašīntulkots un var nebūt pilnībā precīzs.',
     contactInfoBlurb: 'Lai iegūtu vairāk informācijas, sazinieties ar mums: info@plottwizts.com',
     userNotFound: 'Lietotājs nav atrasts',

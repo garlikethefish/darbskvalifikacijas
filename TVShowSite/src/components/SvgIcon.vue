@@ -92,7 +92,7 @@ const ICONS = {
   'clock':       ClockCircle,
   'camera':      Camera,
   'video':       Videocamera,
-  // Cosmetic effect icons
+  // Kosmētikas efektu ikonas
   'sparkle':     StarShine,
   'snowflake':   Snowflake,
   'glow':        StarRing,

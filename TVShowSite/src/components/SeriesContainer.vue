@@ -71,24 +71,24 @@ export default {
       return String(this.currentLanguage || '').toLowerCase().startsWith('lv');
     },
     isTheBoys() {
-      // Exclusion for The Boys
+      // Izņēmums seriālam The Boys
       const english = (this.series?.english_title || this.series?.title || '').trim().toLowerCase();
       return english === 'the boys';
     },
     showMachineTranslatedBadge() {
-      // Exclude The Boys from machine translation badge
+      // Izslēdz The Boys no mašīntulkošanas birkas
       if (this.isLatvian && this.isTheBoys) return false;
       return this.isLatvian && !!(this.series?.machine_translated_title || this.series?.machine_translated_series_title);
     },
     displayTitle() {
-      // Show 'Zēni' for The Boys in Latvian
+      // Latviešu valodā The Boys rāda kā 'Zēni'
       if (this.isLatvian && this.isTheBoys) return 'Zēni';
       return this.series?.title || '';
     },
     showEnglishSubtitle() {
       const localized = (this.series?.title || '').trim();
       const english = (this.series?.english_title || '').trim();
-      // Exclude The Boys from subtitle logic
+      // Izslēdz The Boys no subtitru loģikas
       if (this.isLatvian && this.isTheBoys) return false;
       return this.isLatvian && english && localized && english !== localized;
     },
@@ -109,7 +109,7 @@ export default {
       return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
     },
     showTooltip(e) {
-      // Position tooltip below or above the icon, depending on space
+      // Novieto rīka padomu zem vai virs ikonas atkarībā no vietas
       const rect = e.currentTarget.getBoundingClientRect();
       const tooltipWidth = 220;
       const tooltipHeight = 60;
@@ -137,10 +137,10 @@ export default {
           return;
         }
       } catch (err) {
-        // ignore parse error and treat as not logged in
+        // Ignorē parsēšanas kļūdu un uzskata, ka lietotājs nav pieteicies
       }
 
-      // Not logged in - show custom prompt near the button
+      // Nav pieteicies - rāda pielāgotu aicinājumu pie pogas
       const rect = e.currentTarget.getBoundingClientRect();
       this.promptX = rect.left + rect.width / 2;
       this.promptY = rect.bottom + 10;
@@ -252,7 +252,7 @@ export default {
   border-color: var(--accent-color);
 }
 
-/* Tooltip is now handled by Tooltip.vue */
+/* Rīka padomu tagad apstrādā Tooltip.vue */
 
 .card-subtitle {
   margin-top: 2px;

@@ -3,7 +3,7 @@
     <div class="watched-section">
       <h3><SvgIcon name="monitor" :size="20" /> {{ t('watchedStatus') }}</h3>
       
-      <!-- Show Watched Toggle -->
+      <!-- Noskatītā statusa pārslēgs -->
       <div class="watch-show-container">
         <label class="watch-label">
           <input 
@@ -16,7 +16,7 @@
         </label>
       </div>
 
-      <!-- Episodes Watched -->
+      <!-- Noskatītās sērijas -->
       <div v-if="seasons && seasons.length > 0" class="episodes-section">
         <div class="season-selector">
           <label>{{ t('season') }}:</label>
@@ -57,7 +57,7 @@
           </div>
         </div>
 
-        <!-- Statistics -->
+        <!-- Statistika -->
         <div class="watched-stats">
           <p>{{ watchedEpisodeCount }} / {{ totalEpisodeCount }} {{ t('episodesWatched') }}</p>
           <div class="progress-bar">
@@ -98,7 +98,7 @@ export default {
     filteredEpisodes() {
       if (!this.seriesData.seasons) return [];
       if (!this.selectedSeason) {
-        // Return all episodes from all seasons
+        // Atgriež visas sērijas no visām sezonām
         const allEpisodes = [];
         this.seriesData.seasons.forEach(season => {
           if (season.episodes) {
@@ -107,7 +107,7 @@ export default {
         });
         return allEpisodes;
       } else {
-        // Return episodes from selected season
+        // Atgriež sērijas no izvēlētās sezonas
         const season = this.seriesData.seasons.find(s => s.season_number === parseInt(this.selectedSeason));
         return season ? season.episodes || [] : [];
       }
@@ -176,7 +176,7 @@ export default {
 
       try {
         if (!isCurrentlyWatched) {
-          // Mark as watched
+          // Atzīmēt kā noskatītu
           await fetch('/api/watched-episodes', {
             method: 'POST',
             headers: {
@@ -191,7 +191,7 @@ export default {
           });
           this.watchedEpisodes.add(episodeKey);
         } else {
-          // In a real app, you'd have a DELETE endpoint
+          // Reālā lietotnē būtu DELETE galapunkts
           this.watchedEpisodes.delete(episodeKey);
         }
         
@@ -209,13 +209,13 @@ export default {
 
       const auth = JSON.parse(localStorage.getItem('auth'));
       try {
-        // Load watched shows
+        // Ielādē noskatītos seriālus
         const showRes = await fetch(`/api/watched-shows/${auth.user.id}`);
         const shows = await showRes.json();
         const watchedShow = shows.find(s => s.tmdb_series_id === this.seriesId);
         this.showWatched = watchedShow ? watchedShow.watched_status === 'fully' : false;
 
-        // Load watched episodes
+        // Ielādē noskatītās sērijas
         const episodeRes = await fetch(`/api/watched-episodes/${auth.user.id}/${this.seriesId}`);
         const episodes = await episodeRes.json();
         episodes.forEach(ep => {
@@ -418,7 +418,7 @@ export default {
   box-shadow: 0 0 10px rgba(147, 112, 219, 0.5);
 }
 
-/* Custom scrollbar */
+/* Pielāgota ritjosla */
 .episodes-list::-webkit-scrollbar {
   width: 6px;
 }

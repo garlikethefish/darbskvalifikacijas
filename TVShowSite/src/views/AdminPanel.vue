@@ -1,16 +1,12 @@
 <template>
   <div id="admin-panel">
-    <header class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1><SvgIcon name="shield" :size="32" style="vertical-align:middle;margin-right:10px;" /> {{ t('adminPanel') }}</h1>
-          <p class="subtitle">{{ t('adminSubtitle') }}</p>
-        </div>
-      </div>
-    </header>
+    <HeroBand variant="admin">
+      <h1><SvgIcon name="shield" :size="32" style="vertical-align:middle;margin-right:10px;" /> {{ t('adminPanel') }}</h1>
+      <p class="subtitle">{{ t('adminSubtitle') }}</p>
+    </HeroBand>
 
     <div class="admin-container">
-      <!-- Tab Navigation -->
+      <!-- Cilņu navigācija -->
       <nav class="admin-tabs">
         <button 
           v-for="tab in tabs" 
@@ -24,7 +20,7 @@
         </button>
       </nav>
 
-      <!-- Users Tab -->
+      <!-- Lietotāju cilne -->
       <div v-if="activeTab === 'users'" class="tab-content">
         <div class="content-header">
           <h2>{{ t('userManagement') }}</h2>
@@ -94,7 +90,7 @@
                     @click="toggleBan(user)"
                     :title="user.is_banned ? 'Unban user' : 'Ban user'"
                   >
-                    {{ user.is_banned ? '✅' : '🚫' }}
+                    <SvgIcon :name="user.is_banned ? 'check' : 'danger'" :size="16" />
                   </button>
                   <button 
                     v-if="user.id !== currentUserId"
@@ -111,14 +107,17 @@
         </div>
       </div>
 
-      <!-- Badges Tab -->
+      <!-- Žetonu cilne -->
       <div v-if="activeTab === 'badges'" class="tab-content">
         <div class="content-header">
           <h2>{{ t('badgeManagement') }}</h2>
-          <button class="primary-btn" @click="showBadgeCreateForm = !showBadgeCreateForm">{{ showBadgeCreateForm ? '✕ ' + t('cancel') : '+ ' + t('createNewBadge') }}</button>
+          <button class="primary-btn" @click="showBadgeCreateForm = !showBadgeCreateForm">
+            <SvgIcon :name="showBadgeCreateForm ? 'close' : 'add-review'" :size="16" />
+            {{ showBadgeCreateForm ? t('cancel') : t('createNewBadge') }}
+          </button>
         </div>
 
-        <!-- Create Badge Inline Form -->
+        <!-- Iekļautā žetona izveides forma -->
         <div v-if="showBadgeCreateForm" class="settings-section" style="margin-bottom:24px">
           <h3>{{ t('newBadge') }}</h3>
           <div class="form-group">
@@ -134,19 +133,21 @@
             <input type="file" accept="image/*" class="form-input" @change="handleStandaloneBadgeImageUpload" />
             <div v-if="badgeFormData.image" style="display:flex;align-items:center;gap:10px;margin-top:8px">
               <img :src="`/assets/badges/${badgeFormData.image}`" style="width:52px;height:52px;object-fit:contain;border-radius:8px;border:1px solid rgba(255,255,255,0.12)" alt="Preview" />
-              <button class="secondary-btn" style="padding:4px 10px" @click="badgeFormData.image = ''">✕ {{ t('remove') }}</button>
+              <button class="secondary-btn" style="padding:4px 10px" @click="badgeFormData.image = ''">
+                <SvgIcon name="close" :size="14" /> {{ t('remove') }}
+              </button>
             </div>
           </div>
           <p v-if="badgeFormError" style="color:#f44336;margin:8px 0 0">{{ badgeFormError }}</p>
           <button class="primary-btn" style="margin-top:12px" @click="saveNewStandaloneBadge" :disabled="badgeFormSaving">{{ badgeFormSaving ? t('creating') : t('createBadge') }}</button>
         </div>
 
-        <!-- Existing Standalone Badges -->
+        <!-- Esošie atsevišķie žetoni -->
         <div class="badges-grid">
           <div v-for="badge in allStandaloneBadges" :key="badge.id" class="badge-admin-card">
             <div class="badge-admin-header">
               <img v-if="badge.image" :src="`/assets/badges/${badge.image}`" style="width:48px;height:48px;object-fit:contain;border-radius:8px;flex-shrink:0" alt="" />
-              <span v-else class="badge-emoji">🏅</span>
+              <span v-else class="badge-emoji"><SvgIcon name="badge" :size="40" /></span>
               <div class="badge-admin-info">
                 <h4>{{ badge.name }}</h4>
                 <p>{{ badge.description }}</p>
@@ -163,14 +164,17 @@
         </div>
       </div>
 
-      <!-- Quizzes Tab -->
+      <!-- Viktorīnu cilne -->
       <div v-if="activeTab === 'quizzes'" class="tab-content">
         <div class="content-header">
           <h2>{{ t('quizManagement') }}</h2>
-          <button class="primary-btn" @click="toggleCreateQuiz">{{ showCreateQuiz ? '✕ ' + t('cancel') : '+ ' + t('createNewQuiz') }}</button>
+          <button class="primary-btn" @click="toggleCreateQuiz">
+            <SvgIcon :name="showCreateQuiz ? 'close' : 'add-review'" :size="16" />
+            {{ showCreateQuiz ? t('cancel') : t('createNewQuiz') }}
+          </button>
         </div>
 
-        <!-- Create Quiz Inline Form -->
+        <!-- Iekļautā viktorīnas izveides forma -->
         <div v-if="showCreateQuiz" class="settings-section" style="margin-bottom:24px">
           <h3>{{ t('newQuiz') }}</h3>
           <div class="form-group">
@@ -186,7 +190,7 @@
               <label>{{ t('category') }}</label>
               <select v-model="adminQuizForm.category" class="form-input">
                 <option v-for="cat in quizFormCategories" :key="cat.key" :value="cat.key">{{ cat.label }}</option>
-                <option value="__custom__">＋ Custom…</option>
+                <option value="__custom__">Custom...</option>
               </select>
               <input v-if="adminQuizForm.category === '__custom__'" v-model="adminQuizForm.newCategoryLabel" type="text" class="form-input" style="margin-top:6px" placeholder="Category name" />
             </div>
@@ -214,11 +218,13 @@
             <input type="file" accept="image/*" class="form-input" @change="handleQuizImageUpload" />
             <div v-if="adminQuizForm.quiz_image" style="display:flex;align-items:center;gap:10px;margin-top:8px">
               <img :src="`/assets/quiz_images/${adminQuizForm.quiz_image}`" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:1px solid rgba(255,255,255,0.12)" alt="Preview" />
-              <button class="secondary-btn" style="padding:4px 10px" @click="adminQuizForm.quiz_image = ''">✕ {{ t('remove') }}</button>
+              <button class="secondary-btn" style="padding:4px 10px" @click="adminQuizForm.quiz_image = ''">
+                <SvgIcon name="close" :size="14" /> {{ t('remove') }}
+              </button>
             </div>
           </div>
 
-          <!-- Badge toggle -->
+          <!-- Žetona pārslēgs -->
           <label class="quiz-toggle-row">
             <input type="checkbox" v-model="adminQuizForm.hasBadge" />
             <span>{{ t('thisQuizAwardsBadge') }}</span>
@@ -234,7 +240,7 @@
               <p v-if="!allStandaloneBadges.length" style="color:#e57373;font-size:0.82rem;margin:4px 0 0">{{ t('noBadgesYetCreate') }}</p>
             </div>
 
-            <!-- Performance badges -->
+            <!-- Veiktspējas žetoni -->
             <label class="quiz-toggle-row">
               <input type="checkbox" v-model="adminQuizForm.badgeRules.performance.enabled" />
               <span>{{ t('performanceBadges') }}</span>
@@ -263,7 +269,9 @@
                   <input type="file" accept="image/*" class="form-input" @change="e => handleAdminBadgeImageUpload(e, tier, 'badgeImage')" />
                   <div v-if="tier.badgeImage" style="display:flex;align-items:center;gap:8px;margin-top:6px">
                     <img :src="`/assets/badges/${tier.badgeImage}`" style="width:40px;height:40px;object-fit:contain;border-radius:6px" alt="" />
-                    <button class="secondary-btn" style="padding:4px 10px" @click="tier.badgeImage = ''">✕</button>
+                    <button class="secondary-btn" style="padding:4px 10px" @click="tier.badgeImage = ''">
+                      <SvgIcon name="close" :size="14" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -271,7 +279,7 @@
               <p style="font-size:0.78rem;color:var(--subtitle-color);margin:6px 0 0">{{ t('tiersEvaluation') }}</p>
             </template>
 
-            <!-- Secret badges -->
+            <!-- Slepenie žetoni -->
             <label class="quiz-toggle-row">
               <input type="checkbox" v-model="adminQuizForm.badgeRules.secrets.enabled" />
               <span>{{ t('secretBadges') }}</span>
@@ -306,7 +314,9 @@
                   <input type="file" accept="image/*" class="form-input" @change="e => handleAdminBadgeImageUpload(e, cond, 'badgeImage')" />
                   <div v-if="cond.badgeImage" style="display:flex;align-items:center;gap:8px;margin-top:6px">
                     <img :src="`/assets/badges/${cond.badgeImage}`" style="width:40px;height:40px;object-fit:contain;border-radius:6px" alt="" />
-                    <button class="secondary-btn" style="padding:4px 10px" @click="cond.badgeImage = ''">✕</button>
+                    <button class="secondary-btn" style="padding:4px 10px" @click="cond.badgeImage = ''">
+                      <SvgIcon name="close" :size="14" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -314,7 +324,7 @@
             </template>
           </template>
 
-          <!-- Questions -->
+          <!-- Jautājumi -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px">
             <h4 style="margin:0;color:var(--text-color)">{{ t('questions') }}</h4>
             <button class="secondary-btn" @click="addAdminQuizQuestion">{{ t('addQuestion') }}</button>
@@ -351,7 +361,7 @@
           </div>
         </div>
 
-        <!-- Quizzes Table -->
+        <!-- Viktorīnu tabula -->
         <div class="table-wrapper" style="margin-top:0">
           <table class="admin-table">
             <thead>
@@ -387,7 +397,7 @@
         </div>
       </div>
 
-      <!-- Reviews Tab -->
+      <!-- Atsauksmju cilne -->
       <div v-if="activeTab === 'reviews'" class="tab-content">
         <div class="content-header">
           <h2>{{ t('reviewManagement') }}</h2>
@@ -429,16 +439,17 @@
         </div>
       </div>
 
-      <!-- Cosmetics Tab -->
+      <!-- Kosmētikas cilne -->
       <div v-if="activeTab === 'cosmetics'" class="tab-content">
         <div class="content-header">
           <h2>{{ t('cosmeticsManagement') }}</h2>
           <button class="btn-primary" @click="showCosmeticCreateForm = !showCosmeticCreateForm">
-            {{ showCosmeticCreateForm ? t('cancel') : '+ ' + t('newCosmetic') }}
+            <SvgIcon :name="showCosmeticCreateForm ? 'close' : 'add-review'" :size="16" />
+            {{ showCosmeticCreateForm ? t('cancel') : t('newCosmetic') }}
           </button>
         </div>
 
-        <!-- Create Cosmetic Form -->
+        <!-- Kosmētikas izveides forma -->
         <div v-if="showCosmeticCreateForm" class="form-card">
           <h3>{{ t('createNewCosmetic') }}</h3>
           <div class="form-row">
@@ -481,7 +492,7 @@
           </button>
         </div>
 
-        <!-- Cosmetics Table -->
+        <!-- Kosmētikas tabula -->
         <div class="table-wrapper">
           <table class="admin-table">
             <thead>
@@ -514,7 +525,7 @@
           </table>
         </div>
 
-        <!-- Link Source / Award Section -->
+        <!-- Avota piesaistes / piešķiršanas sadaļa -->
         <div class="cosmetics-actions-row">
           <div class="form-card half">
             <h3>{{ t('linkSource') }}</h3>
@@ -575,7 +586,7 @@
           </div>
         </div>
 
-        <!-- Sources Table -->
+        <!-- Avotu tabula -->
         <div v-if="allCosmeticSources.length" class="table-wrapper" style="margin-top:1.5rem;">
           <h3 style="margin-bottom:0.5rem;">{{ t('allCosmeticSources') }}</h3>
           <table class="admin-table">
@@ -604,7 +615,7 @@
         </div>
       </div>
 
-      <!-- Site Settings Tab -->
+      <!-- Vietnes iestatījumu cilne -->
       <div v-if="activeTab === 'settings'" class="tab-content">
         <div class="content-header">
           <h2>{{ t('siteOverview') }}</h2>
@@ -644,7 +655,7 @@
       </div>
     </div>
 
-    <!-- Confirm Dialog -->
+    <!-- Apstiprinājuma dialogs -->
     <div v-if="confirmDialog.show" class="modal-overlay" @click.self="confirmDialog.show = false">
       <div class="confirm-dialog">
         <h3>{{ confirmDialog.title }}</h3>
@@ -660,10 +671,11 @@
 
 <script>
 import SvgIcon from '@/components/SvgIcon.vue'
+import HeroBand from '@/components/HeroBand.vue'
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 
 export default {
-  components: { SvgIcon },
+  components: { SvgIcon, HeroBand },
   data() {
     return {
       currentLanguage: 'en',
@@ -701,7 +713,7 @@ export default {
         actionText: '',
         action: () => {}
       },
-      // Quizzes tab
+      // Viktorīnu cilne
       showCreateQuiz: false,
       adminQuizSaving: false,
       adminQuizError: '',
@@ -721,14 +733,14 @@ export default {
         { key: 'directors', label: 'Directors' },
         { key: 'actors', label: 'Actors' }
       ],
-      // Standalone badges tab
+      // Atsevišķo žetonu cilne
       allStandaloneBadges: [],
       showBadgeCreateForm: false,
       badgeFormData: { name: '', description: '', image: '' },
       badgeFormSaving: false,
       badgeFormError: '',
 
-      // Cosmetics tab
+      // Kosmētikas cilne
       allCosmetics: [],
       allCosmeticSources: [],
       showCosmeticCreateForm: false,
@@ -785,7 +797,7 @@ export default {
       return { 'Authorization': auth.user.id.toString(), 'Content-Type': 'application/json' };
     },
 
-    // === USER MANAGEMENT ===
+    // === LIETOTĀJU PĀRVALDĪBA ===
     async fetchUsers() {
       try {
         const res = await fetch('/api/admin/users', { headers: this.getAuthHeaders() });
@@ -877,7 +889,7 @@ export default {
       };
     },
 
-    // === BADGE MANAGEMENT ===
+    // === ŽETONU PĀRVALDĪBA ===
     async fetchBadges() {
       try {
         const res = await fetch('/api/admin/badges', { headers: this.getAuthHeaders() });
@@ -954,7 +966,7 @@ export default {
       };
     },
 
-    // === REVIEW MANAGEMENT ===
+    // === ATSAUKSMJU PĀRVALDĪBA ===
     async fetchReviews() {
       try {
         const res = await fetch('/api/admin/reviews', { headers: this.getAuthHeaders() });
@@ -994,7 +1006,7 @@ export default {
       };
     },
 
-    // === SITE SETTINGS ===
+    // === VIETNES IESTATĪJUMI ===
     async fetchSiteStats() {
       try {
         const res = await fetch('/api/admin/stats', { headers: this.getAuthHeaders() });
@@ -1020,7 +1032,7 @@ export default {
       }
     },
 
-    // === QUIZ MANAGEMENT ===
+    // === VIKTORĪNU PĀRVALDĪBA ===
     toggleCreateQuiz() {
       this.showCreateQuiz = !this.showCreateQuiz;
       if (this.showCreateQuiz) {
@@ -1157,7 +1169,7 @@ export default {
       }
     },
 
-    // === STANDALONE BADGE MANAGEMENT ===
+    // === ATSEVIŠĶO ŽETONU PĀRVALDĪBA ===
     async fetchStandaloneBadges() {
       try {
         const res = await fetch('/api/admin/standalone-badges', { headers: this.getAuthHeaders() });
@@ -1239,7 +1251,7 @@ export default {
       };
     },
 
-    // Cosmetics methods
+    // Kosmētikas metodes
     async fetchCosmetics() {
       try {
         const headers = this.getAuthHeaders();
@@ -1402,7 +1414,18 @@ export default {
 </script>
 
 <style scoped>
-/* Hero */
+#admin-panel {
+  overflow-x: hidden;
+}
+
+:where(#admin-panel) :where(div, nav, section, form) {
+  box-sizing: border-box;
+  display: block;
+  width: auto;
+  table-layout: auto;
+}
+
+/* Galvene */
 .hero {
   color: var(--text-color);
   margin-bottom: 0;
@@ -1481,22 +1504,47 @@ export default {
   100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
 }
 
-/* Layout */
+/* Izkārtojums */
 .admin-container {
-  max-width: 1200px;
-  margin: 0 auto 60px;
+  max-width: 1220px;
+  margin: 2rem auto 60px;
   padding: 0 20px;
+  position: relative;
 }
 
-/* Tabs */
+.admin-container::before {
+  content: '';
+  position: absolute;
+  inset: 0 20px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle 360px at 15% 8%, rgba(112,233,116,0.16), transparent 70%),
+    radial-gradient(circle 360px at 88% 14%, rgba(40,160,255,0.12), transparent 68%),
+    rgba(6, 10, 6, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  pointer-events: none;
+}
+
+/* Cilnes */
 .admin-tabs {
   display: flex;
-  gap: 4px;
-  background: var(--dark-bg-color);
-  border-radius: 12px 12px 0 0;
-  padding: 8px 8px 0;
+  gap: 6px;
+  background: rgba(6, 10, 6, 0.34);
+  border-radius: 22px 22px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 0;
+  padding: 10px 10px 0;
   margin-top: 0;
   overflow-x: auto;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .tab-btn {
@@ -1506,36 +1554,50 @@ export default {
   justify-content: center;
   gap: 8px;
   padding: 14px 20px;
-  border: none;
-  background: transparent;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--subtitle-color);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 10px 10px 0 0;
+  border-radius: 12px 12px 0 0;
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .tab-btn:hover {
   color: var(--text-color);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .tab-btn.active {
   color: var(--accent-color);
-  background: var(--background-color);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(112, 233, 116, 0.28);
   box-shadow: inset 0 2px 0 var(--accent-color);
 }
 
 .tab-icon { font-size: 1.1rem; }
 
-/* Tab Content */
+/* Cilnes saturs */
 .tab-content {
-  background: var(--background-color);
-  border-radius: 0 0 12px 12px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+    rgba(6, 10, 6, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0 0 22px 22px;
   padding: 30px;
   min-height: 400px;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .content-header {
@@ -1545,6 +1607,7 @@ export default {
   margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 12px;
+  min-width: 0;
 }
 
 .content-header h2 {
@@ -1553,14 +1616,14 @@ export default {
   margin: 0;
 }
 
-/* Search */
+/* Meklēšana */
 .search-bar { flex-shrink: 0; }
 
 .search-input {
   padding: 10px 16px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
-  background: var(--dark-bg-color);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-color);
   font-size: 0.95rem;
   width: 250px;
@@ -1572,7 +1635,7 @@ export default {
   border-color: var(--accent-color);
 }
 
-/* Stats */
+/* Statistika */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1581,13 +1644,18 @@ export default {
 }
 
 .stat-card {
-  background: var(--dark-bg-color);
-  border-radius: 10px;
+  background:
+    radial-gradient(circle 180px at 50% 0%, rgba(112,233,116,0.12), transparent 68%),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .stat-value {
@@ -1599,23 +1667,29 @@ export default {
 .stat-label {
   font-size: 0.85rem;
   color: var(--subtitle-color);
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
-/* Table */
+/* Tabula */
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  max-width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .admin-table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
 
 .admin-table th {
-  background: var(--dark-bg-color);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--subtitle-color);
   padding: 12px 16px;
   text-align: left;
@@ -1633,8 +1707,20 @@ export default {
   vertical-align: middle;
 }
 
+.admin-table code {
+  display: inline-block;
+  max-width: 180px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
 .admin-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .row-banned { opacity: 0.6; }
@@ -1660,7 +1746,7 @@ export default {
   text-overflow: ellipsis;
 }
 
-/* Badges */
+/* Žetoni */
 .role-badge {
   padding: 3px 10px;
   border-radius: 20px;
@@ -1709,7 +1795,7 @@ export default {
 .rating-4 { background: #a6e22e; color: #333; }
 .rating-5 { background: #38c172; }
 
-/* Action buttons */
+/* Darbību pogas */
 .actions-cell {
   display: flex;
   gap: 6px;
@@ -1721,7 +1807,7 @@ export default {
   height: 34px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  background: var(--dark-bg-color);
+  background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   font-size: 1rem;
   display: flex;
@@ -1741,7 +1827,7 @@ export default {
 .action-btn.promote:hover { border-color: var(--accent-color); background: rgba(112, 233, 116, 0.1); }
 .action-btn.demote:hover { border-color: #ff884c; background: rgba(255, 136, 76, 0.1); }
 
-/* Buttons */
+/* Pogas */
 .primary-btn {
   padding: 12px 24px;
   background: var(--accent-color);
@@ -1752,6 +1838,10 @@ export default {
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .primary-btn:hover:not(:disabled) {
@@ -1773,6 +1863,10 @@ export default {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .secondary-btn:hover {
@@ -1793,7 +1887,7 @@ export default {
 
 .danger-btn:hover { background: #e03e3e; transform: translateY(-1px); }
 
-/* Modal */
+/* Modālais logs */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1806,7 +1900,10 @@ export default {
 }
 
 .modal-content {
-  background: var(--dark-bg-color);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.035)),
+    rgba(6, 10, 6, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   padding: 30px;
   max-width: 700px;
@@ -1814,6 +1911,8 @@ export default {
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
 .modal-header {
@@ -1848,7 +1947,7 @@ export default {
   gap: 16px;
 }
 
-/* Form */
+/* Forma */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -1865,12 +1964,13 @@ export default {
 
 .form-input {
   padding: 10px 14px;
-  border: 2px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
-  background: var(--background-color);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-color);
   font-size: 0.95rem;
   transition: border-color 0.3s;
+  min-width: 0;
 }
 
 .form-input:focus {
@@ -1882,7 +1982,7 @@ export default {
 .emoji-input { max-width: 100px; font-size: 1.5rem; text-align: center; }
 .form-select { max-width: 120px; cursor: pointer; }
 
-/* Questions */
+/* Jautājumi */
 .questions-section {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 16px;
@@ -1901,9 +2001,9 @@ export default {
 }
 
 .question-card {
-  background: var(--background-color);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
   padding: 16px;
   margin-bottom: 12px;
   display: flex;
@@ -1934,7 +2034,7 @@ export default {
 
 .options-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1951,19 +2051,21 @@ export default {
   white-space: nowrap;
 }
 
-/* Badges Grid */
+/* Žetonu režģis */
 .badges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
+  max-width: 100%;
 }
 
 .badge-admin-card {
-  background: var(--dark-bg-color);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 14px;
   padding: 20px;
   transition: all 0.3s ease;
+  min-width: 0;
 }
 
 .badge-admin-card:hover {
@@ -1984,6 +2086,7 @@ export default {
   margin: 0 0 4px;
   color: var(--text-color);
   font-size: 1.05rem;
+  overflow-wrap: anywhere;
 }
 
 .badge-admin-info p {
@@ -1991,6 +2094,11 @@ export default {
   color: var(--subtitle-color);
   font-size: 0.85rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.badge-admin-info {
+  min-width: 0;
 }
 
 .badge-admin-footer {
@@ -2011,14 +2119,19 @@ export default {
 
 .badge-admin-footer .action-btn { margin-left: auto; }
 
-/* Confirm Dialog */
+/* Apstiprinājuma dialogs */
 .confirm-dialog {
-  background: var(--dark-bg-color);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.035)),
+    rgba(6, 10, 6, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   padding: 30px;
   max-width: 420px;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
 .confirm-dialog h3 {
@@ -2039,12 +2152,16 @@ export default {
   gap: 12px;
 }
 
-/* Settings */
+/* Iestatījumi */
 .settings-section {
-  background: var(--dark-bg-color);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 16px;
   padding: 24px;
   margin-top: 20px;
+  max-width: 100%;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .settings-section h3 {
@@ -2052,23 +2169,40 @@ export default {
   color: var(--text-color);
 }
 
-/* Empty State */
+.settings-section > *,
+.form-card > *,
+.quiz-block > * {
+  max-width: 100%;
+}
+
+/* Tukšais stāvoklis */
 .empty-state {
   text-align: center;
   padding: 40px;
   color: var(--subtitle-color);
 }
 
-/* Responsive */
+/* Responsīvais izkārtojums */
 @media (max-width: 768px) {
+  .admin-container {
+    padding: 0 12px;
+  }
+
+  .admin-container::before {
+    inset: 0 12px;
+  }
+
   .admin-tabs {
-    border-radius: 12px 12px 0 0;
+    border-radius: 18px 18px 0 0;
   }
 
   .tab-label { display: none; }
   .tab-icon { font-size: 1.3rem; }
 
-  .tab-content { padding: 20px 16px; }
+  .tab-content {
+    padding: 20px 16px;
+    border-radius: 0 0 18px 18px;
+  }
 
   .search-input { width: 100%; }
 
@@ -2082,21 +2216,24 @@ export default {
   .quiz-form-row-2 { grid-template-columns: 1fr; }
 }
 
-/* Quiz creation form */
+/* Viktorīnas izveides forma */
 .quiz-form-row-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  max-width: 100%;
 }
 .quiz-block {
-  background: var(--background-color);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
   padding: 16px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 100%;
+  min-width: 0;
 }
 .quiz-options-list {
   display: flex;
@@ -2108,10 +2245,11 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--dark-bg-color);
-  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.055);
+  border-radius: 10px;
   padding: 8px 10px;
   border: 1.5px solid transparent;
+  min-width: 0;
 }
 .quiz-opt-row.quiz-opt-correct { border-color: var(--accent-color); }
 .quiz-toggle-row {
@@ -2122,6 +2260,11 @@ export default {
   color: var(--text-color);
   cursor: pointer;
   margin: 8px 0;
+  min-width: 0;
+}
+
+.quiz-toggle-row span {
+  overflow-wrap: anywhere;
 }
 .quiz-toggle-row input[type="checkbox"] {
   accent-color: var(--accent-color);
@@ -2129,14 +2272,15 @@ export default {
   height: 16px;
 }
 
-/* Cosmetics Tab */
+/* Kosmētikas cilne */
 .cosmetics-actions-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
+  max-width: 100%;
 }
 .cosmetics-actions-row .half {
-  flex: 1;
   min-width: 0;
 }
 .cosmetic-type-tag {
@@ -2167,12 +2311,59 @@ export default {
 .rarity-tag.rare { background: rgba(66,135,245,0.15); color: #4287f5; }
 .rarity-tag.epic { background: rgba(163,53,238,0.15); color: #a335ee; }
 .rarity-tag.legendary { background: rgba(255,165,0,0.15); color: #ffa500; }
+
+.btn-primary,
+.btn-sm {
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  border-radius: 8px;
+  background: var(--accent-color);
+  color: var(--dark-bg-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.btn-sm {
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.btn-danger {
+  background: rgba(255, 75, 75, 0.16);
+  color: #ff7777;
+  border: 1px solid rgba(255, 75, 75, 0.28);
+}
+
+.btn-danger:hover {
+  background: rgba(255, 75, 75, 0.24);
+}
+
 .form-card {
-  background: var(--card-bg, rgba(30,30,40,0.6));
-  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+    rgba(255, 255, 255, 0.045);
+  border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 1rem;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.11);
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .form-card h3 {
   margin: 0 0 1rem;
@@ -2209,7 +2400,7 @@ export default {
 
 @media (max-width: 700px) {
   .cosmetics-actions-row {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 }
 </style>

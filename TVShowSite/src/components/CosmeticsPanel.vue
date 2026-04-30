@@ -15,10 +15,10 @@
       </button>
     </div>
 
-    <!-- Currently equipped -->
+    <!-- Pašlaik aprīkots -->
     <div v-if="equipped" class="equipped-section">
       <span class="equipped-label">{{ t('activeEffect') }}:</span>
-      <span class="equipped-name rarity-badge" :class="equipped.rarity">{{ equipped.name }}</span>
+      <span class="equipped-name rarity-badge" :class="equipped.rarity">{{ getCosmeticName(equipped) }}</span>
       <button class="unequip-btn" @click="unequip">{{ t('removeEffect') }}</button>
     </div>
 
@@ -32,7 +32,7 @@
         <div class="card-preview">
           <div class="preview-circle" :class="item.rarity">
             <SvgIcon v-if="!item.preview_image" :name="getEffectIcon(item.effect_key)" :size="28" />
-            <img v-else :src="`/assets/badges/${item.preview_image}`" :alt="item.name" class="preview-img" />
+            <img v-else :src="`/assets/badges/${item.preview_image}`" :alt="getCosmeticName(item)" class="preview-img" />
           </div>
           <div v-if="!isOwned(item.id)" class="lock-overlay">
             <SvgIcon name="lock" :size="20" />
@@ -41,17 +41,17 @@
         </div>
 
         <div class="card-info">
-          <span class="cosmetic-name">{{ item.name }}</span>
-          <span class="rarity-tag" :class="item.rarity">{{ item.rarity }}</span>
+          <span class="cosmetic-name">{{ getCosmeticName(item) }}</span>
+          <span class="rarity-tag" :class="item.rarity">{{ getRarityLabel(item.rarity) }}</span>
         </div>
 
-        <p v-if="item.description" class="cosmetic-desc">{{ item.description }}</p>
+        <p v-if="getCosmeticDescription(item)" class="cosmetic-desc">{{ getCosmeticDescription(item) }}</p>
 
-        <!-- Source hint for locked items -->
+        <!-- Avota norāde bloķētiem vienumiem -->
         <p v-if="!isOwned(item.id) && item.sources?.length" class="source-hint">
           <span v-for="src in item.sources" :key="src.id">
             <template v-if="src.source_type === 'quiz'">
-              🎯 {{ t('scoreAtLeast') }} {{ src.min_score }}% {{ t('inQuiz') }} "{{ src.quiz_title }}"
+              <SvgIcon name="target" :size="13" /> {{ t('scoreAtLeast') }} {{ src.min_score }}% {{ t('inQuiz') }} "{{ src.quiz_title }}"
             </template>
             <template v-else-if="src.source_type === 'milestone'">
               {{ getMilestoneLabel(src.milestone_type, src.milestone_value) }}
@@ -74,8 +74,90 @@
 
 <script>
 import axios from 'axios';
-import { getTranslation } from '../services/translations.js';
+import { getTranslation, getCurrentLanguage } from '../services/translations.js';
 import SvgIcon from './SvgIcon.vue';
+
+const EFFECT_COPY = {
+  particle_sparkle: {
+    en: ['Sparkle Trail', 'Soft glowing particles follow the cursor.'],
+    lv: ['Dzirksteļu pēda', 'Maigas mirdzošas daļiņas seko kursoram.']
+  },
+  particle_fire: {
+    en: ['Fire Trail', 'Warm flame particles follow the cursor.'],
+    lv: ['Uguns pēda', 'Siltas liesmu daļiņas seko kursoram.']
+  },
+  particle_snow: {
+    en: ['Snow Trail', 'Cool snow particles drift behind the cursor.'],
+    lv: ['Sniega pēda', 'Vēsas sniega daļiņas slīd aiz kursora.']
+  },
+  glow_smooth: {
+    en: ['Smooth Glow', 'A calm glow effect for the page background.'],
+    lv: ['Maigs mirdzums', 'Mierīgs mirdzuma efekts lapas fonam.']
+  },
+  glow_rainbow: {
+    en: ['Rainbow Glow', 'A colorful glow effect for the page background.'],
+    lv: ['Varavīksnes mirdzums', 'Krāsains mirdzuma efekts lapas fonam.']
+  },
+  particle_fairydust: {
+    en: ['Fairy Dust', 'Bright dust particles sparkle behind the cursor.'],
+    lv: ['Pasaku putekļi', 'Spilgtas putekļu daļiņas mirdz aiz kursora.']
+  },
+  particle_bubble: {
+    en: ['Bubble Trail', 'Light bubbles float behind the cursor.'],
+    lv: ['Burbuļu pēda', 'Viegli burbuļi paceļas aiz kursora.']
+  },
+  smooth_wavy: {
+    en: ['Wavy Background', 'Smooth waves move across the profile background.'],
+    lv: ['Viļņots fons', 'Maigi viļņi kustas profila fonā.']
+  },
+  flowing_ribbons: {
+    en: ['Flowing Ribbons', 'Layered ribbons move through the profile background.'],
+    lv: ['Plūstošas lentes', 'Slāņotas lentes kustas profila fonā.']
+  },
+  rainbow_cursor: {
+    en: ['Rainbow Cursor', 'A colorful cursor trail with shifting tones.'],
+    lv: ['Varavīksnes kursors', 'Krāsaina kursora pēda ar mainīgiem toņiem.']
+  },
+  canvas_cursor: {
+    en: ['Canvas Cursor', 'A painted cursor trail with soft motion.'],
+    lv: ['Audekla kursors', 'Gleznieciska kursora pēda ar maigu kustību.']
+  },
+  fluid_cursor: {
+    en: ['Fluid Cursor', 'A liquid style cursor trail.'],
+    lv: ['Plūstošs kursors', 'Šķidruma stila kursora pēda.']
+  },
+  particles_stars: {
+    en: ['Star Field', 'Stars drift across the profile background.'],
+    lv: ['Zvaigžņu lauks', 'Zvaigznes slīd pāri profila fonam.']
+  },
+  particles_bubbles: {
+    en: ['Bubble Field', 'Bubbles float through the profile background.'],
+    lv: ['Burbuļu lauks', 'Burbuļi paceļas profila fonā.']
+  },
+  particles_fireflies: {
+    en: ['Fireflies', 'Small lights move across the profile background.'],
+    lv: ['Spīdvaboles', 'Mazas gaismas kustas profila fonā.']
+  },
+  pattern_dots: {
+    en: ['Dot Pattern', 'A subtle dotted background pattern.'],
+    lv: ['Punktu raksts', 'Smalks punktots fona raksts.']
+  },
+  pattern_waves: {
+    en: ['Wave Pattern', 'A subtle wave pattern for the profile background.'],
+    lv: ['Viļņu raksts', 'Smalks viļņu raksts profila fonam.']
+  },
+  pattern_grid: {
+    en: ['Grid Pattern', 'A clean grid pattern for the profile background.'],
+    lv: ['Režģa raksts', 'Tīrs režģa raksts profila fonam.']
+  }
+};
+
+const RARITY_KEYS = {
+  common: 'rarityCommon',
+  rare: 'rarityRare',
+  epic: 'rarityEpic',
+  legendary: 'rarityLegendary'
+};
 
 export default {
   name: 'CosmeticsPanel',
@@ -90,7 +172,8 @@ export default {
       catalog: [],
       owned: [],
       activeCosmetics: { cursorTrail: null, backgroundEffect: null },
-      loading: false
+      loading: false,
+      currentLanguage: 'en'
     };
   },
   computed: {
@@ -103,10 +186,18 @@ export default {
     }
   },
   async mounted() {
+    this.currentLanguage = getCurrentLanguage();
+    this._languageChangedHandler = (e) => {
+      this.currentLanguage = e.detail.language;
+    };
+    window.addEventListener('languageChanged', this._languageChangedHandler);
     await this.loadData();
   },
+  beforeUnmount() {
+    window.removeEventListener('languageChanged', this._languageChangedHandler);
+  },
   methods: {
-    t(key) { return getTranslation(key); },
+    t(key) { return getTranslation(key, this.currentLanguage); },
 
     async loadData() {
       this.loading = true;
@@ -209,15 +300,30 @@ export default {
       return icons[effectKey] || 'palette';
     },
 
+    getCosmeticName(item) {
+      const copy = EFFECT_COPY[item?.effect_key];
+      if (!copy) return item?.name || '';
+      return copy[this.currentLanguage]?.[0] || copy.en[0] || item?.name || '';
+    },
+
+    getCosmeticDescription(item) {
+      const copy = EFFECT_COPY[item?.effect_key];
+      if (!copy) return item?.description || '';
+      return copy[this.currentLanguage]?.[1] || copy.en[1] || item?.description || '';
+    },
+
+    getRarityLabel(rarity) {
+      return this.t(RARITY_KEYS[rarity] || 'rarityCommon');
+    },
+
     getMilestoneLabel(type, value) {
       const labels = {
         review_count: { en: `Write ${value} reviews`, lv: `Uzraksti ${value} recenzijas` },
         follower_count: { en: `Get ${value} followers`, lv: `Iegūsti ${value} sekotājus` },
         quiz_completions: { en: `Complete ${value} quizzes`, lv: `Izpildi ${value} viktorīnas` }
       };
-      const lang = localStorage.getItem('language') || 'en';
       const entry = labels[type];
-      if (entry) return entry[lang] || entry.en;
+      if (entry) return entry[this.currentLanguage] || entry.en;
       return `${value} ${type}`;
     }
   }
@@ -229,24 +335,37 @@ export default {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cosmetics-panel :where(div, span, p) {
+  box-sizing: border-box;
+  display: revert;
+  width: auto;
+  table-layout: auto;
 }
 
 .cosmetics-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  width:auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 0;
+  width: 100%;
 }
 
 .cosmetics-tabs button {
-  padding: 10px 20px;
-  border: 1px solid var(--accent-color);
-  background: transparent;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid rgba(112, 233, 116, 0.28);
+  background: rgba(255, 255, 255, 0.045);
   color: var(--text-color);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 0.95rem;
   transition: all 0.2s;
+  white-space: normal;
 }
 
 .cosmetics-tabs button.active {
@@ -262,12 +381,14 @@ export default {
 .equipped-section {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  margin-bottom: 18px;
-  padding: 12px 16px;
+  margin-bottom: 0;
+  padding: 14px 16px;
   background: rgba(112, 233, 116, 0.08);
   border: 1px solid rgba(112, 233, 116, 0.2);
-  border-radius: 10px;
+  border-radius: 12px;
+  flex-wrap: wrap;
 }
 
 .equipped-label {
@@ -277,27 +398,37 @@ export default {
 
 .equipped-name {
   font-weight: 600;
+  margin-right: auto;
 }
 
 .cosmetics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 35px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 18px;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
+  align-items: stretch;
+  overflow: hidden;
 }
 .cosmetic-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 12px 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+    rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 16px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   transition: all 0.25s;
   position: relative;
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  min-height: 250px;
+  justify-content: flex-start;
 }
 
 .cosmetic-card:hover {
@@ -316,13 +447,14 @@ export default {
 
 .card-preview {
   position: relative;
-  width: 54px;
-  height: 54px;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
 }
 
 .preview-circle {
-  width: 54px;
-  height: 54px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -337,8 +469,8 @@ export default {
 .preview-circle.legendary { border-color: #ffd54f; background: rgba(255, 213, 79, 0.15); box-shadow: 0 0 12px rgba(255, 213, 79, 0.2); }
 
 .preview-img {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   border-radius: 50%;
 }
@@ -377,14 +509,18 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-height: 54px;
+  width: 100%;
 }
 
 .cosmetic-name {
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--text-color);
   text-align: center;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .rarity-tag {
@@ -402,22 +538,38 @@ export default {
 .rarity-tag.legendary, .rarity-badge.legendary { color: #ffd54f; }
 
 .cosmetic-desc {
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   color: var(--subtitle-color);
   text-align: center;
   margin: 0;
+  line-height: 1.35;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
 }
 
 .source-hint {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   color: var(--subtitle-color);
   text-align: center;
   font-style: italic;
   margin: 0;
+  line-height: 1.35;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .card-actions {
-  margin-top: 4px;
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .equip-btn, .unequip-btn {
@@ -428,6 +580,9 @@ export default {
   font-size: 0.82rem;
   font-weight: 600;
   transition: all 0.2s;
+  min-height: 34px;
+  width: 100%;
+  max-width: 140px;
 }
 
 .equip-btn {
@@ -457,9 +612,13 @@ export default {
   color: var(--subtitle-color);
 }
 @media (max-width: 600px) {
+  .cosmetics-tabs {
+    grid-template-columns: 1fr;
+  }
+
   .cosmetics-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 </style>

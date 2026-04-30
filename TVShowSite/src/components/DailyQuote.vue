@@ -1,5 +1,5 @@
 <template>
-    <div v-if="quote" class="quote-content"> <!-- v-if so that doesnt display elements before quote data loaded-->
+    <div v-if="quote" class="quote-content"> <!-- v-if, lai nerādītu elementus pirms citāta datu ielādes -->
         <h1 class="quote-text">"{{ formattedQuote }}"</h1>
         <p class="quote-series">{{ quote.series}}</p>
     </div>
@@ -10,7 +10,7 @@
 }
 
 .quote-text {
-  font-size: 40px;
+  font-size: clamp(1.2rem, 2.8vw, 1.9rem);
   margin: 0 0 12px 0;
   letter-spacing: -0.3px;
   font-weight: 700;
@@ -51,7 +51,7 @@
 
 @media (max-width: 500px) {
   .quote-text {
-    font-size: 1.2rem;
+    font-size: clamp(1.05rem, 5.2vw, 1.45rem);
     padding: 0 5px;
   }
   .quote-series {
@@ -75,9 +75,9 @@ export default {
     formattedQuote() {
       if (!this.quote || !this.quote.text) return '';
       let text = this.quote.text;
-      // Remove anything in brackets
+      // Noņem visu iekavās
       text = text.replace(/\[.*?\]/g, '');
-      // If there's a colon, take the part after it
+      // Ja ir kols, paņem daļu aiz tā
       const colonIndex = text.indexOf(':');
       if (colonIndex !== -1) {
         text = text.substring(colonIndex + 1).trim();

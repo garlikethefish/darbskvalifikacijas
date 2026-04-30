@@ -3,7 +3,7 @@
     <div class="create-review">
       <h1>{{ t('createNewReview') }}</h1>
 
-      <!-- Search Bar -->
+      <!-- Meklēšanas josla -->
       <div class="form-section search-section">
         <input
           type="text"
@@ -13,7 +13,7 @@
         />
       </div>
 
-      <!-- Series Grid -->
+      <!-- Seriālu režģis -->
       <div class="form-section series-section">
         <h2>{{ t('tvSeries') }}</h2>
         <div class="series-grid">
@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <!-- Episodes Grid -->
+      <!-- Sēriju režģis -->
       <div class="form-section episode-section" v-if="selectedSeries">
         <h2>{{ t('episodes') }}</h2>
         <div v-if="loadingEpisodes" class="loading-text">{{ t('loadingEpisodes') }}</div>
@@ -114,7 +114,7 @@ export default {
       hoverRating: 0,
       isReviewModalOpen: false,
       currentLanguage: 'en',
-      // note: when navigated here from a series page we will preselect via query param
+      // Piezīme: pārejot šeit no seriāla lapas, iepriekš izvēlēsimies pēc query parametra
     };
   },
   methods: {
@@ -193,14 +193,14 @@ export default {
           title: data.name || data.title || '',
           series_picture: data.series_picture || data.poster_path || data.poster || ''
         };
-        // ensure the series appears in the list so it can be visibly selected
+        // Nodrošina, ka seriāls parādās sarakstā un to var vizuāli izvēlēties
         if (!this.seriesList.find(s => s.id == seriesObj.id)) {
           this.seriesList.unshift(seriesObj);
           this.filteredSeries = [...this.seriesList];
         }
         this.selectedSeries = seriesObj;
         this.episodesBySeason = data.seasons || [];
-        // scroll to episodes section for better UX
+        // Ritina uz sēriju sadaļu labākai lietojamībai
         this.$nextTick(() => {
           const el = document.querySelector('.episode-section');
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -261,13 +261,13 @@ export default {
     this.$nextTick(() => {
       const seriesId = this.$route.query.seriesId;
       if (seriesId) {
-        // Preselect the series and load episodes without opening the review modal
+        // Iepriekš izvēlas seriālu un ielādē sērijas, neatverot atsauksmes modālo logu
         const trySelect = () => {
           const series = this.seriesList.find(s => s.id == seriesId);
           if (series) {
             this.selectSeries(series);
           } else {
-            // If not found in the top list, fetch details directly by id
+            // Ja nav atrasts augšējā sarakstā, detaļas iegūst tieši pēc ID
             this.selectSeriesById(seriesId);
           }
         };
@@ -378,7 +378,7 @@ export default {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* evenly space content */
+  gap: 15px; /* Vienmērīgi izvieto saturu */
   box-shadow: 0 8px 20px rgba(0,0,0,0.6);
 }
 
@@ -457,29 +457,29 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #555; /* grey default */
+  background-color: #555; /* Pelēks pēc noklusējuma */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-weight: bold;
-  color: black; /* text black */
+  color: black; /* Melns teksts */
   transition: all 0.2s ease;
 }
 
-/* Hover effect */
+/* Norādīšanas efekts */
 .circle:hover {
   transform: scale(1.2);
 }
 
-/* Selected circle colors */
-.circle.selected:nth-child(1) { background-color: #ff4c4c; } /* 1 - red */
-.circle.selected:nth-child(2) { background-color: #ff944c; } /* 2 - orange */
-.circle.selected:nth-child(3) { background-color: #ffd54c; } /* 3 - yellow */
-.circle.selected:nth-child(4) { background-color: #a6ff4c; } /* 4 - light green */
-.circle.selected:nth-child(5) { background-color: #4cff6a; } /* 5 - green */
+/* Izvēlēto apļu krāsas */
+.circle.selected:nth-child(1) { background-color: #ff4c4c; } /* 1 - sarkans */
+.circle.selected:nth-child(2) { background-color: #ff944c; } /* 2 - oranžs */
+.circle.selected:nth-child(3) { background-color: #ffd54c; } /* 3 - dzeltens */
+.circle.selected:nth-child(4) { background-color: #a6ff4c; } /* 4 - gaiši zaļš */
+.circle.selected:nth-child(5) { background-color: #4cff6a; } /* 5 - zaļš */
 
-/* Glow effect matching circle color */
+/* Spīduma efekts, kas atbilst apļa krāsai */
 .circle.selected:nth-child(1) { box-shadow: 0 0 10px #ff4c4c, 0 0 20px #ff4c4c; }
 .circle.selected:nth-child(2) { box-shadow: 0 0 10px #ff944c, 0 0 20px #ff944c; }
 .circle.selected:nth-child(3) { box-shadow: 0 0 10px #ffd54c, 0 0 20px #ffd54c; }

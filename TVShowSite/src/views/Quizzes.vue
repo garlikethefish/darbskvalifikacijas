@@ -1,23 +1,19 @@
 <template>
   <div id="quizzes-page">
-    <!-- Hero Section -->
-    <div class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1>{{ t('quizzes') }}</h1>
-          <p class="subtitle">{{ t('testYourKnowledge') }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- Galvenes sadaļa -->
+    <HeroBand variant="quizzes">
+      <h1>{{ t('quizzes') }}</h1>
+      <p class="subtitle">{{ t('testYourKnowledge') }}</p>
+    </HeroBand>
 
     <div class="quizzes-container">
-      <!-- Loading State -->
+      <!-- Ielādes stāvoklis -->
       <div v-if="loading" class="loading-spinner">
         <div class="spinner"></div>
         <p>{{ t('loading') }}</p>
       </div>
 
-      <!-- Quiz Taking Mode -->
+      <!-- Viktorīnas pildīšanas režīms -->
       <div v-else-if="activeQuiz && !showResults" class="quiz-taker">
         <div class="quiz-header">
           <button type="button" class="back-btn" @click.stop="backToList">
@@ -32,7 +28,7 @@
           </div>
         </div>
 
-        <!-- Current Question -->
+        <!-- Pašreizējais jautājums -->
         <div class="question-container">
           <h3 class="question-text">{{ currentQuestion.question_text }}</h3>
           
@@ -81,7 +77,7 @@
           </div>
         </div>
 
-        <!-- Question Indicator -->
+        <!-- Jautājuma indikators -->
         <div class="question-indicator">
           <div 
             v-for="(q, idx) in activeQuiz.questions"
@@ -96,7 +92,7 @@
         </div>
       </div>
 
-      <!-- Results Modal -->
+      <!-- Rezultātu modālais logs -->
       <div v-else-if="showResults && quizResult" class="modal-overlay" @click.self="handleResultsClose">
         <div class="modal-content results-modal">
           <div class="results-header">
@@ -116,7 +112,7 @@
               <p v-else class="fail-text">{{ t('keepTrying') }}</p>
             </div>
 
-            <!-- Badge Notifications -->
+            <!-- Žetonu paziņojumi -->
             <template v-if="quizResult.badgesAwarded && quizResult.badgesAwarded.length">
               <div
                 v-for="badge in quizResult.badgesAwarded"
@@ -134,7 +130,7 @@
               </div>
             </template>
 
-            <!-- Cosmetic Notifications -->
+            <!-- Kosmētikas paziņojumi -->
             <template v-if="quizResult.cosmeticsAwarded && quizResult.cosmeticsAwarded.length">
               <div
                 v-for="cosmetic in quizResult.cosmeticsAwarded"
@@ -163,7 +159,7 @@
         </div>
       </div>
 
-      <!-- Cooldown Modal -->
+      <!-- Gaidīšanas laika modālais logs -->
       <div v-if="showCooldownModal && cooldownInfo" class="modal-overlay" @click.self="closeCooldownModal">
         <div class="modal-content cooldown-modal">
           <div class="cooldown-header">
@@ -195,7 +191,7 @@
         </div>
       </div>
 
-      <!-- Admin Create Quiz Modal -->
+      <!-- Administratora viktorīnas izveides modālais logs -->
       <div v-if="showAdminPanel" class="modal-overlay" @click.self="closeAdminPanel">
         <div class="modal-content admin-quiz-modal">
           <div class="admin-modal-header">
@@ -204,7 +200,7 @@
           </div>
 
           <div class="admin-form">
-            <!-- Basic Info -->
+            <!-- Pamatinformācija -->
             <div class="admin-section">
               <h3>{{ t('quizDetails') }}</h3>
               <div class="form-row">
@@ -257,7 +253,7 @@
                 <p v-if="!standaloneBadges.length" class="form-hint" style="color:#e57373;margin-top:4px">{{ t('noBadgesYetCreate') }}</p>
               </div>
 
-              <!-- Image Upload -->
+              <!-- Attēla augšupielāde -->
               <div class="form-row">
                 <label>{{ t('quizImage') }}</label>
                 <input
@@ -272,18 +268,18 @@
                 </div>
               </div>
 
-              <!-- Badge toggle -->
+              <!-- Žetona pārslēgs -->
               <label class="toggle-row" style="margin-top:4px">
                 <input type="checkbox" v-model="adminForm.hasBadge" />
                 <span>This quiz awards a badge <span class="form-hint">(disable for quizzes with no badge reward)</span></span>
               </label>
             </div>
 
-            <!-- Badge Rules (only when hasBadge is enabled) -->
+            <!-- Žetona noteikumi (tikai, ja hasBadge ir ieslēgts) -->
             <div v-if="adminForm.hasBadge" class="admin-section">
               <h3>Badge Rules</h3>
 
-              <!-- Performance badges toggle -->
+              <!-- Veiktspējas žetonu pārslēgs -->
               <label class="toggle-row">
                 <input type="checkbox" v-model="adminForm.badgeRules.performance.enabled" />
                 <span>Performance-based badges <span class="form-hint">(badge awarded based on score — first matching tier wins)</span></span>
@@ -324,7 +320,7 @@
                 <p class="form-hint" style="margin:0">Tiers are evaluated highest→lowest; the first one the user qualifies for is awarded.</p>
               </template>
 
-              <!-- Secret badges toggle -->
+              <!-- Slepeno žetonu pārslēgs -->
               <label class="toggle-row">
                 <input type="checkbox" v-model="adminForm.badgeRules.secrets.enabled" />
                 <span>Secret badges <span class="form-hint">(awarded for picking a specific answer on a question)</span></span>
@@ -371,7 +367,7 @@
               </template>
             </div>
 
-            <!-- Questions -->
+            <!-- Jautājumi -->
             <div class="admin-section">
               <div class="questions-header">
                 <h3>Questions</h3>
@@ -440,7 +436,7 @@
         </div>
       </div>
 
-      <!-- Admin Create Badge Modal -->
+      <!-- Administratora žetona izveides modālais logs -->
       <div v-if="showBadgePanel" class="modal-overlay" @click.self="closeBadgePanel">
         <div class="modal-content admin-quiz-modal">
           <div class="admin-modal-header">
@@ -496,10 +492,10 @@
         </div>
       </div>
 
-      <!-- QUIZ LIST VIEW -->
+      <!-- VIKTORĪNU SARAKSTA SKATS -->
       <template v-if="!activeQuiz">
 
-        <!-- Admin Bar -->
+        <!-- Administratora josla -->
         <div v-if="isAdmin" class="admin-bar">
           <span class="admin-label"><SvgIcon name="shield-star" :size="16" /> Admin</span>
           <div class="admin-bar-actions">
@@ -512,13 +508,13 @@
           </div>
         </div>
 
-        <!-- Daily Quiz Section -->
+        <!-- Dienas viktorīnas sadaļa -->
         <div v-if="dailyQuiz" class="daily-quiz-section">
           <div class="section-label">
             <SvgIcon name="bolt" :size="20" />
             <span>{{ t('dailyQuiz') }}</span>
           </div>
-          <div class="daily-quiz-card" @click="startQuiz(dailyQuiz)">
+          <div class="daily-quiz-card" :class="{ 'login-required': !isLoggedIn }" @click="startQuiz(dailyQuiz)">
             <div class="daily-poster" :style="getPosterStyle(dailyQuiz)">
               <div class="daily-poster-overlay"></div>
               <div class="daily-badges">
@@ -535,14 +531,14 @@
                 <span class="meta-item"><SvgIcon name="users" :size="14" /> {{ dailyQuiz.completion_count || 0 }}</span>
                 <span class="meta-item"><SvgIcon name="question" :size="14" /> {{ dailyQuiz.question_count || 0 }} {{ t('questions') }}</span>
               </div>
-              <button type="button" class="daily-start-btn">
-                {{ t('takeQuiz') }}
+              <button type="button" class="daily-start-btn" :disabled="!isLoggedIn">
+                {{ isLoggedIn ? t('takeQuiz') : t('loginToTakeQuiz') }}
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Category Tabs -->
+        <!-- Kategoriju cilnes -->
         <div class="filter-bar">
           <div class="category-tabs">
             <button 
@@ -569,7 +565,7 @@
           </div>
         </div>
 
-        <!-- Quiz Grid -->
+        <!-- Viktorīnu režģis -->
         <div class="quizzes-grid">
           <div v-if="filteredQuizzes.length === 0" class="no-quizzes">
             <SvgIcon name="question" :size="48" />
@@ -582,28 +578,29 @@
             class="quiz-card"
             :class="{ 
               'locked': isLocked(quiz),
-              'completed': userBadges[quiz.id]
+              'completed': userBadges[quiz.id],
+              'login-required': !isLoggedIn
             }"
             @click="startQuiz(quiz)"
           >
-            <!-- Card Poster/Header -->
+            <!-- Kartītes plakāts/galvene -->
             <div class="card-poster" :style="getPosterStyle(quiz)">
               <div class="card-poster-overlay"></div>
 
-              <!-- Lock overlay corner badge -->
+              <!-- Bloķēšanas pārklājuma stūra žetons -->
               <div v-if="isLocked(quiz)" class="lock-corner">
                 <SvgIcon name="lock" :size="16" />
                 <span>{{ Math.ceil(quizLockStatus[quiz.id].hoursRemaining) }}h</span>
               </div>
 
-              <!-- Badges row on poster -->
+              <!-- Žetonu rinda uz plakāta -->
               <div class="card-badges">
                 <span class="cat-badge">{{ t(quiz.category || 'series') }}</span>
                 <span class="diff-badge" :class="quiz.difficulty || 'medium'">{{ t(quiz.difficulty || 'medium') }}</span>
               </div>
             </div>
 
-            <!-- Card Body -->
+            <!-- Kartītes saturs -->
             <div class="card-body">
               <div class="card-title-row">
                 <SvgIcon :name="quiz.icon_name || 'question'" :size="20" />
@@ -621,7 +618,7 @@
                   {{ quiz.question_count || 0 }}
                 </span>
 
-                <!-- Badge icon: earned or greyed -->
+                <!-- Žetona ikona: iegūta vai pelēkota -->
                 <span class="badge-indicator" :class="{ earned: userBadges[quiz.id] }">
                   <SvgIcon name="badge" :size="18" />
                 </span>
@@ -630,9 +627,12 @@
               <button 
                 type="button" 
                 class="card-btn"
-                :disabled="userBadges[quiz.id] || isLocked(quiz)"
+                :disabled="!isLoggedIn || userBadges[quiz.id] || isLocked(quiz)"
               >
-                <template v-if="userBadges[quiz.id]">
+                <template v-if="!isLoggedIn">
+                  <SvgIcon name="lock" :size="16" /> {{ t('loginToTakeQuiz') }}
+                </template>
+                <template v-else-if="userBadges[quiz.id]">
                   <SvgIcon name="check" :size="16" /> {{ t('completed') }}
                 </template>
                 <template v-else-if="isLocked(quiz)">
@@ -663,6 +663,7 @@
 <script>
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 import SvgIcon from '@/components/SvgIcon.vue'
+import HeroBand from '@/components/HeroBand.vue'
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
@@ -729,7 +730,7 @@ export default {
       ],
     };
   },
-  components: { SvgIcon },
+  components: { SvgIcon, HeroBand },
   computed: {
     currentQuestion() {
       if (!this.activeQuiz || !this.activeQuiz.questions) return {};
@@ -747,6 +748,10 @@ export default {
         if (this.selectedDifficulty !== 'all' && (q.difficulty || 'medium') !== this.selectedDifficulty) return false;
         return true;
       });
+    },
+    isLoggedIn() {
+      const auth = JSON.parse(localStorage.getItem('auth'));
+      return Boolean(auth?.loggedIn && auth?.user?.id);
     }
   },
   methods: {
@@ -783,7 +788,7 @@ export default {
               this.tmdbPosters[id] = `${TMDB_IMG}${data.poster_path}`;
             }
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) { /* Ignorēt */ }
       }
     },
     async fetchQuizzes() {
@@ -792,7 +797,7 @@ export default {
         if (!res.ok) throw new Error('Failed to fetch quizzes');
         this.quizzes = await res.json();
         
-        // Fetch user's earned badges and lock status
+        // Iegūst lietotāja nopelnītos žetonus un bloķēšanas statusu
         const auth = JSON.parse(localStorage.getItem('auth'));
         if (auth?.user?.id) {
           this.isAdmin = auth.user.role === 'admin';
@@ -801,7 +806,7 @@ export default {
           if (this.isAdmin) this.fetchStandaloneBadges();
         }
 
-        // Auto-discover any custom categories from loaded quizzes
+        // Automātiski atrod pielāgotās kategorijas no ielādētajām viktorīnām
         const knownKeys = new Set(this.categories.map(c => c.key));
         for (const quiz of this.quizzes) {
           const cat = quiz.category;
@@ -811,7 +816,7 @@ export default {
           }
         }
 
-        // Fetch TMDB posters
+        // Iegūst TMDB plakātus
         await this.fetchTmdbPosters();
       } catch (err) {
         console.error('Error fetching quizzes:', err);
@@ -825,7 +830,7 @@ export default {
         if (!res.ok) throw new Error('Failed to fetch badges');
         const badges = await res.json();
         badges.forEach(badge => {
-          // 'default', 'pass', and 'perf' badge types mark a quiz as fully completed
+          // 'default', 'pass' un 'perf' žetonu tipi atzīmē viktorīnu kā pilnībā pabeigtu
           if (!badge.badge_type || badge.badge_type === 'default' || badge.badge_type === 'pass' || badge.badge_type === 'perf') {
             this.userBadges[badge.quiz_id] = true;
           }
@@ -870,6 +875,10 @@ export default {
       }
     },
     async startQuiz(quiz) {
+      if (!this.isLoggedIn) {
+        alert(this.t('loginToTakeQuiz'));
+        return;
+      }
       if (this.userBadges[quiz.id]) return;
       if (this.isLocked(quiz)) {
         this.cooldownInfo = this.quizLockStatus[quiz.id];
@@ -877,7 +886,10 @@ export default {
         return;
       }
       try {
-        const res = await fetch(`/api/quizzes/${quiz.id}`);
+        const auth = JSON.parse(localStorage.getItem('auth'));
+        const res = await fetch(`/api/quizzes/${quiz.id}`, {
+          headers: { 'Authorization': auth.user.id.toString() }
+        });
         if (!res.ok) throw new Error('Failed to fetch quiz details');
         this.activeQuiz = await res.json();
         this.currentQuestionIndex = 0;
@@ -900,6 +912,11 @@ export default {
       }
     },
     async submitQuiz() {
+      if (!this.isLoggedIn) {
+        alert(this.t('loginToTakeQuiz'));
+        this.backToList();
+        return;
+      }
       const answeredCount = Object.values(this.answers).filter(a => a && a.trim()).length;
       if (answeredCount < this.activeQuiz.questions.length) {
         alert(this.t('pleaseAnswerAllQuestions'));
@@ -919,7 +936,7 @@ export default {
         if (this.quizResult.badgeAwarded) {
           this.userBadges[this.activeQuiz.id] = true;
         }
-        // Handle pass badge from badgesAwarded array
+        // Apstrādā nokārtošanas žetonu no badgesAwarded masīva
         if (this.quizResult.badgesAwarded) {
           this.quizResult.badgesAwarded.forEach(b => {
             if (b.type === 'default' || b.type === 'pass' || b.type === 'perf') {
@@ -1014,7 +1031,7 @@ export default {
           headers: { 'Authorization': auth.user.id.toString() }
         });
         if (res.ok) this.standaloneBadges = await res.json();
-      } catch (e) { /* ignore */ }
+      } catch (e) { /* Ignorēt */ }
     },
     async saveNewBadge() {
       this.badgeError = '';
@@ -1128,12 +1145,12 @@ export default {
       this.adminError = '';
       const f = this.adminForm;
 
-      // Resolve custom category
+      // Atrisina pielāgoto kategoriju
       let resolvedCategory = f.category;
       if (f.category === '__custom__') {
         if (!f.newCategoryLabel.trim()) { this.adminError = this.t('customCategoryNameRequired'); return; }
         resolvedCategory = f.newCategoryLabel.trim().toLowerCase().replace(/\s+/g, '_');
-        // Register in filter tabs if not already there
+        // Reģistrē filtra cilnēs, ja tā tur vēl nav
         if (!this.categories.find(c => c.key === resolvedCategory)) {
           this.categories.push({ key: resolvedCategory, label: resolvedCategory, icon: f.newCategoryIcon.trim() || 'question', localLabel: f.newCategoryLabel.trim() });
         }
@@ -1226,7 +1243,7 @@ export default {
 </script>
 
 <style scoped>
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   color: var(--text-color);
   margin-bottom: 30px;
@@ -1305,15 +1322,15 @@ export default {
   100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
 }
 
-/* Main Container */
+/* Galvenais konteiners */
 .quizzes-container { max-width: 1200px; margin: 0 auto 60px; padding: 0 20px; }
 
-/* Loading */
+/* Ielāde */
 .loading-spinner { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 20px; }
 .spinner { width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.2); border-top: 3px solid var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* ======= DAILY QUIZ SECTION ======= */
+/* ======= DIENAS VIKTORĪNAS SADAĻA ======= */
 .daily-quiz-section { margin-bottom: 32px; }
 .section-label {
   display: inline-flex; align-items: center; gap: 8px;
@@ -1327,6 +1344,14 @@ export default {
   border: 1px solid rgba(112,233,116,0.15);
 }
 .daily-quiz-card:hover { transform: translateY(-4px); box-shadow: 0 10px 36px rgba(0,0,0,0.26); }
+.daily-quiz-card.login-required,
+.quiz-card.login-required {
+  cursor: default;
+}
+.daily-quiz-card.login-required:hover,
+.quiz-card.login-required:hover {
+  transform: none;
+}
 .daily-poster {
   width: 260px; min-height: 180px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--gradient-start), var(--medium-bg-color));
@@ -1349,8 +1374,14 @@ export default {
   cursor: pointer; transition: background 0.2s, transform 0.2s;
 }
 .daily-start-btn:hover { background: #8cf590; transform: translateY(-2px); }
+.daily-start-btn:disabled {
+  background: #555;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
 
-/* ======= FILTER BAR ======= */
+/* ======= FILTRA JOSLA ======= */
 .filter-bar { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 24px; align-items: center; }
 .category-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .cat-tab {
@@ -1374,7 +1405,7 @@ export default {
 .diff-tab.active.medium { background: #ff9800; color: #fff; border-color: #ff9800; }
 .diff-tab.active.hard { background: #f44336; color: #fff; border-color: #f44336; }
 
-/* ======= QUIZ GRID ======= */
+/* ======= VIKTORĪNU REŽĢIS ======= */
 .quizzes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -1385,7 +1416,7 @@ export default {
   color: var(--subtitle-color); display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
 
-/* ======= QUIZ CARD ======= */
+/* ======= VIKTORĪNAS KARTĪTE ======= */
 .quiz-card {
   background: var(--dark-bg-color); border-radius: 12px; overflow: hidden;
   display: flex; flex-direction: column;
@@ -1399,7 +1430,7 @@ export default {
 .quiz-card.completed { border: 1.5px solid var(--accent-color); cursor: default; }
 .quiz-card.completed:hover { transform: none; }
 
-/* Card Poster */
+/* Kartītes plakāts */
 .card-poster {
   position: relative; height: 110px;
   background: linear-gradient(135deg, var(--gradient-start) 0%, var(--medium-bg-color) 100%);
@@ -1423,7 +1454,7 @@ export default {
 .diff-badge.medium { background: rgba(255,152,0,0.85); }
 .diff-badge.hard { background: rgba(244,67,54,0.85); }
 
-/* Lock corner badge */
+/* Bloķēšanas stūra žetons */
 .lock-corner {
   position: absolute; top: 8px; right: 8px; z-index: 2;
   display: flex; align-items: center; gap: 4px;
@@ -1433,7 +1464,7 @@ export default {
   backdrop-filter: blur(4px);
 }
 
-/* Card Body */
+/* Kartītes saturs */
 .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; width:auto;}
 .card-title-row { display: flex; align-items: center; gap: 8px; }
 .card-title-row h3 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-color); line-height: 1.3; }
@@ -1443,7 +1474,7 @@ export default {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-/* Card meta row */
+/* Kartītes metadatu rinda */
 .card-meta {
   display: flex; align-items: center; gap: 12px; margin-top: 4px;
 }
@@ -1458,7 +1489,7 @@ export default {
 }
 .badge-indicator.earned { color: var(--accent-color); filter: none; }
 
-/* Card button */
+/* Kartītes poga */
 .card-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; margin-top: 6px; padding: 10px; border: none; border-radius: 8px;
@@ -1470,7 +1501,7 @@ export default {
 .card-btn:disabled { background: #555; color: #999; cursor: not-allowed; opacity: 0.7; }
 .quiz-card.completed .card-btn:disabled { background: rgba(112,233,116,0.15); color: var(--accent-color); opacity: 1; }
 
-/* ======= QUIZ TAKER ======= */
+/* ======= VIKTORĪNAS PILDĪTĀJS ======= */
 .quiz-taker {
   background: var(--dark-bg-color); border-radius: 14px; padding: 44px;
   max-width: 860px; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
@@ -1496,7 +1527,7 @@ export default {
   font-weight: 600; color: var(--accent-color); font-size: 0.9rem; white-space: nowrap;
 }
 
-/* Question */
+/* Jautājums */
 .question-container { margin-bottom: 40px; }
 .question-text { font-size: 1.35rem; margin: 0 0 32px 0; color: var(--text-color); line-height: 1.6; font-weight: 600; }
 .options { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
@@ -1510,7 +1541,7 @@ export default {
 .option-input { flex-shrink: 0; width: 20px; height: 20px; cursor: pointer; margin-top: 2px; accent-color: var(--accent-color); }
 .option-text { flex: 1; color: var(--text-color); font-size: 1rem; line-height: 1.5; }
 
-/* Question Nav */
+/* Jautājumu navigācija */
 .question-nav { display: flex; gap: 16px; justify-content: space-between; }
 .nav-btn, .submit-btn {
   flex: 1; padding: 14px 24px; border: 2px solid var(--accent-color);
@@ -1526,7 +1557,7 @@ export default {
 .submit-btn { background: var(--accent-color); color: var(--dark-bg-color); }
 .submit-btn:hover { background: #8cf590; }
 
-/* Question indicators */
+/* Jautājumu indikatori */
 .question-indicator {
   display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
   margin-top: 40px; padding-top: 24px; border-top: 1.5px solid var(--medium-bg-color);
@@ -1539,7 +1570,7 @@ export default {
 .indicator-dot.answered { background: var(--accent-color); }
 .indicator-dot.active { width: 20px; border-color: var(--accent-color); box-shadow: 0 0 8px rgba(112,233,116,0.4); }
 
-/* ======= MODALS ======= */
+/* ======= MODĀLIE LOGI ======= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
@@ -1555,7 +1586,7 @@ export default {
 .results-header h2 { font-size: 1.7rem; margin: 0; color: var(--text-color); font-weight: 700; }
 .results-body { display: flex; flex-direction: column; gap: 24px; }
 
-/* Score */
+/* Rezultāts */
 .score-display { display: flex; justify-content: center; padding: 24px 0; }
 .score-circle {
   width: 120px; height: 120px; border-radius: 50%;
@@ -1565,7 +1596,7 @@ export default {
 .score-display.passed .score-circle { background: rgba(112,233,116,0.12); border-color: var(--accent-color); }
 .score-text { font-size: 2.4rem; font-weight: 800; color: var(--accent-color); }
 
-/* Results Info */
+/* Rezultātu informācija */
 .results-info { color: var(--text-color); padding: 20px; background: var(--medium-bg-color); border-radius: 10px; }
 .results-info p { margin: 12px 0; font-size: 1.05rem; line-height: 1.6; }
 .results-info p:first-child { margin-top: 0; }
@@ -1573,7 +1604,7 @@ export default {
 .pass-text { color: var(--accent-color); font-weight: 700; font-size: 1.3rem; }
 .fail-text { color: var(--subtitle-color); font-weight: 600; font-size: 1.1rem; }
 
-/* Badge notification */
+/* Žetona paziņojums */
 .badge-notification {
   background: linear-gradient(135deg, rgba(112,233,116,0.12), rgba(112,233,116,0.05));
   border: 1.5px solid var(--accent-color); border-radius: 12px;
@@ -1585,7 +1616,7 @@ export default {
 .badge-text { font-size: 1.2rem; font-weight: 800; color: var(--accent-color); margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.8px; }
 .badge-name { font-size: 0.95rem; color: var(--subtitle-color); margin: 0; font-weight: 600; }
 
-/* Cosmetic notification */
+/* Kosmētikas paziņojums */
 .cosmetic-notification {
   background: linear-gradient(135deg, rgba(120, 80, 255, 0.12), rgba(120, 80, 255, 0.04));
   border: 1.5px solid #ab47bc; border-radius: 12px;
@@ -1603,7 +1634,7 @@ export default {
 .cosmetic-rarity-tag.epic { color: #ce93d8; }
 .cosmetic-rarity-tag.legendary { color: #ffd54f; }
 
-/* Results actions */
+/* Rezultātu darbības */
 .results-actions { display: flex; gap: 16px; margin-top: 20px; }
 .retry-btn, .close-btn {
   flex: 1; padding: 14px 24px; border: none; border-radius: 8px;
@@ -1615,7 +1646,7 @@ export default {
 .close-btn { background: var(--medium-bg-color); color: var(--text-color); border: 1.5px solid var(--accent-color); }
 .close-btn:hover { background: var(--accent-color); color: var(--dark-bg-color); transform: translateY(-2px); }
 
-/* Cooldown modal */
+/* Gaidīšanas laika modālais logs */
 .cooldown-modal { text-align: center; border: 1.5px solid #ff6b6b; }
 .cooldown-header { display: flex; align-items: center; justify-content: center; gap: 10px; border-bottom: 2px solid #ff6b6b; padding-bottom: 20px; margin-bottom: 24px; }
 .cooldown-header h2 { font-size: 1.5rem; margin: 0; color: #ff6b6b; font-weight: 700; }
@@ -1635,7 +1666,7 @@ export default {
 .cooldown-actions .close-btn { background: #ff6b6b; border-color: #ff6b6b; color: #fff; flex: 1; }
 .cooldown-actions .close-btn:hover { background: #e55555; border-color: #e55555; }
 
-/* ======= RESPONSIVE ======= */
+/* ======= RESPONSĪVAIS IZKĀRTOJUMS ======= */
 @media (max-width: 768px) {
   .hero-inner h1 { font-size: 1.8rem; }
   .daily-quiz-card { flex-direction: column; }
@@ -1691,7 +1722,7 @@ export default {
   .retry-btn, .close-btn { padding: 12px; font-size: 0.92rem; }
 }
 
-/* ======= ADMIN BAR ======= */
+/* ======= ADMINISTRATORA JOSLA ======= */
 .admin-bar {
   display: flex; align-items: center; justify-content: space-between;
   background: rgba(112,233,116,0.07); border: 1.5px solid rgba(112,233,116,0.2);
@@ -1718,7 +1749,7 @@ export default {
   border: 1px solid rgba(255,255,255,0.1);
 }
 
-/* Admin delete on card */
+/* Administratora dzēšana kartītē */
 .admin-delete-btn {
   display: flex; align-items: center; justify-content: center; gap: 4px;
   width: 100%; margin-top: 4px; padding: 7px; border: 1.5px solid #f44336;
@@ -1728,7 +1759,7 @@ export default {
 }
 .admin-delete-btn:hover { background: #f44336; color: #fff; }
 
-/* ======= ADMIN CREATE QUIZ MODAL ======= */
+/* ======= ADMINISTRATORA VIKTORĪNAS IZVEIDES MODĀLAIS LOGS ======= */
 .admin-quiz-modal {
   max-width: 720px; width: 95%; padding: 28px 32px;
   max-height: 75vh; overflow-y: auto;
@@ -1756,7 +1787,7 @@ export default {
 .form-hint { font-weight: 400; margin-left: 4px; }
 .custom-cat-fields { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 
-/* Toggle rows */
+/* Pārslēgu rindas */
 .toggle-row {
   display: flex; align-items: flex-start; gap: 10px;
   font-size: 0.9rem; color: var(--text-color); cursor: pointer;
@@ -1766,7 +1797,7 @@ export default {
 }
 .toggle-row input[type="checkbox"] { margin-top: 1px; flex-shrink: 0; accent-color: var(--accent-color); width: 16px; height: 16px; cursor: pointer; }
 
-/* Badge tier blocks */
+/* Žetonu līmeņu bloki */
 .badge-tier-block {
   background: var(--dark-bg-color); border-radius: 8px; padding: 12px 14px;
   display: flex; flex-direction: column; gap: 10px;
@@ -1775,7 +1806,7 @@ export default {
 .tier-header { display: flex; align-items: center; justify-content: space-between; }
 .tier-num { font-size: 0.78rem; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.8px; }
 
-/* Badge type variants in results */
+/* Žetonu tipu varianti rezultātos */
 .badge-notification.fail { background: linear-gradient(135deg, rgba(255,152,0,0.12), rgba(255,152,0,0.05)); border-color: #ff9800; }
 .badge-notification.fail .badge-text { color: #ff9800; }
 .badge-notification.secret { background: linear-gradient(135deg, rgba(156,39,176,0.12), rgba(156,39,176,0.05)); border-color: #9c27b0; }
@@ -1790,7 +1821,7 @@ export default {
 .admin-input:focus { outline: none; border-color: var(--accent-color); }
 .admin-textarea { resize: vertical; min-height: 60px; }
 
-/* Image upload preview */
+/* Attēla augšupielādes priekšskatījums */
 .img-upload-preview {
   display: flex; align-items: center; gap: 12px; margin-top: 8px;
 }
@@ -1805,7 +1836,7 @@ export default {
 }
 .img-clear-btn:hover { background: #f44336; color: #fff; }
 
-/* Questions builder */
+/* Jautājumu veidotājs */
 .questions-header { display: flex; align-items: center; justify-content: space-between; }
 .add-q-btn {
   background: none; border: 1.5px solid var(--accent-color); color: var(--accent-color);

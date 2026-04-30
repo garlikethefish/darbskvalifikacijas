@@ -1,6 +1,6 @@
 <template>
   <div class="notification-panel-wrapper" ref="wrapper">
-    <!-- Notification Bell Button -->
+    <!-- Paziņojumu zvana poga -->
     <button 
       ref="bellBtn"
       class="notification-bell"
@@ -11,7 +11,7 @@
       <span v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
-    <!-- Dev Tools Button (for testing notifications) -->
+    <!-- Izstrādātāja rīku poga (paziņojumu testēšanai) -->
     <!-- <button 
       v-if="isDev"
       class="dev-tools-btn"
@@ -21,10 +21,10 @@
       <SvgIcon name="settings" :size="36" />
     </button> -->
 
-    <!-- Teleport dropdowns to body so they escape header overflow:hidden -->
+    <!-- Pārvieto nolaižamās izvēlnes uz body, lai tās izietu ārpus galvenes overflow:hidden -->
     <Teleport to="body">
 
-    <!-- Notification Panel -->
+    <!-- Paziņojumu panelis -->
     <div v-if="showPanel" class="notification-panel" :style="panelStyle" @click.stop>
       <div class="panel-header">
         <h3>Notifications</h3>
@@ -50,13 +50,13 @@
       </div>
 
       <div class="panel-content">
-        <!-- Empty State -->
+        <!-- Tukšais stāvoklis -->
         <div v-if="notifications.length === 0" class="empty-state">
           <p>No notifications yet</p>
           <p class="hint">Follow shows to get notified about new episodes!</p>
         </div>
 
-        <!-- Notification List -->
+        <!-- Paziņojumu saraksts -->
         <div v-else class="notifications-list">
           <div 
             v-for="notif in notifications" 
@@ -97,7 +97,7 @@
 
     </div>
 
-    <!-- Click outside to close -->
+    <!-- Klikšķis ārpusē, lai aizvērtu -->
     <div v-if="showPanel" class="panel-overlay" @click="closePanel"></div>
     <!-- Developer Test Tools Panel (for testing notifications)
     <div v-if="showDevTools && isDev" class="dev-tools-panel" :style="devToolsStyle" @click.stop>
@@ -247,13 +247,13 @@ export default {
 
       const auth = JSON.parse(localStorage.getItem('auth'));
       
-      // Immediately update UI (optimistic update)
+      // Uzreiz atjaunina saskarni (optimistiskais atjauninājums)
       this.notifications.forEach(n => {
         n.is_read = 1;
       });
       this.updateUnreadCount();
       
-      // Single bulk request to mark all as read
+      // Viens masveida pieprasījums, lai visus atzīmētu kā izlasītus
       fetch('/api/notifications/mark-all-read', {
         method: 'POST',
         headers: {
@@ -282,7 +282,7 @@ export default {
       return date.toLocaleDateString();
     },
     startPolling() {
-      // Poll for new notifications every 30 seconds (skip if testing)
+      // Ik pēc 30 sekundēm pārbauda jaunus paziņojumus (izlaiž testēšanas laikā)
       this.pollInterval = setInterval(() => {
         if (!this.isTestingNotifications) {
           this.loadNotifications();
@@ -371,7 +371,7 @@ export default {
 
       const notif = testNotifications[type];
       if (notif) {
-        // Add to beginning for visibility
+        // Pievieno sākumā labākai redzamībai
         this.notifications.unshift(notif);
         this.updateUnreadCount();
         this.isTestingNotifications = true;
@@ -381,12 +381,12 @@ export default {
       if (!localStorage.getItem('auth')) return;
       const auth = JSON.parse(localStorage.getItem('auth'));
 
-      // Optimistic UI update
+      // Optimistisks saskarnes atjauninājums
       this.notifications = [];
       this.updateUnreadCount();
       this.isTestingNotifications = false;
 
-      // Delete all on server
+      // Dzēš visu serverī
       fetch('/api/notifications', {
         method: 'DELETE',
         headers: {
@@ -400,11 +400,11 @@ export default {
       if (!localStorage.getItem('auth')) return;
       const auth = JSON.parse(localStorage.getItem('auth'));
 
-      // Optimistic UI update
+      // Optimistisks saskarnes atjauninājums
       this.notifications = this.notifications.filter(n => n.id !== notificationId);
       this.updateUnreadCount();
 
-      // Delete on server
+      // Dzēš serverī
       fetch(`/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
@@ -709,7 +709,7 @@ export default {
   z-index: 9999;
 }
 
-/* Custom scrollbar */
+/* Pielāgota ritjosla */
 .panel-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -727,7 +727,7 @@ export default {
   background: rgba(112, 233, 116, 0.4);
 }
 
-/* Developer Tools Styles */
+/* Izstrādātāja rīku stili */
 .dev-tools-btn {
   position: relative;
   background: none;

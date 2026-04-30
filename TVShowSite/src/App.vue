@@ -153,7 +153,7 @@ header {
   transition: padding 0.3s cubic-bezier(0.16,0.84,0.24,1);
 }
 
-/* Gradient blobs — only visible on the right side (left is covered by solid bg) */
+/* Gradienta laukumi — redzami tikai labajā pusē (kreiso pusi sedz vienkrāsains fons) */
 header::before {
   content: '';
   position: absolute;
@@ -174,7 +174,7 @@ header.scrolled {
   padding-bottom: 0;
 }
 
-/* Mouse spotlight */
+/* Peles prožektors */
 header::after {
   content: '';
   position: absolute;

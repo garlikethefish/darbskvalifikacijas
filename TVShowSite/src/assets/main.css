@@ -108,7 +108,7 @@ body::before {
     min-height: 100vh;
 }
 
-/* Prevent page scrolling when certain full-screen/hero animations run */
+/* Novērš lapas ritināšanu, kad darbojas noteiktas pilnekrāna/galvenes animācijas */
 body.no-scroll {
     overflow: hidden !important;
     height: 100vh !important;
@@ -158,8 +158,8 @@ body.no-scroll {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  z-index: 1500; /* very high */
-  position: relative; /* or fixed if needed */
+  z-index: 1500; /* ļoti augsts */
+  position: relative; /* vai fixed, ja nepieciešams */
 }
 
 .hamburger-menu span {
@@ -185,36 +185,36 @@ body.no-scroll {
     width: 400px;
     height: 250px;
 }
-/* off images are green, even are blue (corresponds to site design :3)*/
+/* Nepāra attēli ir zaļi, pāra ir zili (atbilst vietnes dizainam :3) */
 [data-theme="dark"] .series-container:nth-child(odd) img {
-  filter: brightness(50%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(200%); /* green */
+  filter: brightness(50%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(200%); /* zaļš */
 }
 
 [data-theme="dark"] .series-container:nth-child(even) img {
-  filter: brightness(50%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(200%); /* blue */
+  filter: brightness(50%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(200%); /* zils */
 }
 
 [data-theme="light"] .series-container:nth-child(odd) img {
-  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(100%); /* green */
+  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(100%); /* zaļš */
 }
 
 [data-theme="light"] .series-container:nth-child(even) img {
-  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(100%); /* blue */
+  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(100%); /* zils */
 }
 
 [data-theme="dark"] .series-container:nth-child(odd) img:hover{
-  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(200%); /* green */
+  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(200%); /* zaļš */
 }
 
 [data-theme="dark"] .series-container:nth-child(even) img:hover{
-  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(200%); /* blue */
+  filter: brightness(80%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(200%); /* zils */
 }
 [data-theme="light"] .series-container:nth-child(odd) img:hover{
-  filter: brightness(100%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(100%); /* green */
+  filter: brightness(100%) grayscale(100%) sepia(100%) hue-rotate(90deg) saturate(100%); /* zaļš */
 }
 
 [data-theme="light"] .series-container:nth-child(even) img:hover{
-  filter: brightness(100%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(100%); /* blue */
+  filter: brightness(100%) grayscale(100%) sepia(100%) hue-rotate(130deg) saturate(100%); /* zils */
 }
 .series-container .caption-text {
     position: absolute;
@@ -412,7 +412,7 @@ a.donate-link {
 .tagline{
     background: var(--background-color);
 }
-/* unnecessary currently, but might be useful in the future
+/* Pašlaik nav nepieciešams, bet nākotnē var noderēt
 .dropdown {
     display:flex;
     width: auto;
@@ -541,7 +541,7 @@ footer{
     h1.center {
         font-size: 24px;
     }
-    /* unnecessary currently, but might be useful in the future
+    /* Pašlaik nav nepieciešams, bet nākotnē var noderēt
     .dropdown-content {
         display: none;
         position: relative; 

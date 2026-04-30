@@ -1,6 +1,6 @@
 <template>
   <div class="avatar-maker">
-    <!-- Presets -->
+    <!-- Sagataves -->
     <div class="presets-row">
       <span class="presets-label">Presets:</span>
       <button
@@ -12,7 +12,7 @@
       <button class="preset-btn preset-clear" @click="clearAll">Clear</button>
     </div>
 
-    <!-- Preview -->
+    <!-- Priekšskatījums -->
     <div class="avatar-preview-area">
       <div class="avatar-preview-box" ref="previewBox">
         <img
@@ -30,7 +30,7 @@
       <canvas ref="compositeCanvas" width="512" height="512" style="display:none;"></canvas>
     </div>
 
-    <!-- Category Tabs -->
+    <!-- Kategoriju cilnes -->
     <div class="category-tabs">
       <button
         v-for="cat in categories"
@@ -42,7 +42,7 @@
       </button>
     </div>
 
-    <!-- Part Options -->
+    <!-- Daļu opcijas -->
     <div class="part-options-grid">
       <div
         v-if="optionalCategories.includes(activeCategory)"
@@ -65,7 +65,7 @@
       </div>
     </div>
 
-    <!-- Actions -->
+    <!-- Darbības -->
     <div class="avatar-actions">
       <button class="save-avatar-btn" @click="saveAvatar" :disabled="isSaving || !allRequiredSelected">
         <span v-if="!isSaving">Save Avatar</span>
@@ -229,7 +229,7 @@ export default {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, 512, 512);
 
-        // Draw each selected layer in order
+        // Zīmē katru izvēlēto slāni secībā
         for (const layer of this.layerOrder) {
           const filename = this.selectedParts[layer];
           if (filename) {
@@ -239,10 +239,10 @@ export default {
           }
         }
 
-        // Convert canvas to blob
+        // Pārveido canvas par blob
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
-        // Upload via existing profile picture endpoint
+        // Augšupielādē caur esošo profila attēla galapunktu
         const auth = JSON.parse(localStorage.getItem('auth'));
         const formData = new FormData();
         formData.append('profilePicture', blob, 'avatar.png');
@@ -256,7 +256,7 @@ export default {
         if (!uploadRes.ok) throw new Error('Failed to upload avatar');
         const uploadData = await uploadRes.json();
 
-        // Save avatar config for future editing
+        // Saglabā avatara konfigurāciju turpmākai rediģēšanai
         await fetch(`/api/users/${this.userId}/avatar-config`, {
           method: 'POST',
           headers: {
@@ -290,7 +290,7 @@ export default {
   gap: 18px;
 }
 
-/* Presets */
+/* Sagataves */
 .presets-row {
   display: flex;
   align-items: center;
@@ -330,7 +330,7 @@ export default {
   color: #fff;
 }
 
-/* Preview */
+/* Priekšskatījums */
 .avatar-preview-area {
   display: flex;
   justify-content: center;
@@ -368,7 +368,7 @@ export default {
   padding: 10px;
 }
 
-/* Category Tabs */
+/* Kategoriju cilnes */
 .category-tabs {
   display: flex;
   gap: 6px;
@@ -399,7 +399,7 @@ export default {
   color: var(--dark-bg-color);
 }
 
-/* Part Options */
+/* Daļu opcijas */
 .part-options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -468,7 +468,7 @@ export default {
   border-radius: 6px;
 }
 
-/* Actions */
+/* Darbības */
 .avatar-actions {
   display: flex;
   justify-content: center;

@@ -27,7 +27,7 @@ export default {
   align-items: center;
 }
 
-/* h1 variant — gradient divider (used in Home.vue) */
+/* h1 variants — gradienta atdalītājs (lietots Home.vue) */
 .section-header--h1 {
   padding-top: 30px;
   padding-bottom: 30px;
@@ -41,7 +41,7 @@ export default {
   text-align: center;
 }
 
-/* h2 variant — accent border (used in Profile.vue, ReviewDetail.vue) */
+/* h2 variants — akcenta apmale (lietots Profile.vue, ReviewDetail.vue) */
 .section-header--h2 {
   margin-bottom: 1.5rem;
   padding-bottom: 15px;

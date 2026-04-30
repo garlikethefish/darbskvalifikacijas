@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <div v-if="user">
-      <!-- DEV: Cursor test overlay -->
+      <!-- IZSTR.: Kursora testa pārklājums -->
       <CursorTrail v-if="cursorTestActive && cursorTestCurrent" :effectKey="cursorTestCurrent" :config="cursorTestConfigs[cursorTestCurrent] || {}" />
-      <!-- Profile-wide background effect -->
+      <!-- Profila fona efekts -->
       <ProfileBackground
         v-if="bgTestActive ? bgTestCurrent : activeBackground"
         :key="bgTestActive ? bgTestCurrent : activeBackground.effect_key"
@@ -11,18 +11,14 @@
         :config="bgTestActive ? (bgTestConfigs[bgTestCurrent] || {}) : parsedBgConfig"
         class="page-background-effect"
       />
-      <!-- Hero Section -->
-      <header class="hero">
-        <div class="hero-band">
-          <div class="hero-inner">
-            <h1>{{ user.username }}'s {{ t('profile') }}</h1>
-            <p class="subtitle"><SvgIcon name="edit" :size="16" /> {{ reviewCount }} {{ t('reviews') }} • <SvgIcon name="tv" :size="16" /> {{ followedShows.length }} {{ t('followedShows') }} • <SvgIcon name="users" :size="16" /> {{ followerCount }} {{ t('followers') }} • <SvgIcon name="heart" :size="16" /> {{ followingCount }} {{ t('following') }}</p>
-          </div>
-        </div>
-      </header>
+      <!-- Galvenes sadaļa -->
+      <HeroBand variant="profile">
+        <h1>{{ user.username }}'s {{ t('profile') }}</h1>
+        <p class="subtitle"><SvgIcon name="edit" :size="16" /> {{ reviewCount }} {{ t('reviews') }} • <SvgIcon name="tv" :size="16" /> {{ followedShows.length }} {{ t('followedShows') }} • <SvgIcon name="users" :size="16" /> {{ followerCount }} {{ t('followers') }} • <SvgIcon name="heart" :size="16" /> {{ followingCount }} {{ t('following') }}</p>
+      </HeroBand>
 
       <div class="profile-container">
-        <!-- Profile Card -->
+        <!-- Profila kartīte -->
         <div class="profile-card">
           <div class="profile-header">
             <div class="pfp-section">
@@ -47,7 +43,7 @@
               </div>
             </div>
 
-            <!-- Profile Picture Selection Modal (Owner only) -->
+            <!-- Profila attēla izvēles modālais logs (tikai īpašniekam) -->
             <div v-if="isOwnProfile && showProfilePictureModal" class="modal-overlay" @click.self="showProfilePictureModal = false">
               <div class="modal-content pfp-modal-wide">
                 <div class="modal-header">
@@ -136,8 +132,23 @@
           </div>
         </div>
 
-        <!-- Badges Section -->
-        <div v-if="badges.length > 0" class="badges-section">
+        <!-- Žetonu sadaļa -->
+        <div class="profile-activity-shell">
+          <nav class="profile-tabs">
+            <button
+              v-for="tab in profileTabs"
+              :key="tab.id"
+              class="profile-tab-btn"
+              :class="{ active: activeProfileTab === tab.id }"
+              @click="activeProfileTab = tab.id"
+            >
+              <span class="profile-tab-icon"><SvgIcon :name="tab.icon" :size="18" /></span>
+              <span class="profile-tab-label">{{ tab.label }}</span>
+            </button>
+          </nav>
+
+          <div class="profile-tab-content">
+        <div v-if="activeProfileTab === 'badges' && badges.length > 0" class="badges-section">
           <SectionHeader>
             <SvgIcon name="badge" :size="22" /> {{ isOwnProfile ? t('badges') : t('earnedBadges') }}
             <template #actions v-if="isOwnProfile">
@@ -169,7 +180,7 @@
           </div>
         </div>
 
-        <!-- Badge Inspect Modal -->
+        <!-- Žetona apskates modālais logs -->
         <div v-if="inspectBadge" class="badge-inspect-overlay" @click.self="closeBadgeInspect">
           <div class="badge-inspect-modal">
             <button class="badge-inspect-close" @click="closeBadgeInspect"><SvgIcon name="close" :size="18" /></button>
@@ -202,14 +213,14 @@
           </div>
         </div>
 
-        <!-- Cosmetics Section (Owner only) -->
-        <div v-if="isOwnProfile" class="cosmetics-section">
+        <!-- Kosmētikas sadaļa (tikai īpašniekam) -->
+        <div v-if="activeProfileTab === 'cosmetics' && isOwnProfile" class="cosmetics-section">
           <SectionHeader><SvgIcon name="palette" :size="22" /> {{ t('cosmetics') }}</SectionHeader>
           <CosmeticsPanel :userId="user.id" :isOwnProfile="isOwnProfile" />
         </div>
 
-        <!-- DEV: Background Effects Test -->
-        <div v-if="isOwnProfile && bgTestActive" class="bg-test-section">
+        <!-- IZSTR.: Fona efektu tests -->
+        <div v-if="activeProfileTab === 'cosmetics' && isOwnProfile && bgTestActive" class="bg-test-section">
           <SectionHeader>
             {{ t('backgroundEffectsTest') }}
             <template #actions>
@@ -226,10 +237,10 @@
           </div>
           <p class="bg-test-hint">Effect is applied to the page background. Move your mouse around to see interactive effects.</p>
         </div>
-        <!-- For Developer BG testing <button v-if="isOwnProfile && !bgTestActive" class="bg-test-toggle" @click="bgTestActive = true">🛠 {{ t('testBackgrounds') }}</button> -->
+        <!-- Izstrādātāja fona testēšanai <button v-if="isOwnProfile && !bgTestActive" class="bg-test-toggle" @click="bgTestActive = true">🛠 {{ t('testBackgrounds') }}</button> -->
 
-        <!-- DEV: Cursor Effects Test -->
-        <div v-if="isOwnProfile && cursorTestActive" class="bg-test-section">
+        <!-- IZSTR.: Kursora efektu tests -->
+        <div v-if="activeProfileTab === 'cosmetics' && isOwnProfile && cursorTestActive" class="bg-test-section">
           <SectionHeader>
             {{ t('cursorEffectsTest') }}
             <template #actions>
@@ -246,10 +257,10 @@
           </div>
           <p class="bg-test-hint">Move your mouse around to see the cursor effect. Click a different effect to switch.</p>
         </div>
-        <!-- For Developer Cursor Effect testing <button v-if="isOwnProfile && !cursorTestActive" class="bg-test-toggle" @click="cursorTestActive = true">🖱 {{ t('testCursors') }}</button> -->
+        <!-- Izstrādātāja kursora efektu testēšanai <button v-if="isOwnProfile && !cursorTestActive" class="bg-test-toggle" @click="cursorTestActive = true">🖱 {{ t('testCursors') }}</button> -->
 
-        <!-- Favorite Shows Section (Owner - editable) -->
-        <div v-if="isOwnProfile" class="favorites-section">
+        <!-- Iecienīto seriālu sadaļa (īpašnieks - rediģējama) -->
+        <div v-if="activeProfileTab === 'favorites' && isOwnProfile" class="favorites-section">
           <SectionHeader>{{ t('favoriteShows') }}</SectionHeader>
           <div class="favorites-grid">
             <div v-for="(fav, index) in favorites" :key="index" class="favorite-slot" :class="{ dragging: isDragging && index === dragIndex }" @dragstart="dragStart($event, index)" @dragover.prevent @drop="drop($event, index)" @dragend="dragEnd" @click="openSelectModal(index)" :draggable="fav.tmdb_id !== null">
@@ -281,8 +292,8 @@
           </div>
         </div>
 
-        <!-- Favorite Shows Section (Visitor - read only) -->
-        <div v-if="!isOwnProfile && favoriteShows.length > 0" class="favorites-section">
+        <!-- Iecienīto seriālu sadaļa (apmeklētājs - tikai lasāma) -->
+        <div v-if="activeProfileTab === 'favorites' && !isOwnProfile && favoriteShows.length > 0" class="favorites-section">
           <SectionHeader>{{ t('favoriteShows') }}</SectionHeader>
           <div class="favorites-grid">
             <div 
@@ -302,8 +313,16 @@
           </div>
         </div>
 
-        <!-- Common Shows Section (Visitor only) -->
-        <div v-if="!isOwnProfile && auth && auth.loggedIn && (commonFollowedShowsData.length > 0 || commonFavoritesData.length > 0)" class="common-section">
+        <!-- Kopīgo seriālu sadaļa (tikai apmeklētājam) -->
+        <div v-if="activeProfileTab === 'favorites' && !isOwnProfile && favoriteShows.length === 0" class="favorites-section">
+          <SectionHeader>{{ t('favoriteShows') }}</SectionHeader>
+          <div class="profile-tab-empty">
+            <div class="empty-icon"><SvgIcon name="heart" :size="56" /></div>
+            <p>{{ t('noFavoriteShowsYet') }}</p>
+          </div>
+        </div>
+
+        <div v-if="activeProfileTab === 'common' && !isOwnProfile && auth && auth.loggedIn && (commonFollowedShowsData.length > 0 || commonFavoritesData.length > 0)" class="common-section">
           <SectionHeader><SvgIcon name="star" :size="22" /> {{ t('whatInCommon') }}</SectionHeader>
           <div v-if="commonFavoritesData.length > 0" class="common-group">
             <h3 class="common-subtitle">{{ t('sharedFavoriteShows') }} ({{ commonFavoritesData.length }})</h3>
@@ -342,8 +361,8 @@
           </div>
         </div>
 
-        <!-- Reviews Section -->
-        <div class="reviews-section" v-if="reviews.length">
+        <!-- Atsauksmju sadaļa -->
+        <div class="reviews-section" v-if="activeProfileTab === 'reviews' && reviews.length">
           <SectionHeader>
             {{ isOwnProfile ? t('userReviews') : t('recentReviews') + ' ' + t('reviews') }}
             <template #actions v-if="isOwnProfile">
@@ -374,8 +393,17 @@
           </div>
         </div>
 
-        <!-- Comments Section -->
-        <div class="comments-section" v-if="userComments.length">
+        <!-- Komentāru sadaļa -->
+        <div v-if="activeProfileTab === 'reviews' && isOwnProfile && !reviews.length" class="reviews-section">
+          <SectionHeader>{{ t('userReviews') }}</SectionHeader>
+          <div class="profile-tab-empty">
+            <div class="empty-icon"><SvgIcon name="note" :size="56" /></div>
+            <p>{{ t('noReviewsYet') }}</p>
+            <button class="new-review-btn" @click="new_review">+ {{ t('newReview') }}</button>
+          </div>
+        </div>
+
+        <div class="comments-section" v-if="activeProfileTab === 'comments' && userComments.length">
           <SectionHeader><SvgIcon name="chat" :size="22" /> {{ t('postedComments') }}</SectionHeader>
           <div class="comments-list">
             <div v-for="comment in displayComments" :key="comment.id" class="comment-card" @click="$router.push(`/review/${comment.review_id}`)">
@@ -388,8 +416,8 @@
           </div>
         </div>
 
-        <!-- Followed Shows Section -->
-        <div class="followed-shows-section" v-if="followedShows.length">
+        <!-- Sekoto seriālu sadaļa -->
+        <div class="followed-shows-section" v-if="activeProfileTab === 'followed' && followedShows.length">
           <SectionHeader><SvgIcon name="star" :size="22" /> {{ t('followedShows') }}</SectionHeader>
           <div class="followed-grid">
             <div 
@@ -408,18 +436,11 @@
           </div>
         </div>
 
-        <!-- Empty State (Owner) -->
-        <div v-if="isOwnProfile && !reviews.length && !followedShows.length" class="empty-state">
-          <div class="empty-icon"><SvgIcon name="note" :size="64" /></div>
-          <p>{{ t('noReviewsYet') }}</p>
-          <button class="new-review-btn" @click="new_review">+ {{ t('newReview') }}</button>
+        <!-- Tukšais stāvoklis (īpašnieks) -->
+          </div>
         </div>
 
-        <!-- Empty State (Visitor) -->
-        <div v-if="!isOwnProfile && !hasVisitorContent" class="empty-state">
-          <div class="empty-icon"><SvgIcon name="note" :size="64" /></div>
-          <p>{{ t('noPublicActivity') }}</p>
-        </div>
+        <!-- Tukšais stāvoklis (apmeklētājs) -->
       </div>
     </div>
 
@@ -438,12 +459,13 @@ import AvatarMaker from '@/components/AvatarMaker.vue'
 import CosmeticsPanel from '@/components/CosmeticsPanel.vue'
 import ProfileBackground from '@/components/ProfileBackground.vue'
 import CursorTrail from '@/components/CursorTrail.vue'
+import HeroBand from '@/components/HeroBand.vue'
 
 export default {
-  components: { SvgIcon, SectionHeader, AvatarMaker, CosmeticsPanel, ProfileBackground, CursorTrail },
+  components: { SvgIcon, SectionHeader, AvatarMaker, CosmeticsPanel, ProfileBackground, CursorTrail, HeroBand },
   data() {
     return {
-      // Shared
+      // Koplietots
       user: null,
       reviews: [],
       reviewCount: 0,
@@ -460,7 +482,7 @@ export default {
       profileImageUrl: null,
       activeBackground: null,
 
-      // DEV: Background test
+      // IZSTR.: Fona tests
       bgTestActive: false,
       bgTestCurrent: 'particles_stars',
       bgTestEffects: [
@@ -484,7 +506,7 @@ export default {
         flowing_ribbons: { lineColor: 'rgba(112, 233, 116, 0.35)' },
       },
 
-      // DEV: Cursor test
+      // IZSTR.: Kursora tests
       cursorTestActive: false,
       cursorTestCurrent: null,
       cursorTestEffects: [
@@ -501,7 +523,7 @@ export default {
       ],
       cursorTestConfigs: {},
 
-      // Owner-only
+      // Tikai īpašniekam
       defaultIcons: ['default_grey.png', 'default_green.png', 'default_pink.png'],
       newUsername: '',
       isEditingUsername: false,
@@ -518,8 +540,9 @@ export default {
       searchResults: [],
       selectedDisplayBadgeId: null,
       inspectBadge: null,
+      activeProfileTab: 'favorites',
 
-      // Visitor-only
+      // Tikai apmeklētājam
       isFollowing: false,
       followLoading: false,
       favoriteShows: [],
@@ -549,6 +572,45 @@ export default {
     displayComments() {
       return this.isOwnProfile ? this.userComments : this.userComments.slice(0, 5);
     },
+    profileTabs() {
+      const tabs = [
+        { id: 'favorites', label: this.t('favoriteShows'), icon: 'heart' }
+      ];
+
+      if (this.badges.length > 0) {
+        tabs.push({
+          id: 'badges',
+          label: this.isOwnProfile ? this.t('badges') : this.t('earnedBadges'),
+          icon: 'badge'
+        });
+      }
+
+      if (this.isOwnProfile) {
+        tabs.push({ id: 'cosmetics', label: this.t('cosmetics'), icon: 'palette' });
+      }
+
+      if (!this.isOwnProfile && this.auth && this.auth.loggedIn && (this.commonFollowedShowsData.length > 0 || this.commonFavoritesData.length > 0)) {
+        tabs.push({ id: 'common', label: this.t('whatInCommon'), icon: 'star' });
+      }
+
+      if (this.isOwnProfile || this.reviews.length > 0) {
+        tabs.push({
+          id: 'reviews',
+          label: this.isOwnProfile ? this.t('userReviews') : this.t('recentReviews'),
+          icon: 'note'
+        });
+      }
+
+      if (this.userComments.length > 0) {
+        tabs.push({ id: 'comments', label: this.t('postedComments'), icon: 'chat' });
+      }
+
+      if (this.followedShows.length > 0) {
+        tabs.push({ id: 'followed', label: this.t('followedShows'), icon: 'tv' });
+      }
+
+      return tabs;
+    },
     parsedBgConfig() {
       if (!this.activeBackground) return {};
       const cfg = this.activeBackground.config;
@@ -568,7 +630,7 @@ export default {
       return date.toLocaleDateString(this.currentLanguage === 'lv' ? 'lv-LV' : 'en-US');
     },
 
-    // === Shared data loading ===
+    // === Koplietoto datu ielāde ===
     async fetchShowDetails(tmdbId) {
       try {
         const res = await fetch(`/api/tmdb/series/${tmdbId}?lang=${encodeURIComponent(this.currentLanguage)}`);
@@ -660,7 +722,7 @@ export default {
       }
     },
 
-    // === Owner-only methods ===
+    // === Tikai īpašniekam paredzētās metodes ===
     getProfileImageUrl(profilePicture) {
       if (!profilePicture) return this.defaultIcon;
       const cacheBuster = Math.random().toString(36).substring(7);
@@ -835,7 +897,7 @@ export default {
       const ny = (y - centerY) / centerY;
       const rotateX = ny * -25;
       const rotateY = nx * 25;
-      // Light from top-left: shine brighter when tilting toward light
+      // Gaisma no augšējā kreisā stūra: spīd spožāk, noliecot pret gaismu
       const lightAngle = (-nx + -ny) / 2;
       const brightness = 1 + lightAngle * 0.35;
       const shadowX = nx * -14;
@@ -1027,7 +1089,7 @@ export default {
       }
     },
 
-    // === Visitor-only methods ===
+    // === Tikai apmeklētājam paredzētās metodes ===
     async loadFollowStatus(userId) {
       try {
         const res = await fetch(`/api/users/${userId}/follow-status`, {
@@ -1162,7 +1224,7 @@ export default {
     this.isOwnProfile = this.auth?.user?.id === parseInt(userId);
 
     if (this.isOwnProfile) {
-      // Owner mode
+      // Īpašnieka režīms
       this.user = this.auth.user;
       this.profileImageUrl = this.user.profile_picture || null;
 
@@ -1180,7 +1242,7 @@ export default {
         }
       });
     } else {
-      // Visitor mode
+      // Apmeklētāja režīms
       try {
         const profileRes = await fetch(`/api/users/${userId}/public-profile`);
         if (!profileRes.ok) {
@@ -1240,7 +1302,18 @@ export default {
 </script>
 
 <style scoped>
-/* Page-level background effect */
+#app {
+  overflow-x: hidden;
+}
+
+:where(#app) :where(div, section, article, nav, header, footer) {
+  box-sizing: border-box;
+  display: block;
+  width: auto;
+  table-layout: auto;
+}
+
+/* Lapas līmeņa fona efekts */
 .page-background-effect {
   position: fixed;
   inset: 0;
@@ -1249,7 +1322,7 @@ export default {
   overflow: hidden;
 }
 
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   color: var(--text-color);
   margin-bottom: 40px;
@@ -1330,7 +1403,7 @@ export default {
   100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
 }
 
-/* Profile Container */
+/* Profila konteiners */
 .profile-container {
   max-width: 1200px;
   margin: 0 auto 60px auto;
@@ -1339,7 +1412,7 @@ export default {
   z-index: 1;
 }
 
-/* Profile Card */
+/* Profila kartīte */
 .profile-card {
   background: rgba(20, 20, 30, 0.55);
   backdrop-filter: blur(18px);
@@ -1354,7 +1427,7 @@ export default {
   margin-right: auto;
 }
 
-/* Modal Styles */
+/* Modālā loga stili */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1365,7 +1438,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .modal-content {
@@ -1418,7 +1491,7 @@ export default {
   gap: 20px;
 }
 
-/* Profile Picture Modal Tabs */
+/* Profila attēla modālā loga cilnes */
 .pfp-modal-wide {
   max-width: 680px;
   width: 95%;
@@ -1642,7 +1715,7 @@ export default {
   color: var(--accent-color);
 }
 
-/* Selected Badge on Profile Icon */
+/* Izvēlētais žetons uz profila ikonas */
 .selected-badge-display {
   position: absolute;
   top: 0;
@@ -1674,7 +1747,7 @@ export default {
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
 }
 
-/* User Details */
+/* Lietotāja dati */
 .user-details {
   display: flex;
   flex-direction: column;
@@ -1726,7 +1799,7 @@ export default {
   gap: 10px;
 }
 
-/* Action Buttons */
+/* Darbību pogas */
 .action-buttons {
   display: flex;
   gap: 15px;
@@ -1795,7 +1868,7 @@ export default {
   background-color: #888;
 }
 
-/* Follow Button */
+/* Sekošanas poga */
 .follow-btn {
   display: flex;
   align-items: center;
@@ -1832,7 +1905,7 @@ export default {
   cursor: not-allowed;
 }
 
-/* Badges Section */
+/* Žetonu sadaļa */
 .badges-section {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
@@ -1969,7 +2042,7 @@ export default {
   margin: 0;
 }
 
-/* Badge Inspect Modal */
+/* Žetona apskates modālais logs */
 .badge-inspect-overlay {
   position: fixed;
   top: 0;
@@ -2138,7 +2211,7 @@ export default {
   color: white;
 }
 
-/* Favorite Shows Section */
+/* Iecienīto seriālu sadaļa */
 .favorites-section {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
@@ -2292,7 +2365,7 @@ export default {
   font-size: 0.85rem;
 }
 
-/* Common Section */
+/* Kopīgā sadaļa */
 .common-section {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
@@ -2381,7 +2454,7 @@ export default {
   margin: 0;
 }
 
-/* Reviews Section */
+/* Atsauksmju sadaļa */
 .reviews-section {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
@@ -2495,7 +2568,7 @@ export default {
   overflow: hidden;
 }
 
-/* Comments Section */
+/* Komentāru sadaļa */
 .comments-section {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
@@ -2552,7 +2625,7 @@ export default {
   word-break: break-word;
 }
 
-/* Followed Shows Section */
+/* Sekoto seriālu sadaļa */
 .followed-shows-section {
   background: rgba(20, 20, 30, 0.45);
   backdrop-filter: blur(16px);
@@ -2620,7 +2693,7 @@ export default {
   margin: 0;
 }
 
-/* Empty State */
+/* Tukšais stāvoklis */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -2641,7 +2714,7 @@ export default {
   margin-bottom: 30px;
 }
 
-/* Loading */
+/* Ielāde */
 .loading {
   display: flex;
   flex-direction: column;
@@ -2650,19 +2723,223 @@ export default {
   height: 60vh;
   gap: 1rem;
 }
-.badges-section, 
-.favorites-section, 
-.reviews-section, 
+.badges-section,
+.favorites-section,
+.reviews-section,
 .cosmetics-section,
-.comments-section, 
-.followed-shows-section {
-  padding-top: 0 !important;
-  padding-left: 0 !important; 
-  padding-right: 0 !important; 
-  overflow: hidden; 
+.comments-section,
+.followed-shows-section,
+.common-section {
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(1.25rem, 2.5vw, 2rem) !important;
+  margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  overflow: visible;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+    rgba(20, 20, 30, 0.46);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-/* Responsive Design */
+.badges-container,
+.favorites-grid,
+.common-grid,
+.reviews-grid,
+.followed-grid {
+  width: 100%;
+  max-width: 100%;
+  gap: clamp(0.9rem, 1.8vw, 1.25rem);
+  align-items: stretch;
+}
+
+.badges-container {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+
+.favorites-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+}
+
+.common-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.reviews-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+.followed-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}
+
+.comments-list {
+  gap: 0.9rem;
+}
+
+.badge-item,
+.favorite-slot,
+.common-card,
+.review-card,
+.comment-card,
+.followed-card {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.065), rgba(255,255,255,0.02)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.badge-title,
+.show-title,
+.common-title,
+.episode-title,
+.series-info,
+.followed-title,
+.comment-header .review-title {
+  overflow-wrap: anywhere;
+}
+
+.favorite-slot {
+  min-height: 220px;
+}
+
+.review-card,
+.comment-card {
+  height: 100%;
+}
+
+.followed-card {
+  height: 100%;
+}
+
+.profile-card {
+  width: 100%;
+  max-width: 760px;
+  margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+    rgba(20, 20, 30, 0.48);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.profile-header {
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.badge-item,
+.review-card,
+.comment-card,
+.followed-card,
+.common-card {
+  border-radius: 14px;
+}
+
+.comment-header {
+  gap: 0.75rem;
+}
+
+.comment-date {
+  flex-shrink: 0;
+}
+
+.profile-container {
+  margin-top: 1.25rem;
+}
+
+.badges-container {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 170px));
+  justify-content: center;
+}
+
+.badge-item {
+  max-width: 170px;
+}
+
+.badge-item-header {
+  padding: 10px;
+}
+
+.badge-icon {
+  font-size: 2rem;
+}
+
+.badge-img {
+  width: 38px;
+  height: 38px;
+}
+
+.badge-info {
+  padding: 8px 10px;
+}
+
+.badge-title {
+  font-size: 0.82rem;
+}
+
+.badge-earned {
+  font-size: 0.7rem;
+}
+
+.comments-list {
+  gap: 0.55rem;
+}
+
+.comment-card {
+  padding: 0.65rem 0.8rem;
+}
+
+.comment-header {
+  margin-bottom: 0.3rem;
+}
+
+.comment-header .review-title {
+  font-size: 0.82rem;
+}
+
+.comment-date {
+  font-size: 0.72rem;
+}
+
+.comment-text {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.followed-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 95px), 120px));
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.followed-card {
+  max-width: 120px;
+}
+
+.followed-info {
+  padding: 8px 9px;
+}
+
+.followed-title {
+  font-size: 0.76rem;
+}
+
+.followed-date {
+  font-size: 0.68rem;
+}
+
+/* Responsīvais dizains */
 @media (max-width: 768px) {
   .hero-inner h1 {
     font-size: 2rem;
@@ -2766,7 +3043,7 @@ export default {
   }
 }
 
-/* DEV: Background test panel */
+/* IZSTR.: Fona testa panelis */
 .bg-test-toggle {
   display: block;
   margin: 1rem auto;
@@ -2827,4 +3104,179 @@ export default {
   opacity: 0.5;
   margin: 0;
 }
+
+.profile-card {
+  position: relative;
+  overflow: visible;
+  z-index: 20;
+  max-width: 760px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    radial-gradient(circle 320px at 18% 12%, rgba(112, 233, 116, 0.16), transparent 70%),
+    radial-gradient(circle 320px at 86% 16%, rgba(40, 160, 255, 0.12), transparent 68%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(6, 10, 6, 0.42);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.profile-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.16), transparent 34%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.08), transparent 42%);
+  opacity: 0.7;
+}
+
+.profile-header {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-activity-shell {
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    radial-gradient(circle 380px at 15% 8%, rgba(112, 233, 116, 0.16), transparent 70%),
+    radial-gradient(circle 380px at 88% 14%, rgba(40, 160, 255, 0.12), transparent 68%),
+    rgba(6, 10, 6, 0.36);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 10px 0;
+  overflow-x: auto;
+  background: rgba(6, 10, 6, 0.34);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.profile-tab-btn {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 130px;
+  padding: 14px 18px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--subtitle-color);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.profile-tab-btn:hover {
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.profile-tab-btn.active {
+  color: var(--accent-color);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(112, 233, 116, 0.28);
+  box-shadow: inset 0 2px 0 var(--accent-color);
+}
+
+.profile-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-tab-content {
+  min-height: 400px;
+  padding: clamp(1rem, 2.5vw, 1.875rem);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(6, 10, 6, 0.42);
+}
+
+.profile-tab-content > .badges-section,
+.profile-tab-content > .favorites-section,
+.profile-tab-content > .reviews-section,
+.profile-tab-content > .cosmetics-section,
+.profile-tab-content > .comments-section,
+.profile-tab-content > .followed-shows-section,
+.profile-tab-content > .common-section,
+.profile-tab-content > .bg-test-section {
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.profile-tab-content > .bg-test-section {
+  margin-top: 1rem;
+}
+
+.profile-tab-empty {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  color: var(--subtitle-color);
+}
+
+.profile-tab-empty p {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 768px) {
+  .profile-activity-shell {
+    border-radius: 18px;
+  }
+
+  .profile-tabs {
+    padding: 8px 8px 0;
+  }
+
+  .profile-tab-btn {
+    min-width: 56px;
+    padding: 12px 14px;
+  }
+
+  .profile-tab-label {
+    display: none;
+  }
+
+  .profile-tab-content {
+    padding: 16px;
+  }
+}
 </style>
+
+
+

@@ -5,11 +5,12 @@ import DailyQuote from '@/components/DailyQuote.vue';
 import SectionHeader from '@/components/SectionHeader.vue';
 import Caption from '@/components/Caption.vue';
 import Aside from '@/components/Aside.vue';
+import HeroBand from '@/components/HeroBand.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   name: 'Home',
-  components: { SeriesContainer, DailyQuote, SectionHeader, Caption, Aside },
+  components: { SeriesContainer, DailyQuote, SectionHeader, Caption, Aside, HeroBand },
   data() {
     return {
       series: [],
@@ -91,7 +92,7 @@ export default {
           number_of_episodes: show.number_of_episodes || 0
         }));
 
-        // populate filter options dynamically
+        // Dinamiski aizpilda filtra opcijas
         const genresSet = new Set();
         const yearsSet = new Set();
         this.series.forEach(s => {
@@ -115,7 +116,7 @@ export default {
     'filterOptions.selectedGenres'() { this.applySorting(); },
     'filterOptions.selectedYears'() { this.applySorting(); },
     selectedFilterType() {
-      // reset selections when changing filter type
+      // Atiestata izvēles, mainot filtra tipu
       this.filterOptions.selectedGenres = [];
       this.filterOptions.selectedYears = [];
       this.applySorting();
@@ -124,7 +125,7 @@ export default {
   mounted() {
     this.currentLanguage = getCurrentLanguage();
     this.fetchSeries();
-    // Listen for language changes
+    // Klausās valodas izmaiņas
     this._languageChangedHandler = (e) => {
       this.currentLanguage = e.detail.language;
       this.fetchSeries();
@@ -139,16 +140,12 @@ export default {
 
 <template>
   <div id="app">
-    <header class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <DailyQuote></DailyQuote>
-        </div>
-      </div>
-    </header>
+    <HeroBand variant="home">
+      <DailyQuote></DailyQuote>
+    </HeroBand>
     <SectionHeader level="h1">{{ t('topTVShowsToday') }}</SectionHeader>
     
-    <!-- Sorting and Filtering Controls -->
+    <!-- Kārtošanas un filtrēšanas vadīklas -->
     <div class="controls-container">
       <div class="controls-wrapper">
         <div class="sort-controls">
@@ -170,7 +167,7 @@ export default {
         </div>
       </div>
 
-      <!-- Genre Checkboxes -->
+      <!-- Žanru izvēles rūtiņas -->
       <div class="filter-group" v-if="selectedFilterType === 'genre'">
         <div class="filter-options">
           <div v-for="genre in filterOptions.genres" :key="genre" class="filter-option">
@@ -186,7 +183,7 @@ export default {
         </div>
       </div>
 
-      <!-- Year Checkboxes -->
+      <!-- Gadu izvēles rūtiņas -->
       <div class="filter-group" v-if="selectedFilterType === 'year'">
         <div class="filter-options">
           <div v-for="year in filterOptions.years" :key="year" class="filter-option">
@@ -226,7 +223,7 @@ export default {
   </div>
 </template>
 <style>
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   overflow: hidden;
 }

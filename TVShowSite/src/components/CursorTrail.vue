@@ -19,16 +19,16 @@ export default {
       hue: 0,
       pool: [],
       lastMouse: { x: -1000, y: -1000 },
-      // Rainbow cursor
+      // Varavīksnes kursors
       rainbowParticles: [],
       rainbowInitted: false,
       rainbowTime: 0,
-      // Canvas cursor (springy lines)
+      // Canvas kursors (atsperīgas līnijas)
       canvasLines: [],
       canvasPos: { x: 0, y: 0 },
       canvasInitted: false,
       canvasHue: 0,
-      // Fluid cursor
+      // Plūstošs kursors
       fluidX: -1000,
       fluidY: -1000
     };
@@ -87,6 +87,43 @@ export default {
       if (this.pool.length < 300) this.pool.push(p);
     },
 
+    normalizeRgb(value, fallback = '112, 233, 116') {
+      const clamp = (n) => Math.max(0, Math.min(255, Math.round(Number(n))));
+      const asTriplet = (parts) => {
+        if (!parts || parts.length < 3) return null;
+        const nums = parts.slice(0, 3).map(Number);
+        if (nums.some(n => !Number.isFinite(n))) return null;
+        return nums.map(clamp).join(', ');
+      };
+
+      if (Array.isArray(value)) return asTriplet(value) || fallback;
+      if (typeof value !== 'string') return fallback;
+
+      const raw = value.trim();
+      const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+      if (hex) {
+        const h = hex[1].length === 3
+          ? hex[1].split('').map(ch => ch + ch).join('')
+          : hex[1];
+        return [
+          parseInt(h.slice(0, 2), 16),
+          parseInt(h.slice(2, 4), 16),
+          parseInt(h.slice(4, 6), 16)
+        ].join(', ');
+      }
+
+      const rgb = raw.match(/^rgba?\(\s*([^)]+)\)$/i);
+      if (rgb) {
+        return asTriplet(rgb[1].split(',').map(part => part.trim().replace('%', ''))) || fallback;
+      }
+
+      return asTriplet(raw.split(',').map(part => part.trim())) || fallback;
+    },
+
+    rgbaColor(value, alpha, fallback = '112, 233, 116') {
+      return `rgba(${this.normalizeRgb(value, fallback)}, ${alpha})`;
+    },
+
     animate() {
       const c = this.$refs.canvas;
       if (!c) return;
@@ -114,7 +151,7 @@ export default {
       this.animFrameId = requestAnimationFrame(() => this.animate());
     },
 
-    // --- PARTICLE SPARKLE ---
+    // --- DAĻIŅU MIRDZUMS ---
     renderSparkle(ctx) {
       const cfg = this.config;
       const color = cfg.color || '170, 255, 200';
@@ -144,7 +181,7 @@ export default {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color}, ${p.opacity})`;
+        ctx.fillStyle = this.rgbaColor(color, p.opacity, '170, 255, 200');
         ctx.fill();
 
         if (p.life <= 0) {
@@ -154,7 +191,7 @@ export default {
       }
     },
 
-    // --- PARTICLE FIRE ---
+    // --- DAĻIŅU UGUNS ---
     renderFire(ctx) {
       const cfg = this.config;
       const spawnRate = cfg.spawnRate || 4;
@@ -196,7 +233,7 @@ export default {
       }
     },
 
-    // --- PARTICLE SNOW ---
+    // --- DAĻIŅU SNIEGS ---
     renderSnow(ctx) {
       const cfg = this.config;
       const spawnRate = cfg.spawnRate || 2;
@@ -223,7 +260,7 @@ export default {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${p.color}, ${p.opacity})`;
+        ctx.fillStyle = this.rgbaColor(p.color, p.opacity, '255, 255, 255');
         ctx.fill();
 
         if (p.life <= 0) {
@@ -233,7 +270,7 @@ export default {
       }
     },
 
-    // --- GLOW SMOOTH (fluid cursor) ---
+    // --- VIENMĒRĪGS SPĪDUMS (plūstošs kursors) ---
     renderGlowSmooth(ctx) {
       const cfg = this.config;
       const color = cfg.color || '112, 233, 116';
@@ -247,16 +284,16 @@ export default {
         this.smoothMouse.x, this.smoothMouse.y, 0,
         this.smoothMouse.x, this.smoothMouse.y, size
       );
-      gradient.addColorStop(0, `rgba(${color}, 0.6)`);
-      gradient.addColorStop(0.4, `rgba(${color}, 0.2)`);
-      gradient.addColorStop(1, `rgba(${color}, 0)`);
+      gradient.addColorStop(0, this.rgbaColor(color, 0.6));
+      gradient.addColorStop(0.4, this.rgbaColor(color, 0.2));
+      gradient.addColorStop(1, this.rgbaColor(color, 0));
 
       ctx.beginPath();
       ctx.arc(this.smoothMouse.x, this.smoothMouse.y, size, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // Leave a short trail of fading dots
+      // Atstāj īsu dziestošu punktu pēdu
       for (let i = 0; i < 2; i++) {
         this.particles.push(this.getParticle(
           this.smoothMouse.x, this.smoothMouse.y,
@@ -275,8 +312,8 @@ export default {
         p.size *= 0.97;
 
         const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-        g.addColorStop(0, `rgba(${p.color}, ${p.opacity})`);
-        g.addColorStop(1, `rgba(${p.color}, 0)`);
+        g.addColorStop(0, this.rgbaColor(p.color, p.opacity));
+        g.addColorStop(1, this.rgbaColor(p.color, 0));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = g;
@@ -289,7 +326,7 @@ export default {
       }
     },
 
-    // --- GLOW RAINBOW ---
+    // --- VARAVĪKSNES SPĪDUMS ---
     renderGlowRainbow(ctx) {
       const cfg = this.config;
       const size = cfg.size || 35;
@@ -313,7 +350,7 @@ export default {
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // Rainbow trail particles
+      // Varavīksnes pēdas daļiņas
       this.particles.push(this.getParticle(
         this.smoothMouse.x, this.smoothMouse.y,
         0, 0,
@@ -341,7 +378,7 @@ export default {
       }
     },
 
-    // --- FAIRY DUST ---
+    // --- PASAKU PUTEKĻI ---
     renderFairyDust(ctx) {
       const cfg = this.config;
       const colors = cfg.colors || ['#D61C59', '#E7D84B', '#1B8798', '#70e974'];
@@ -394,7 +431,7 @@ export default {
       }
     },
 
-    // --- BUBBLE CURSOR ---
+    // --- BURBUĻU KURSORS ---
     renderBubbleCursor(ctx) {
       const cfg = this.config;
       const fillColor = cfg.fillColor || '#e6f1f7';
@@ -445,14 +482,10 @@ export default {
       }
     },
 
-    // --- RAINBOW CURSOR ---
+    // --- VARAVĪKSNES KURSORS ---
     interpolateColors(c1, c2, factor) {
-      const r1 = parseInt(c1.substr(1, 2), 16);
-      const g1 = parseInt(c1.substr(3, 2), 16);
-      const b1 = parseInt(c1.substr(5, 2), 16);
-      const r2 = parseInt(c2.substr(1, 2), 16);
-      const g2 = parseInt(c2.substr(3, 2), 16);
-      const b2 = parseInt(c2.substr(5, 2), 16);
+      const [r1, g1, b1] = this.normalizeRgb(c1, '255, 255, 255').split(',').map(Number);
+      const [r2, g2, b2] = this.normalizeRgb(c2, '255, 255, 255').split(',').map(Number);
       const r = Math.round(r1 + (r2 - r1) * factor);
       const g = Math.round(g1 + (g2 - g1) * factor);
       const b = Math.round(b1 + (b2 - b1) * factor);
@@ -515,7 +548,7 @@ export default {
       }
     },
 
-    // --- CANVAS CURSOR (springy trailing lines) ---
+    // --- CANVAS KURSORS (atsperīgas pēdas līnijas) ---
     renderCanvasCursor(ctx) {
       const cfg = this.config;
       const trails = cfg.trails || 20;
@@ -552,7 +585,7 @@ export default {
         const nodes = line.nodes;
         let e = line.spring;
 
-        // First node follows cursor
+        // Pirmais mezgls seko kursoram
         nodes[0].vx += (this.canvasPos.x - nodes[0].x) * e;
         nodes[0].vy += (this.canvasPos.y - nodes[0].y) * e;
 
@@ -572,7 +605,7 @@ export default {
           e *= tension;
         }
 
-        // Draw curved line
+        // Zīmē izliektu līniju
         ctx.beginPath();
         ctx.moveTo(nodes[0].x, nodes[0].y);
         for (let i = 1; i < nodes.length - 2; i++) {
@@ -589,7 +622,7 @@ export default {
       ctx.globalCompositeOperation = 'source-over';
     },
 
-    // --- FLUID CURSOR ---
+    // --- PLŪSTOŠS KURSORS ---
     renderFluidCursor(ctx) {
       const cfg = this.config;
       const color = cfg.color || '112, 233, 116';
@@ -600,13 +633,13 @@ export default {
       this.fluidX += (this.mouse.x - this.fluidX) * lerp;
       this.fluidY += (this.mouse.y - this.fluidY) * lerp;
 
-      // Spawn trail blobs
+      // Izveido pēdas laukumus
       const dx = this.mouse.x - this.fluidX;
       const dy = this.mouse.y - this.fluidY;
       const velocity = Math.sqrt(dx * dx + dy * dy);
       const stretch = Math.min(velocity * 0.3, size * 0.8);
 
-      // Main blob
+      // Galvenais laukums
       const angle = Math.atan2(dy, dx);
       ctx.save();
       ctx.translate(this.fluidX, this.fluidY);
@@ -614,14 +647,14 @@ export default {
       ctx.beginPath();
       ctx.ellipse(0, 0, size + stretch, Math.max(size - stretch * 0.3, size * 0.5), 0, 0, Math.PI * 2);
       const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size + stretch);
-      grad.addColorStop(0, `rgba(${color}, 0.5)`);
-      grad.addColorStop(0.6, `rgba(${color}, 0.2)`);
-      grad.addColorStop(1, `rgba(${color}, 0)`);
+      grad.addColorStop(0, this.rgbaColor(color, 0.5));
+      grad.addColorStop(0.6, this.rgbaColor(color, 0.2));
+      grad.addColorStop(1, this.rgbaColor(color, 0));
       ctx.fillStyle = grad;
       ctx.fill();
       ctx.restore();
 
-      // Trail particles
+      // Pēdas daļiņas
       if (velocity > 1) {
         for (let i = 0; i < 2; i++) {
           this.particles.push(this.getParticle(
@@ -648,8 +681,8 @@ export default {
         p.size *= 0.97;
 
         const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-        g.addColorStop(0, `rgba(${p.color}, ${p.opacity})`);
-        g.addColorStop(1, `rgba(${p.color}, 0)`);
+        g.addColorStop(0, this.rgbaColor(p.color, p.opacity));
+        g.addColorStop(1, this.rgbaColor(p.color, 0));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = g;

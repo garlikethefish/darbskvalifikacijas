@@ -1,18 +1,14 @@
 <template>
   <div id="app">
-    <!-- Hero Section -->
-    <header class="hero" v-if="review">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1>{{ seriesInfo?.name || t('series') }}</h1>
-          <p v-if="showSeriesEnglishSubtitle" class="english-subtitle">{{ seriesInfo?.english_name }}</p>
-          <p class="subtitle">{{ t('season') }} {{ review.season_number }} {{ t('episode') }} {{ review.episode_number }} — {{ episodeInfo?.name || `${t('episode')} ${review.episode_number}` }}</p>
-        </div>
-      </div>
-    </header>
+    <!-- Galvenes sadaļa -->
+    <HeroBand v-if="review" variant="review-detail">
+      <h1>{{ seriesInfo?.name || t('series') }}</h1>
+      <p v-if="showSeriesEnglishSubtitle" class="english-subtitle">{{ seriesInfo?.english_name }}</p>
+      <p class="subtitle">{{ t('season') }} {{ review.season_number }} {{ t('episode') }} {{ review.episode_number }} — {{ episodeInfo?.name || `${t('episode')} ${review.episode_number}` }}</p>
+    </HeroBand>
 
     <div class="review-detail-container" v-if="review">
-      <!-- Review Header Card -->
+      <!-- Atsauksmes galvenes kartīte -->
       <div class="review-header">
         <div class="series-poster">
           <img v-if="seriesInfo?.poster_path" :src="`https://image.tmdb.org/t/p/w300${seriesInfo.poster_path}`" :alt="seriesInfo?.name">
@@ -42,7 +38,7 @@
         </div>
       </div>
 
-      <!-- Review Title and Text -->
+      <!-- Atsauksmes virsraksts un teksts -->
       <div class="review-content">
         <SectionHeader>{{ review.review_title }}</SectionHeader>
         <label v-if="showTranslateReviewToggle" class="translate-toggle">
@@ -54,11 +50,11 @@
         <p v-else-if="translateReviewText && translatedReviewText" class="translation-note">{{ t('showingMachineTranslatedReview') }}</p>
         <p v-else-if="translateReviewText && translationError" class="translation-note translation-note-error">{{ t('translationUnavailable') }}</p>
 
-        <!-- Episode Still -->
+        <!-- Sērijas kadrs -->
         <img v-if="episodeInfo?.still_path" :src="`https://image.tmdb.org/t/p/w500${episodeInfo.still_path}`" :alt="episodeInfo?.name" class="episode-still">
       </div>
 
-      <!-- Reactions -->
+      <!-- Reakcijas -->
       <div class="reactions-section">
         <button @click="toggleLike" class="reaction-btn like-btn" :class="{ active: isLiked }">
           👍 {{ review.likes }}
@@ -68,11 +64,11 @@
         </button>
       </div>
 
-      <!-- Comments Section -->
+      <!-- Komentāru sadaļa -->
       <div class="comments-section">
         <SectionHeader><SvgIcon name="chat" :size="22" /> {{ t('comments') }} ({{ comments.length }})</SectionHeader>
 
-        <!-- Add comment form -->
+        <!-- Komentāra pievienošanas forma -->
         <div v-if="auth?.loggedIn" class="comment-form">
           <textarea 
             v-model="newComment" 
@@ -88,7 +84,7 @@
           <router-link to="/login">{{ t('login') }}</router-link> {{ t('loginToComment') }}
         </p>
 
-        <!-- Comments list -->
+        <!-- Komentāru saraksts -->
         <div v-if="comments.length > 0" class="comments-list">
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
             <div class="comment-header">
@@ -103,7 +99,7 @@
         </div>
       </div>
 
-      <!-- Series Info Card -->
+      <!-- Seriāla informācijas kartīte -->
       <div class="series-card" v-if="seriesInfo">
         <SectionHeader>{{ t('aboutSeries') }} {{ seriesInfo.name }}</SectionHeader>
         <div class="series-details">
@@ -129,9 +125,10 @@
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 import SvgIcon from '@/components/SvgIcon.vue'
 import SectionHeader from '@/components/SectionHeader.vue'
+import HeroBand from '@/components/HeroBand.vue'
 
 export default {
-  components: { SvgIcon, SectionHeader },
+  components: { SvgIcon, SectionHeader, HeroBand },
   data() {
     return {
       review: null,
@@ -197,9 +194,9 @@ export default {
         this.episodeInfo = data.episodeInfo;
         this.comments = data.comments || [];
 
-        // Check if current user liked/disliked
+        // Pārbauda, vai pašreizējais lietotājs atzīmēja patīk/nepatīk
         if (this.auth?.loggedIn && this.review) {
-          // This could be fetched from a separate endpoint if needed
+          // Vajadzības gadījumā to varētu iegūt no atsevišķa galapunkta
         }
       } catch (err) {
         console.error('Error fetching review:', err);
@@ -369,7 +366,7 @@ export default {
 </script>
 
 <style scoped>
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   color: var(--text-color);
   margin-bottom: 40px;
@@ -454,7 +451,7 @@ export default {
   100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
 }
 
-/* Container */
+/* Konteiners */
 .review-detail-container {
   max-width: 900px;
   margin: 0 auto 60px auto;
@@ -467,7 +464,7 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Review Header */
+/* Atsauksmes galvene */
 .review-header {
   display: flex;
   gap: 2rem;
@@ -565,7 +562,7 @@ export default {
   margin: 0;
 }
 
-/* Review Content */
+/* Atsauksmes saturs */
 .review-content {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
@@ -616,7 +613,7 @@ export default {
   object-fit: cover;
 }
 
-/* Reactions */
+/* Reakcijas */
 .reactions-section {
   display: flex;
   gap: 1rem;
@@ -654,7 +651,7 @@ export default {
   color: rgb(255, 100, 100);
 }
 
-/* Comments Section */
+/* Komentāru sadaļa */
 .comments-section {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
@@ -786,7 +783,7 @@ export default {
   word-break: break-word;
 }
 
-/* Series Card */
+/* Seriāla kartīte */
 .series-card {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
@@ -815,7 +812,7 @@ export default {
   line-height: 1.7;
 }
 
-/* Loading */
+/* Ielāde */
 .loading {
   display: flex;
   flex-direction: column;
@@ -840,7 +837,7 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive */
+/* Responsīvais izkārtojums */
 @media (max-width: 768px) {
   .hero-inner h1 {
     font-size: 2rem;
@@ -874,3 +871,4 @@ export default {
   }
 }
 </style>
+

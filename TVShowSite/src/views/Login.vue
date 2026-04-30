@@ -1,25 +1,21 @@
 <template>
   <div class="auth-page">
-    <!-- Hero Section -->
-    <header class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1 v-if="currentForm === 'login'">{{ t('loginTitle') }}</h1>
-          <h1 v-else>{{ t('registerTitle') }}</h1>
+    <!-- Galvenes sadaļa -->
+    <HeroBand variant="auth">
+      <h1 v-if="currentForm === 'login'">{{ t('loginTitle') }}</h1>
+      <h1 v-else>{{ t('registerTitle') }}</h1>
 
-          <p class="subtitle" v-if="currentForm === 'login'">
-            {{ t('loginSubtitle') }}
-          </p>
-          <p class="subtitle" v-else>
-            {{ t('registerSubtitle') }}
-          </p>
-        </div>
-      </div>
-    </header>
+      <p class="subtitle" v-if="currentForm === 'login'">
+        {{ t('loginSubtitle') }}
+      </p>
+      <p class="subtitle" v-else>
+        {{ t('registerSubtitle') }}
+      </p>
+    </HeroBand>
 
-    <!-- Auth Forms -->
+    <!-- Autentifikācijas formas -->
     <div class="form-wrapper">
-      <!-- Left Side -->
+      <!-- Kreisā puse -->
       <div class="left-panel">
         <div
           class="auth-ring"
@@ -31,7 +27,7 @@
 
           <div class="form-container">
             <transition name="auth-switch" mode="out-in">
-              <!-- Login Form -->
+              <!-- Pieteikšanās forma -->
               <div v-if="currentForm === 'login'" key="login" class="form-card">
                 <form @submit.prevent="login" class="form">
                   <div class="form-group">
@@ -75,7 +71,7 @@
                 </div>
               </div>
 
-              <!-- Register Form -->
+              <!-- Reģistrācijas forma -->
               <div v-else key="register" class="form-card">
                 <form @submit.prevent="register" class="form">
                   <div class="form-group">
@@ -153,7 +149,7 @@
         </div>
       </div>
 
-      <!-- Right Side -->
+      <!-- Labā puse -->
       <div class="right-panel">
         <div class="feature feature-top">
           <div class="feature-icon">
@@ -215,6 +211,7 @@
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 import { nextTick } from 'vue';
 import SvgIcon from '@/components/SvgIcon.vue';
+import HeroBand from '@/components/HeroBand.vue';
 
 const getGifUrl = (fileName) => {
   return new URL(`../assets/gifs/${fileName}`, import.meta.url).href;
@@ -222,7 +219,7 @@ const getGifUrl = (fileName) => {
 
 export default {
   name: 'Login',
-  components: { SvgIcon },
+  components: { SvgIcon, HeroBand },
   data() {
     return {
       currentForm: 'login',
@@ -571,7 +568,7 @@ export default {
   margin: 0;
 }
 
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   margin-bottom: 3rem;
   overflow: hidden;
@@ -685,7 +682,7 @@ export default {
   }
 }
 
-/* Main Layout */
+/* Galvenais izkārtojums */
 .form-wrapper {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(380px, 1fr);
@@ -697,8 +694,8 @@ export default {
   min-height: 760px;
 }
 
-/* Left Side Ring */
-/* Left Side Ring */
+/* Kreisās puses gredzens */
+/* Kreisās puses gredzens */
 .left-panel {
   display: flex;
   align-items: center;
@@ -819,7 +816,7 @@ export default {
     opacity: 0.5;
   }
 }
-/* Form */
+/* Forma */
 .form-container {
   width: 100%;
   min-height: 100%;
@@ -943,7 +940,7 @@ export default {
   font-size: 0.9em;
 }
 
-/* Form transition */
+/* Formas pāreja */
 .auth-switch-enter-active,
 .auth-switch-leave-active {
   transition: opacity 260ms ease, transform 260ms ease;
@@ -969,7 +966,7 @@ export default {
   transform: translateY(-14px) scale(0.98);
 }
 
-/* Right Side */
+/* Labā puse */
 .right-panel {
   min-height: 100%;
   display: flex;
@@ -1044,7 +1041,7 @@ export default {
   line-height: 1.6;
 }
 
-/* GIF block */
+/* GIF bloks */
 .gif-card {
   width: 560px;
   height: 356px;
@@ -1148,7 +1145,7 @@ export default {
   font-size: 1rem;
 }
 
-/* Responsive */
+/* Responsīvais izkārtojums */
 @media (max-width: 1024px) {
   .form-wrapper {
     grid-template-columns: 1fr;

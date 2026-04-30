@@ -19,20 +19,20 @@ app.use(cors());
 app.use(express.json());
 
 
-// Serve static files for profile pictures
+// Serve statiskos failus profila atteliem
 app.use('/assets/user_pfp', express.static(path.join(__dirname, 'src/assets/user_pfp')));
 app.use('/assets/quiz_images', express.static(path.join(__dirname, 'src/assets/quiz_images')));
 app.use('/assets/badges', express.static(path.join(__dirname, 'src/assets/badges')));
 
-// Serve static files for default profile icons
+// Serve statiskos failus noklusejuma profila ikonam
 app.use('/assets/default_pfp_icons', express.static(path.join(__dirname, 'src/assets/default_pfp_icons')));
 
-// Serve static files for avatar parts
+// Serve statiskos failus avatara dalam
 app.use('/assets/profile_parts', express.static(path.join(__dirname, 'src/assets/profile_parts')));
 
-// ...existing code...
+// ...esošais kods...
 
-// Configure multer for quiz image uploads
+// Konfigure multer viktorinu attelu augšupieladem
 const quizImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, 'src/assets/quiz_images');
@@ -59,7 +59,7 @@ const uploadQuizImage = multer({
   }
 });
 
-// Configure multer for badge image uploads
+// Konfigure multer žetonu attelu augšupieladem
 const badgeImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, 'src/assets/badges');
@@ -81,7 +81,7 @@ const uploadBadgeImage = multer({
   }
 });
 
-// Configure multer for profile picture uploads
+// Konfigure multer profila attelu augšupieladem
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, 'src/assets/user_pfp');
@@ -118,7 +118,7 @@ const dbConfig = {
 };
 
 const db = mysql.createConnection(dbConfig);
-// TMDB base config
+// TMDB pamata konfiguracija
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.VITE_TMDB_API_KEY;
 
@@ -199,9 +199,9 @@ async function translateTextToEnglish(text) {
 async function translateTextWithMyMemory(text, sourceLanguage, targetLanguage) {
   if (!hasMeaningfulText(text)) return text;
 
-  // Some public translation endpoints have query-length limits (≈500 chars).
-  // Truncate long inputs to that size and append ellipsis so we don't exceed limits
-  // and don't get an error string returned as the translated text.
+  // Dažiem publiskiem tulkošanas galapunktiem ir vaicājuma garuma ierobežojumi (≈500 rakstzīmes).
+  // Saīsina garas ievades līdz šim izmēram un pievieno daudzpunkti, lai nepārsniegtu ierobežojumus
+  // un lai tulkotā teksta vietā netiktu atgriezta kļūdas virkne.
   const MAX_Q_LEN = 500;
   const sourceText = String(text || '').trim();
   const requestText = sourceText.length > MAX_Q_LEN ? sourceText.slice(0, MAX_Q_LEN - 3) + '...' : sourceText;
@@ -361,8 +361,8 @@ const cachedGenresByLang = {};
 const genreCacheTimeByLang = {};
 const GENRE_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
-// Static fallback translations for common TMDB TV genres to Latvian.
-// These ensure predictable localized labels without relying on third-party translation for short genre names.
+// Statiskas rezerves tulkošanas biežākajiem TMDB TV žanriem latviešu valodā.
+// Tas nodrošina paredzamas lokalizētas etiķetes, nepaļaujoties uz trešās puses tulkošanu īsiem žanru nosaukumiem.
 const STATIC_GENRE_TRANSLATIONS_LV = {
   'Action & Adventure': 'Darbība un piedzīvojumi',
   'Animation': 'Animācija',
@@ -392,8 +392,8 @@ async function getGenreMap(language = 'en-US') {
 
   cachedGenresByLang[language] = {};
 
-  // If requesting Latvian, TMDB may still return English names for some genres.
-  // Fetch English names and auto-translate any genres that are identical to English.
+  // Pieprasot latviešu valodu, TMDB dažiem žanriem joprojām var atgriezt angliskus nosaukumus.
+  // Iegūst angļu nosaukumus un automātiski tulko žanrus, kas sakrīt ar angļu tekstu.
   if (String(language || '').toLowerCase().startsWith('lv')) {
     let enMap = {};
     try {
@@ -407,18 +407,18 @@ async function getGenreMap(language = 'en-US') {
       let name = g.name || '';
       const enName = enMap[g.id] || '';
 
-      // Prefer a static translation if available for short genre labels
+      // Īsām žanru etiķetēm dod priekšroku statiskam tulkojumam, ja tas ir pieejams
       if (enName && STATIC_GENRE_TRANSLATIONS_LV[enName]) {
         name = STATIC_GENRE_TRANSLATIONS_LV[enName];
       } else if (enName && name && name === enName) {
-        // Only attempt machine translation when TMDB returned English text for the Latvian request
+        // Mašīntulkošanu mēģina tikai tad, kad TMDB latviešu pieprasījumam atgrieza angļu tekstu
         try {
           const translated = await translateTextToLatvian(enName);
           if (hasMeaningfulText(translated)) {
             name = translated.trim();
           }
         } catch (err) {
-          // ignore translation errors and fall back to original name
+          // Ignorē tulkošanas kļūdas un atgriežas pie sākotnējā nosaukuma
         }
       }
 
@@ -449,7 +449,7 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
-// Check and award milestone-based cosmetics for a user
+// Pārbauda un piešķir lietotājam uz sasniegumiem balstītu kosmētiku
 async function checkAndAwardMilestones(userId) {
   try {
     const [[reviewStat]] = await db.promise().query(
@@ -485,7 +485,7 @@ async function checkAndAwardMilestones(userId) {
             [userId, src.cosmetic_id, `milestone:${src.milestone_type}:${src.milestone_value}`]
           );
           awarded.push({ id: src.cosmetic_id, name: src.name, type: src.type, rarity: src.rarity, effect_key: src.effect_key });
-          // Create notification for cosmetic unlock
+          // Izveido paziņojumu par kosmētikas atbloķēšanu
           await db.promise().query(
             'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, 0, ?, ?)',
             [userId, 'cosmetic_unlock', `You unlocked a new cosmetic: ${src.name} (${src.rarity})`]
@@ -502,18 +502,14 @@ async function checkAndAwardMilestones(userId) {
   }
 }
 
-// Build recommendations for a given user id. Returns an array of recommendation objects.
+// Veido ieteikumus konkrētam lietotāja ID. Atgriež ieteikumu objektu masīvu.
 async function buildDiscoverForUser(userId, language = 'en-US') {
   const genreMap = await getGenreMap(language);
   const isLatvian = language.startsWith('lv');
 
-  // 1. Get all series the user reviewed (count likes globally)
-  // Previously this query only returned rows when rating >= 7 OR
-  // the current user had liked the review; that caused an empty
-  // resultset for users who had reviews but lower ratings and
-  // therefore produced the public/fallback feed. We now return
-  // all reviewed series and use weights later to prefer higher
-  // ratings and popular likes.
+  // 1. Iegūst visus seriālus, par kuriem lietotājs rakstījis atsauksmes (patikas skaita globāli), un atgriež tos
+  // visus apskatītos seriālus un vēlāk izmanto svarus, lai dotu priekšroku augstākiem
+  // vērtējumiem un populārām patikām.
   const [rows] = await db.promise().query(`
       SELECT
         r.tmdb_series_id,
@@ -528,7 +524,7 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
     `, [userId]);
 
   if (!rows.length) {
-    // fallback pool
+    // rezerves kopa
     let fallbackResults = [];
     const sources = ['top_rated', 'popular'];
     for (const source of sources) {
@@ -579,7 +575,7 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
 
   const likedSeriesIds = rows.map(r => r.tmdb_series_id);
 
-  // Build weighted genre profile
+  // Veido svērtu žanru profilu
   const genreWeights = {};
   const sourceSeries = [];
 
@@ -601,16 +597,16 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
     })
   );
 
-  // Pick several top genres (expanded) and query per-genre to
-  // increase diversity (prevents a single dominant genre like
-  // Animation from overwhelming results).
+  // Izvēlas vairākus galvenos žanrus (paplašināti) un vaicā pa žanriem, lai
+  // palielinātu dažādību (novērš viena dominējoša žanra, piemēram,
+  // Animācijas, pārsvaru rezultātos).
   const topGenreIds = Object.entries(genreWeights)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([id]) => id);
 
-  // Discover from TMDB: query each top genre separately and
-  // aggregate results to avoid overfitting to one genre.
+  // Atklāšana no TMDB: katru galveno žanru vaicā atsevišķi un
+  // apvieno rezultātus, lai nepārlāgotos vienam žanram.
   let results = [];
   for (const gid of topGenreIds) {
     for (let page = 1; page <= 3; page++) {
@@ -622,7 +618,7 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
         }, language);
         results.push(...discoverRes.data.results);
       } catch (e) {
-        // ignore individual failures and continue
+        // Ignorē atsevišķas kļūmes un turpina
       }
       if (results.length >= 120) break;
     }
@@ -631,7 +627,7 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
 
   results = results.filter(show => !likedSeriesIds.includes(show.id));
 
-  // wildcard
+  // aizstājējzīme
   let wildcard = null;
   try {
     const wildcardRes = await tmdbGet('/trending/tv/week', {}, language);
@@ -651,7 +647,7 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
     }
   } catch (e) {}
 
-  // dedupe aggregated results by id (keep first occurrence)
+  // Noņem dublikātus apvienotajos rezultātos pēc ID (patur pirmo gadījumu)
   const seenResults = new Set();
   const uniqueResults = [];
   for (const s of results) {
@@ -722,13 +718,13 @@ async function buildDiscoverForUser(userId, language = 'en-US') {
     recommendations.push(wildcard);
   }
 
-  // sort by matchScore descending so highest matches appear first
+  // Kārto pēc matchScore dilstoši, lai augstākās atbilstības būtu pirmās
   recommendations.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
   return recommendations;
 }
 
-// Fetch episode info from TMDB
+// Iegūst sērijas informāciju no TMDB
 async function fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber, language = 'en-US') {
   const res = await tmdbGetWithFallback(
     `/tv/${seriesId}/season/${seasonNumber}/episode/${episodeNumber}`,
@@ -739,7 +735,7 @@ async function fetchEpisodeFromTMDB(seriesId, seasonNumber, episodeNumber, langu
   return res.data; // includes episode title, air_date, still_path, etc.
 }
 
-// Daily quote
+// Dienas citats
 app.get('/api/daily-quote', async (req, res) => {
   try {
     const language = resolveTmdbLanguage(req.query.lang);
@@ -797,7 +793,7 @@ app.post('/api/translate', async (req, res) => {
   }
 });
 
-// Register
+// Registracija
 app.post('/api/register', (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) return res.status(400).json({ error: 'Missing fields' });
@@ -810,7 +806,7 @@ app.post('/api/register', (req, res) => {
     });
 });
 
-// Login
+// Pieteikšanas
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
@@ -847,7 +843,7 @@ app.get('/api/discover', requireAuth, async (req, res) => {
   }
 });
 
-// Emulate discover for a given user id (no auth) - useful for testing
+// Emulē atklāšanu konkrētam lietotāja ID (bez autentifikācijas) - noder testēšanai
 app.get('/api/discover/emulate/:userId', async (req, res) => {
   const userId = parseInt(req.params.userId);
   if (!userId || isNaN(userId)) return res.status(400).json({ message: 'Invalid user id' });
@@ -862,14 +858,14 @@ app.get('/api/discover/emulate/:userId', async (req, res) => {
   }
 });
 
-// Public discover for development/testing (no auth required)
+// Publiska atklāšana izstrādei/testēšanai (autentifikācija nav vajadzīga)
 app.get('/api/discover/public', async (req, res) => {
   try {
     const language = resolveTmdbLanguage(req.query.lang);
     const isLatvian = language.startsWith('lv');
     const genreMap = await getGenreMap(language);
 
-    // Build a larger, varied fallback pool (top-rated + popular)
+    // Veido lielāku, daudzveidīgu rezerves kopu (augsti vērtētie + populārie)
     let fallbackResults = [];
     const sources = ['top_rated', 'popular'];
     for (const source of sources) {
@@ -878,14 +874,14 @@ app.get('/api/discover/public', async (req, res) => {
           const r = await tmdbGet(`/tv/${source}`, { page }, language);
           fallbackResults.push(...(r.data.results || []));
         } catch (e) {
-          // ignore page fetch errors and continue
+          // Ignorē lapu ielādes kļūdas un turpina
         }
         if (fallbackResults.length >= 120) break;
       }
       if (fallbackResults.length >= 120) break;
     }
 
-    // dedupe by id and limit
+    // Noņem dublikātus pēc ID un ierobežo
     const seen = new Set();
     const deduped = [];
     for (const s of fallbackResults) {
@@ -898,7 +894,7 @@ app.get('/api/discover/public', async (req, res) => {
     const mapped = deduped.map(show => {
       const vote = typeof show.vote_average === 'number' ? show.vote_average : 6.5;
       const scaled = Math.round(45 + (vote / 10) * 50); // 45..95
-      // add small jitter
+      // Pievieno nelielu nejaušību
       const jitter = Math.floor(Math.random() * 7) - 3;
       const score = Math.min(95, Math.max(40, scaled + jitter));
       const stars = Math.min(5, Math.max(1, Math.round(((score - 40) / 55) * 4) + 1));
@@ -930,7 +926,7 @@ app.get('/api/discover/public', async (req, res) => {
 
 
 
-// Add review
+// Pievienot atsauksmi
 app.post('/api/reviews', requireAuth, async (req, res) => {
   const { tmdb_series_id, season_number, episode_number, rating, review_text, review_title } = req.body;
   if (
@@ -950,7 +946,7 @@ app.post('/api/reviews', requireAuth, async (req, res) => {
     async (err, result) => {
       if (err) return res.status(500).json({ error: err.sqlMessage });
 
-      // Notify followers about the new review
+      // Paziņo sekotājiem par jauno atsauksmi
       try {
         const [followers] = await db.promise().query(
           'SELECT follower_id FROM user_follows WHERE following_id = ?',
@@ -970,14 +966,14 @@ app.post('/api/reviews', requireAuth, async (req, res) => {
         console.error('Error creating new_review notifications:', notifErr);
       }
 
-      // Check milestone cosmetics after review creation
+      // Pārbauda sasniegumu kosmētiku pēc atsauksmes izveides
       checkAndAwardMilestones(req.userId).catch(() => {});
 
       res.status(201).json({ message: 'Review created', reviewId: result.insertId });
     });
 });
 
-// Get TMDB episode directly
+// Tieši iegūst TMDB sēriju
 app.get('/api/tmdb/episode', async (req, res) => {
   const { seriesId, seasonNumber, episodeNumber } = req.query;
   if (!seriesId || !seasonNumber || !episodeNumber) return res.status(400).json({ error: 'Missing parameters' });
@@ -993,14 +989,14 @@ app.get('/api/tmdb/episode', async (req, res) => {
 });
 
 
-// Get all reviews with TMDB episode info
+// Iegūst visas atsauksmes ar TMDB sērijas informāciju
 app.get('/api/reviews', async (req, res) => {
   const { seriesId, userId } = req.query;
   const language = resolveTmdbLanguage(req.query.lang);
   const isLatvian = language.startsWith('lv');
 
   try {
-    // Step 1: Fetch reviews from DB (still using user info and review stats)
+    // 1. solis: iegūst atsauksmes no DB (joprojām izmantojot lietotāja informāciju un atsauksmju statistiku)
     let query = `
           SELECT
       r.*,
@@ -1075,7 +1071,7 @@ app.get('/api/reviews', async (req, res) => {
     );
 
 
-    // Step 2: For each review, fetch episode info from TMDB API
+    // 2. solis: katrai atsauksmei iegūst sērijas informāciju no TMDB API
     const tmdbApiKey = process.env.VITE_TMDB_API_KEY;
 
     const reviewsWithEpisodes = await Promise.all(
@@ -1131,23 +1127,23 @@ app.get('/api/user-reviews/:userId', async (req, res) => {
       if (err) return res.status(500).json({ error: err.sqlMessage });
       if (!reviews.length) return res.json([]);
 
-      // Collect unique series+season combinations
+      // Savāc unikālas seriāla+sezonas kombinācijas
       const uniqueSeriesSeason = [...new Set(reviews.map(r => `${r.tmdb_series_id}-${r.season_number}`))];
 
       const episodesData = {};
       const seriesTitles = {};
 
-      // One request per series-season (can reduce further if needed)
+      // Viens pieprasījums katram seriālam-sezonai (vajadzības gadījumā var samazināt vēl vairāk)
       await Promise.all(uniqueSeriesSeason.map(async (ss) => {
         const [seriesId, seasonNumber] = ss.split('-');
 
-        // Fetch series info once
+        // Seriāla informāciju iegūst vienreiz
         if (!seriesTitles[seriesId]) {
           const seriesRes = await tmdbGetWithFallback(`/tv/${seriesId}`, {}, language, ['name', 'overview']);
           seriesTitles[seriesId] = seriesRes.data.name;
         }
 
-        // Fetch season info once
+        // Sezonas informāciju iegūst vienreiz
         const seasonRes = await tmdbGetWithFallback(`/tv/${seriesId}/season/${seasonNumber}`, {}, language, ['name', 'overview']);
 
         seasonRes.data.episodes.forEach(ep => {
@@ -1155,7 +1151,7 @@ app.get('/api/user-reviews/:userId', async (req, res) => {
         });
       }));
 
-      // Map reviews with TMDB info
+      // Kartē atsauksmes ar TMDB informāciju
       const enrichedReviews = reviews.map(r => {
         const ep = episodesData[`${r.tmdb_series_id}-${r.season_number}-${r.episode_number}`];
         return {
@@ -1173,12 +1169,12 @@ app.get('/api/user-reviews/:userId', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user reviews' });
   }
 });
-// Statistics
+// Statistika
 app.get('/api/statistics', async (req, res) => {
   const userId = req.headers.authorization ? parseInt(req.headers.authorization) : null;
 
   try {
-    // Site-wide stats
+    // Vietnes kopējā statistika
     const [highestRated] = await db.promise().query(
       `SELECT tmdb_series_id, AVG(rating) as avg_rating, COUNT(*) as review_count
        FROM reviews
@@ -1260,7 +1256,7 @@ app.get('/api/statistics', async (req, res) => {
 });
 
 
-// React to a review (like/dislike)
+// Reakcija uz atsauksmi (patīk/nepatīk)
 app.post('/api/reviews/:id/react', requireAuth, async (req, res) => {
   const { id } = req.params;
   const { is_like } = req.body;
@@ -1297,7 +1293,7 @@ app.post('/api/reviews/:id/react', requireAuth, async (req, res) => {
 
     await db.promise().query('UPDATE reviews SET likes = ?, dislikes = ? WHERE id = ?', [counts[0].likes || 0, counts[0].dislikes || 0, id]);
 
-    // Create notification for the review author (not for self-reactions, only for new like reactions)
+    // Izveido paziņojumu atsauksmes autoram (ne savām reakcijām, tikai jaunām patīk reakcijām)
     const reviewOwnerId = reviewRows[0].user_id;
     if (currentReaction === 'like' && reviewOwnerId !== userId) {
       try {
@@ -1321,7 +1317,7 @@ app.post('/api/reviews/:id/react', requireAuth, async (req, res) => {
   }
 });
 
-// Get user's reaction for a review
+// Iegūst lietotāja reakciju uz atsauksmi
 app.get('/api/reviews/:id/reaction', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
@@ -1338,7 +1334,7 @@ app.get('/api/reviews/:id/reaction', requireAuth, async (req, res) => {
   }
 });
 
-// Check if username is available
+// Pārbauda, vai lietotājvārds ir pieejams
 app.get('/api/check-username', (req, res) => {
   const { username } = req.query;
 
@@ -1359,7 +1355,7 @@ app.get('/api/check-username', (req, res) => {
   );
 });
 
-// Update username
+// Atjauninat lietotajvardu
 app.put('/api/users/:id/username', requireAuth, (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   const userIdFromAuth = req.userId;
@@ -1369,12 +1365,12 @@ app.put('/api/users/:id/username', requireAuth, (req, res) => {
     return res.status(400).json({ message: 'Invalid username' });
   }
 
-  // Users can only update their own username
+  // Lietotāji var atjaunināt tikai savu lietotājvārdu
   if (userIdFromParams !== userIdFromAuth) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
 
-  // Check if username already exists
+  // Pārbauda, vai lietotājvārds jau pastāv
   db.query(
     'SELECT id FROM users WHERE username = ? LIMIT 1',
     [newUsername],
@@ -1387,7 +1383,7 @@ app.put('/api/users/:id/username', requireAuth, (req, res) => {
         return res.status(409).json({ message: 'Username already taken' });
       }
 
-      // Update username
+      // Atjauninat lietotajvardu
       db.query(
         'UPDATE users SET username = ? WHERE id = ?',
         [newUsername, userIdFromParams],
@@ -1409,14 +1405,14 @@ app.put('/api/users/:id/username', requireAuth, (req, res) => {
   );
 });
 
-// Upload profile picture
+// Augšupieladet profila attelu
 app.post('/api/users/:id/profile-picture', requireAuth, upload.single('profilePicture'), async (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   const userIdFromAuth = req.userId;
 
   console.log('Profile picture upload request - Params ID:', userIdFromParams, 'Auth ID:', userIdFromAuth);
 
-  // Users can only update their own profile picture
+  // Lietotāji var atjaunināt tikai savu profila attēlu
   if (userIdFromParams !== userIdFromAuth) {
     console.log('Unauthorized - ID mismatch');
     return res.status(403).json({ message: 'Unauthorized' });
@@ -1433,13 +1429,13 @@ app.post('/api/users/:id/profile-picture', requireAuth, upload.single('profilePi
   console.log('Uploaded file:', filename);
   console.log('Profile picture path:', profilePicturePath);
 
-  // Get old profile picture to delete it
+  // Iegūst veco profila attēlu, lai to dzēstu
   db.query('SELECT profile_picture FROM users WHERE id = ?', [userIdFromParams], (err, results) => {
     if (err) {
       console.error('Error fetching old profile picture:', err);
     } else if (results.length > 0 && results[0].profile_picture) {
       const oldPicPath = results[0].profile_picture;
-      // Only delete if it's not a default picture
+      // Dzēš tikai tad, ja tas nav noklusējuma attēls
       if (oldPicPath && !oldPicPath.includes('default_pfp_icons')) {
         const oldFilePath = path.join(__dirname, 'src', oldPicPath);
         fs.unlink(oldFilePath, (err) => {
@@ -1449,7 +1445,7 @@ app.post('/api/users/:id/profile-picture', requireAuth, upload.single('profilePi
     }
   });
 
-  // Update profile picture in database
+  // Atjaunina profila attēlu datubāzē
   db.query(
     'UPDATE users SET profile_picture = ? WHERE id = ?',
     [profilePicturePath, userIdFromParams],
@@ -1467,12 +1463,12 @@ app.post('/api/users/:id/profile-picture', requireAuth, upload.single('profilePi
   );
 });
 
-// Update profile picture with default option
+// Atjaunina profila attēlu ar noklusējuma opciju
 app.post('/api/users/:id/profile-picture-default', requireAuth, (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   const userIdFromAuth = req.userId;
 
-  // Users can only update their own profile picture
+  // Lietotāji var atjaunināt tikai savu profila attēlu
   if (userIdFromParams !== userIdFromAuth) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
@@ -1502,10 +1498,10 @@ app.post('/api/users/:id/profile-picture-default', requireAuth, (req, res) => {
   );
 });
 
-// User favorites routes
-// ==================== AVATAR MAKER ENDPOINTS ====================
+// Lietotaja favoritu maršruti
+// ==================== AVATARA VEIDOTAJA GALAPUNKTI ====================
 
-// List available avatar parts per category
+// Uzskaita pieejamās avatara daļas pa kategorijām
 app.get('/api/avatar-parts', (req, res) => {
   const partsDir = path.join(__dirname, 'src/assets/profile_parts');
   const categories = ['background', 'background_gradient', 'body_color', 'body_outline', 'eyes'];
@@ -1524,7 +1520,7 @@ app.get('/api/avatar-parts', (req, res) => {
   res.json(result);
 });
 
-// Get avatar config for a user
+// Iegūst lietotāja avatara konfigurāciju
 app.get('/api/users/:id/avatar-config', requireAuth, (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   if (userIdFromParams !== req.userId) {
@@ -1542,7 +1538,7 @@ app.get('/api/users/:id/avatar-config', requireAuth, (req, res) => {
   });
 });
 
-// Save avatar config for a user
+// Saglabā lietotāja avatara konfigurāciju
 app.post('/api/users/:id/avatar-config', requireAuth, (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   if (userIdFromParams !== req.userId) {
@@ -1554,7 +1550,7 @@ app.post('/api/users/:id/avatar-config', requireAuth, (req, res) => {
     return res.status(400).json({ message: 'Invalid config' });
   }
 
-  // Validate that config only contains allowed keys and string/null values
+  // Validē, ka konfigurācija satur tikai atļautās atslēgas un string/null vērtības
   const allowedKeys = ['background', 'background_gradient', 'body_color', 'body_outline', 'eyes'];
   for (const key of Object.keys(config)) {
     if (!allowedKeys.includes(key)) {
@@ -1645,7 +1641,7 @@ app.delete('/api/users/:id/favorites/:position', requireAuth, (req, res) => {
   );
 });
 
-// User top shows route
+// Lietotāja top seriālu maršruts
 app.get('/api/user-top-shows/:id', requireAuth, (req, res) => {
   const userIdFromParams = parseInt(req.params.id);
   const userIdFromAuth = req.userId;
@@ -1672,7 +1668,7 @@ app.get('/api/user-top-shows/:id', requireAuth, (req, res) => {
   );
 });
 
-// Add comment
+// Pievienot komentaru
 app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
   const { id } = req.params;
   const { comment_text, other_user_id } = req.body;
@@ -1687,7 +1683,7 @@ app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
     );
     await db.promise().query('UPDATE reviews SET comment_count = comment_count + 1 WHERE id = ?', [id]);
 
-    // Create notifications for comment
+    // Izveido paziņojumus par komentāru
     try {
       const [reviewRows] = await db.promise().query('SELECT user_id, tmdb_series_id, review_title FROM reviews WHERE id = ?', [id]);
       const [commenterRows] = await db.promise().query('SELECT username FROM users WHERE id = ?', [userId]);
@@ -1698,7 +1694,7 @@ app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
         const tmdbSeriesId = reviewRows[0].tmdb_series_id;
         const reviewTitle = reviewRows[0].review_title || 'Untitled';
 
-        // Notify review author (if not self-comment)
+        // Paziņo atsauksmes autoram (ja tas nav paša komentārs)
         if (reviewOwnerId !== userId) {
           const message = `${commenterName} commented on your review "${reviewTitle}"`;
           await db.promise().query(
@@ -1707,7 +1703,7 @@ app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
           );
         }
 
-        // Notify mentioned user (if different from commenter and review author)
+        // Paziņo pieminētajam lietotājam (ja tas atšķiras no komentētāja un atsauksmes autora)
         if (other_user_id && other_user_id !== userId) {
           const message = `${commenterName} mentioned you in a comment on "${reviewTitle}"`;
           await db.promise().query(
@@ -1727,7 +1723,7 @@ app.post('/api/reviews/:id/comments', requireAuth, async (req, res) => {
   }
 });
 
-// Get comments for a review
+// Iegut atsauksmes komentarus
 app.get('/api/reviews/:id/comments', (req, res) => {
   const { id } = req.params;
   const conn = getConnection();
@@ -1751,7 +1747,7 @@ app.get('/api/reviews/:id/comments', (req, res) => {
   );
 });
 
-// Delete review
+// Dzest atsauksmi
 app.delete('/api/reviews/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
@@ -1779,7 +1775,7 @@ app.delete('/api/reviews/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Delete comment
+// Dzest komentaru
 app.delete('/api/comments/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
@@ -1806,9 +1802,9 @@ app.delete('/api/comments/:id', requireAuth, async (req, res) => {
   }
 });
 
-// ===== QUIZ ENDPOINTS =====
+// ===== VIKTORINU GALAPUNKTI =====
 
-// Get all quizzes
+// Iegūst visas viktorīnas
 app.get('/api/quizzes', async (req, res) => {
   try {
     const [quizzes] = await db.promise().query(`
@@ -1825,8 +1821,8 @@ app.get('/api/quizzes', async (req, res) => {
   }
 });
 
-// Get specific quiz with questions
-app.get('/api/quizzes/:id', async (req, res) => {
+// Iegūst konkrētu viktorīnu ar jautājumiem
+app.get('/api/quizzes/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   try {
     const [quiz] = await db.promise().query('SELECT id, title, description, icon_emoji, category, difficulty, icon_name, tmdb_series_id, quiz_image, badge_name, badge_rules FROM quizzes WHERE id = ?', [id]);
@@ -1844,7 +1840,7 @@ app.get('/api/quizzes/:id', async (req, res) => {
   }
 });
 
-// Get user's earned badges (quiz-based + standalone, unified table)
+// Iegūst lietotāja nopelnītos žetonus (viktorīnu un atsevišķos, vienotā tabulā)
 app.get('/api/users/:userid/badges', async (req, res) => {
   const { userid } = req.params;
   try {
@@ -1871,7 +1867,7 @@ app.get('/api/users/:userid/badges', async (req, res) => {
   }
 });
 
-// Get badge details including completion status for user
+// Iegūst žetona detaļas, tostarp lietotāja pabeigšanas statusu
 app.get('/api/users/:userid/quiz-status/:quizid', requireAuth, async (req, res) => {
   const { userid, quizid } = req.params;
   try {
@@ -1886,20 +1882,20 @@ app.get('/api/users/:userid/quiz-status/:quizid', requireAuth, async (req, res) 
   }
 });
 
-// Check quiz cooldown status - returns if user can retake after failure
+// Pārbauda viktorīnas gaidīšanas statusu - atgriež, vai lietotājs pēc neveiksmes drīkst mēģināt vēlreiz
 app.get('/api/quizzes/:id/cooldown-status', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
 
   try {
-    // Get the most recent failed attempt (score < 70)
+    // Iegūst jaunāko neveiksmīgo mēģinājumu (rezultāts < 70)
     const [attempts] = await db.promise().query(
       'SELECT score, attempted_at FROM quiz_attempts WHERE user_id = ? AND quiz_id = ? AND score < 70 ORDER BY attempted_at DESC LIMIT 1',
       [userId, id]
     );
 
     if (attempts.length === 0) {
-      // No failed attempts, user can retake
+      // Nav neveiksmīgu mēģinājumu, lietotājs drīkst mēģināt vēlreiz
       return res.json({ canRetake: true, cooldownExpired: true, nextRetakeTime: null });
     }
 
@@ -1908,11 +1904,11 @@ app.get('/api/quizzes/:id/cooldown-status', requireAuth, async (req, res) => {
     const hoursElapsed = (now - lastFailedAttempt) / (1000 * 60 * 60);
 
     if (hoursElapsed >= 24) {
-      // 24 hours have passed
+      // Ir pagājušas 24 stundas
       return res.json({ canRetake: true, cooldownExpired: true, nextRetakeTime: null });
     }
 
-    // Still in cooldown
+    // Joprojām gaidīšanas periodā
     const nextRetakeTime = new Date(lastFailedAttempt.getTime() + 24 * 60 * 60 * 1000);
     return res.json({ 
       canRetake: false, 
@@ -1926,14 +1922,14 @@ app.get('/api/quizzes/:id/cooldown-status', requireAuth, async (req, res) => {
   }
 });
 
-// Submit quiz answers and award badges based on performance and badge rules
+// Iesniedz viktorīnas atbildes un piešķir žetonus pēc veiktspējas un žetonu noteikumiem
 app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
   const { answers } = req.body; // Object: { questionId: 'A', questionId2: 'B', ... }
 
   try {
-    // Fetch quiz badge config
+    // Iegūst viktorīnas žetona konfigurāciju
     const [quizRows] = await db.promise().query(
       'SELECT badge_name, badge_rules FROM quizzes WHERE id = ?',
       [id]
@@ -1943,27 +1939,27 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
     const quiz = quizRows[0];
     const badgeRules = quiz.badge_rules ? JSON.parse(quiz.badge_rules) : null;
 
-    // Fetch all questions in order
+    // Iegūst visus jautājumus secībā
     const [questions] = await db.promise().query(
       'SELECT id, correct_answer FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
       [id]
     );
     if (questions.length === 0) return res.status(404).json({ message: 'Quiz not found' });
 
-    // Calculate score
+    // Aprēķina rezultātu
     let correct = 0;
     questions.forEach(q => {
       if (answers[q.id] && answers[q.id].toUpperCase() === q.correct_answer) correct++;
     });
     const score = Math.round((correct / questions.length) * 100);
 
-    // Determine pass threshold for "passed" flag (use first tier threshold or 70)
+    // Nosaka nokārtošanas slieksni "passed" karogam (izmanto pirmā līmeņa slieksni vai 70)
     const passThreshold = badgeRules?.performance?.enabled && badgeRules.performance.tiers?.length
       ? Math.max(...badgeRules.performance.tiers.map(t => t.minScore ?? 0))
       : (badgeRules?.performance?.enabled ? (badgeRules.performance.passThreshold || 70) : 70);
     const passed = score >= passThreshold;
 
-    // Record attempt
+    // Reģistrē mēģinājumu
     await db.promise().query(
       'INSERT INTO quiz_attempts (user_id, quiz_id, score) VALUES (?, ?, ?)',
       [userId, id, score]
@@ -1987,13 +1983,13 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
 
     if (badgeRules?.performance?.enabled) {
       if (badgeRules.performance.tiers?.length) {
-        // Multiple tiers: sort highest minScore first, award first matching tier
+        // Vairāki līmeņi: kārto pēc augstākā minScore vispirms un piešķir pirmo atbilstošo līmeni
         const sorted = [...badgeRules.performance.tiers]
           .filter(t => t.badgeName)
           .sort((a, b) => (b.minScore ?? 0) - (a.minScore ?? 0));
         const matchedTier = sorted.find(t => score >= (t.minScore ?? 0));
         if (matchedTier) {
-          // Use ON DUPLICATE KEY UPDATE so re-attempts can upgrade to a higher tier
+          // Izmanto ON DUPLICATE KEY UPDATE, lai atkārtoti mēģinājumi varētu paaugstināt līmeni
           await db.promise().query(
             'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, badge_image, badge_name_override) VALUES (?, "quiz", ?, ?, ?, ?) ON DUPLICATE KEY UPDATE earned_at = NOW(), badge_image = VALUES(badge_image), badge_name_override = VALUES(badge_name_override)',
             [userId, id, 'perf', matchedTier.badgeImage || null, matchedTier.badgeName || null]
@@ -2002,7 +1998,7 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
           badgeAwarded = true;
         }
       } else {
-        // Legacy single-threshold format
+        // Mantotais viena sliekšņa formāts
         if (passed && badgeRules.performance.passBadgeName) {
           await awardBadge('pass', badgeRules.performance.passBadgeName);
         } else if (!passed && badgeRules.performance.failBadgeName) {
@@ -2010,11 +2006,11 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
         }
       }
     } else if (passed && quiz.badge_name) {
-      // Default single pass badge
+      // Noklusējuma viens nokārtošanas žetons
       await awardBadge('default', quiz.badge_name, badgeRules?.defaultBadgeImage || null);
     }
 
-    // Secret badges: each condition is independent; use secret_N badge_type
+    // Slepenie žetoni: katrs nosacījums ir neatkarīgs; izmanto secret_N badge_type
     const secretConditions = badgeRules?.secrets?.conditions ?? (
       badgeRules?.secret?.enabled ? [{ questionIndex: badgeRules.secret.questionIndex, answer: badgeRules.secret.answer, badgeName: badgeRules.secret.badgeName }] : []
     );
@@ -2030,7 +2026,7 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
       }
     }
 
-    // Award cosmetics linked to this quiz
+    // Piešķir ar šo viktorīnu saistīto kosmētiku
     const cosmeticsAwarded = [];
     try {
       const [cosmeticSources] = await db.promise().query(
@@ -2047,7 +2043,7 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
             [userId, src.cosmetic_id, `quiz:${id}`]
           );
           cosmeticsAwarded.push({ id: src.cosmetic_id, name: src.name, type: src.type, rarity: src.rarity, effect_key: src.effect_key });
-          // Create notification for cosmetic unlock
+          // Izveido paziņojumu par kosmētikas atbloķēšanu
           await db.promise().query(
             'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, 0, ?, ?)',
             [userId, 'cosmetic_unlock', `You unlocked a new cosmetic: ${src.name} (${src.rarity})`]
@@ -2060,7 +2056,7 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
       console.error('Error awarding quiz cosmetics:', cosErr);
     }
 
-    // Check milestone cosmetics after quiz completion
+    // Pārbauda sasniegumu kosmētiku pēc viktorīnas pabeigšanas
     const milestoneCosmetics = await checkAndAwardMilestones(userId);
     cosmeticsAwarded.push(...milestoneCosmetics);
 
@@ -2082,7 +2078,7 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
   }
 });
 
-// Admin: Upload a new quiz image
+// Administrators: augšupielādēt jaunu viktorīnas attēlu
 app.post('/api/admin/quiz-images', requireAuth, uploadQuizImage.single('quizImage'), async (req, res) => {
   const userId = req.userId;
   try {
@@ -2100,19 +2096,19 @@ app.post('/api/admin/quiz-images', requireAuth, uploadQuizImage.single('quizImag
   }
 });
 
-// Admin: Create a new quiz
+// Administrators: izveidot jaunu viktorīnu
 app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
   const userId = req.userId;
   const { title, description, icon_emoji, icon_name, category, difficulty, tmdb_series_id, quiz_image, badge_name, badge_rules, questions } = req.body;
 
   try {
-    // Check if user is admin
+    // Pārbauda, vai lietotājs ir administrators
     const [user] = await db.promise().query('SELECT role FROM users WHERE id = ?', [userId]);
     if (user.length === 0 || user[0].role !== 'admin') {
       return res.status(403).json({ message: 'Only admins can create quizzes' });
     }
 
-    // Create quiz
+    // Izveido viktorīnu
     const [result] = await db.promise().query(
       'INSERT INTO quizzes (title, description, icon_emoji, icon_name, category, difficulty, tmdb_series_id, quiz_image, badge_name, badge_rules, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [title, description, icon_emoji || '', icon_name || null, category || 'series', difficulty || 'medium', tmdb_series_id || null, quiz_image || null, badge_name || null, badge_rules ? JSON.stringify(badge_rules) : null, userId]
@@ -2120,7 +2116,7 @@ app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
 
     const quizId = result.insertId;
 
-    // Insert questions
+    // Ievieto jautājumus
     if (questions && questions.length > 0) {
       for (const q of questions) {
         await db.promise().query(
@@ -2137,7 +2133,7 @@ app.post('/api/admin/quizzes', requireAuth, async (req, res) => {
   }
 });
 
-// Admin: Update a quiz
+// Administrators: atjaunināt viktorīnu
 app.put('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
@@ -2159,19 +2155,19 @@ app.put('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Admin: Delete a quiz
+// Administrators: dzēst viktorīnu
 app.delete('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
 
   try {
-    // Check if user is admin
+    // Pārbauda, vai lietotājs ir administrators
     const [user] = await db.promise().query('SELECT role FROM users WHERE id = ?', [userId]);
     if (user.length === 0 || user[0].role !== 'admin') {
       return res.status(403).json({ message: 'Only admins can delete quizzes' });
     }
 
-    // Clean up user_badges referencing this quiz
+    // Notīra user_badges ierakstus, kas atsaucas uz šo viktorīnu
     await db.promise().query('DELETE FROM user_badges WHERE badge_source = "quiz" AND source_id = ?', [id]);
     await db.promise().query('DELETE FROM quizzes WHERE id = ?', [id]);
     res.json({ message: 'Quiz deleted' });
@@ -2181,15 +2177,15 @@ app.delete('/api/admin/quizzes/:id', requireAuth, async (req, res) => {
   }
 });
 
-// ===== QUIZ ENDPOINTS END =====
+// ===== VIKTORINU GALAPUNKTU BEIGAS =====
 
-// Admin: Upload badge image
+// Administrators: augšupielādēt žetona attēlu
 app.post('/api/admin/badge-images', requireAuth, requireAdmin, uploadBadgeImage.single('badgeImage'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No image file provided' });
   res.json({ filename: req.file.filename });
 });
 
-// Admin: Get all standalone badges
+// Administrators: iegūt visus atsevišķos žetonus
 app.get('/api/admin/standalone-badges', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [badges] = await db.promise().query(
@@ -2204,7 +2200,7 @@ app.get('/api/admin/standalone-badges', requireAuth, requireAdmin, async (req, r
   }
 });
 
-// Admin: Create standalone badge
+// Administrators: izveidot atsevišķu žetonu
 app.post('/api/admin/standalone-badges', requireAuth, requireAdmin, async (req, res) => {
   const { name, description, image } = req.body;
   if (!name?.trim()) return res.status(400).json({ message: 'Badge name is required' });
@@ -2220,7 +2216,7 @@ app.post('/api/admin/standalone-badges', requireAuth, requireAdmin, async (req, 
   }
 });
 
-// Admin: Award standalone badge to user
+// Administrators: piešķirt lietotājam atsevišķu žetonu
 app.post('/api/admin/standalone-badges/:id/award', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { userId: targetUserId } = req.body;
@@ -2240,10 +2236,10 @@ app.post('/api/admin/standalone-badges/:id/award', requireAuth, requireAdmin, as
   }
 });
 
-// Admin: Delete standalone badge
+// Administrators: dzēst atsevišķu žetonu
 app.delete('/api/admin/standalone-badges/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    // Clean up user_badges referencing this standalone badge
+    // Notīra user_badges ierakstus, kas atsaucas uz šo atsevišķo žetonu
     await db.promise().query('DELETE FROM user_badges WHERE badge_source = "standalone" AND source_id = ?', [req.params.id]);
     await db.promise().query('DELETE FROM standalone_badges WHERE id = ?', [req.params.id]);
     res.json({ message: 'Badge deleted' });
@@ -2253,7 +2249,7 @@ app.delete('/api/admin/standalone-badges/:id', requireAuth, requireAdmin, async 
   }
 });
 
-// Fetch series details including seasons
+// Iegūst seriāla detaļas, ieskaitot sezonas
 app.get('/api/tmdb/series-seasons/:id', async (req, res) => {
   const seriesId = req.params.id;
   try {
@@ -2271,10 +2267,10 @@ app.get('/api/tmdb/top-series', async (req, res) => {
   try {
     const language = resolveTmdbLanguage(req.query.lang);
     const isLatvian = language.startsWith('lv');
-    // 1. Fetch the genre map (handles Latvian auto-translation and caching)
+    // 1. Iegūst žanru karti (apstrādā latviešu automātisko tulkošanu un kešošanu)
     const genreMap = await getGenreMap(language);
 
-    // 2. Fetch the popular TV shows (first page)
+    // 2. Iegūst populāros TV seriālus (pirmo lapu)
     const response = await tmdbGet('/tv/popular', { page: 1 }, language);
     let enById = new Map();
     if (isLatvian) {
@@ -2282,7 +2278,7 @@ app.get('/api/tmdb/top-series', async (req, res) => {
       enById = new Map((enResponse.data.results || []).map((s) => [s.id, s]));
     }
 
-    // 3. Take top 12 shows and map genre IDs to names
+    // 3. Paņem top 12 seriālus un kartē žanru ID uz nosaukumiem
     const shows = await Promise.all(response.data.results.slice(0, 12).map(async (show) => {
       const enShow = enById.get(show.id) || {};
 
@@ -2319,7 +2315,7 @@ app.get('/api/tmdb/top-series', async (req, res) => {
 });
 
 
-// Fetch series details including all seasons & episodes (single call per series)
+// Iegūst seriāla detaļas, ieskaitot visas sezonas un sērijas (viens izsaukums uz seriālu)
 app.get('/api/tmdb/series-details/:id', async (req, res) => {
   const seriesId = req.params.id;
   try {
@@ -2331,7 +2327,7 @@ app.get('/api/tmdb/series-details/:id', async (req, res) => {
       isLatvian ? tmdbGet(`/tv/${seriesId}`, {}, 'en-US') : Promise.resolve(null)
     ]);
 
-    // Fetch episodes for all seasons
+    // Iegūst sērijas visām sezonām
     const seasonsWithEpisodes = await Promise.all(
       (seriesRes.data.seasons || []).map(async season => {
         const epRes = await tmdbGetWithFallback(
@@ -2372,7 +2368,7 @@ app.get('/api/tmdb/series-details/:id', async (req, res) => {
     res.status(err.response?.status || 500).json({ message: 'Failed to fetch series details' });
   }
 });
-// Fetch series videos (trailers)
+// Iegūst seriāla video (treilerus)
 app.get('/api/tmdb/series-videos/:id', async (req, res) => {
   const seriesId = req.params.id;
   try {
@@ -2396,7 +2392,7 @@ app.get('/api/tmdb/series-videos/:id', async (req, res) => {
     res.status(err.response?.status || 500).json({ message: 'Failed to fetch series videos' });
   }
 });
-// Search series by query (TMDB)
+// Meklē seriālus pēc vaicājuma (TMDB)
 app.get('/api/tmdb/search-series', async (req, res) => {
   const query = req.query.query;
   if (!query) return res.json([]); // return empty array if no query
@@ -2435,7 +2431,7 @@ app.get('/api/tmdb/search-series', async (req, res) => {
   }
 });
 
-// Fetch lightweight series metadata used across profile/statistics/quizzes
+// Iegūst vieglus seriāla metadatus, ko izmanto profilā/statistikā/viktorīnās
 app.get('/api/tmdb/series/:id', async (req, res) => {
   try {
     const language = resolveTmdbLanguage(req.query.lang);
@@ -2473,9 +2469,9 @@ app.get('/api/tmdb/series/:id', async (req, res) => {
   }
 });
 
-// ===== NEW FEATURES: PUBLIC PROFILES, WATCHED SHOWS, FOLLOWED SHOWS, USER LISTS, NOTIFICATIONS =====
+// ===== JAUNAS FUNKCIJAS: PUBLISKIE PROFILI, NOSKATITIE SERIALI, SEKOTIE SERIALI, LIETOTAJU SARAKSTI, PAZINOJUMI =====
 
-// Get public profile of another user
+// Iegūst cita lietotāja publisko profilu
 app.get('/api/users/:userId/public-profile', async (req, res) => {
   const { userId } = req.params;
 
@@ -2489,19 +2485,19 @@ app.get('/api/users/:userId/public-profile', async (req, res) => {
 
     const user = users[0];
 
-    // Get user reviews count
+    // Iegūst lietotāja atsauksmju skaitu
     const [reviewCounts] = await db.promise().query(
       'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?',
       [userId]
     );
 
-    // Get followed shows count
+    // Iegūst sekoto seriālu skaitu
     const [followedCounts] = await db.promise().query(
       'SELECT COUNT(*) as count FROM user_shows WHERE user_id = ? AND is_followed = 1',
       [userId]
     );
 
-    // Get badges
+    // Iegūst žetonus
     const [badges] = await db.promise().query(
       `SELECT ub.id, ub.earned_at, ub.badge_type, ub.badge_source, ub.source_id,
               CASE WHEN ub.badge_source = 'quiz' THEN COALESCE(ub.badge_name_override, q.title) ELSE COALESCE(ub.badge_name_override, sb.name) END AS title,
@@ -2527,7 +2523,7 @@ app.get('/api/users/:userId/public-profile', async (req, res) => {
   }
 });
 
-// Get single review with all details
+// Iegūst vienu atsauksmi ar visām detaļām
 app.get('/api/reviews/:reviewId', async (req, res) => {
   const { reviewId } = req.params;
   const language = resolveTmdbLanguage(req.query.lang);
@@ -2547,13 +2543,13 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
     const review = reviews[0];
     review.review_language = detectReviewLanguage(review.review_title, review.review_text);
 
-    // Get total user reviews
+    // Iegūst kopējo lietotāja atsauksmju skaitu
     const [userReviews] = await db.promise().query(
       'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?',
       [review.user_id]
     );
 
-    // Get TMDB series details
+    // Iegūst TMDB seriāla detaļas
     const [seriesRes, englishSeriesRes] = await Promise.all([
       tmdbGetWithFallback(`/tv/${review.tmdb_series_id}`, {}, language, ['name', 'overview']),
       isLatvian ? tmdbGet(`/tv/${review.tmdb_series_id}`, {}, 'en-US') : Promise.resolve(null)
@@ -2567,7 +2563,7 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
         machineTranslatedTitle: false
       };
 
-    // Get episode details
+    // Iegūst sērijas detaļas
     const episodeRes = await tmdbGetWithFallback(
       `/tv/${review.tmdb_series_id}/season/${review.season_number}/episode/${review.episode_number}`,
       {},
@@ -2575,7 +2571,7 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
       ['name', 'overview']
     );
 
-    // Get comments
+    // Iegūst komentārus
     const [comments] = await db.promise().query(
       `SELECT c.*, u.username, u.profile_picture FROM comments c
        JOIN users u ON c.user_id = u.id
@@ -2603,7 +2599,7 @@ app.get('/api/reviews/:reviewId', async (req, res) => {
   }
 });
 
-// Mark show as watched
+// Atzīmē seriālu kā noskatītu
 app.post('/api/watched-shows', requireAuth, async (req, res) => {
   const { tmdb_series_id, watched_status } = req.body;
   const userId = req.userId;
@@ -2623,7 +2619,7 @@ app.post('/api/watched-shows', requireAuth, async (req, res) => {
   }
 });
 
-// Mark episode as watched
+// Atzīmē sēriju kā noskatītu
 app.post('/api/watched-episodes', requireAuth, async (req, res) => {
   const { tmdb_series_id, season_number, episode_number } = req.body;
   const userId = req.userId;
@@ -2648,7 +2644,7 @@ app.post('/api/watched-episodes', requireAuth, async (req, res) => {
   }
 });
 
-// Get watched shows for user
+// Iegūst lietotāja noskatītos seriālus
 app.get('/api/watched-shows/:userId', async (req, res) => {
   const { userId } = req.params;
 
@@ -2665,7 +2661,7 @@ app.get('/api/watched-shows/:userId', async (req, res) => {
   }
 });
 
-// Get watched episodes for show
+// Iegūst seriāla noskatītās sērijas
 app.get('/api/watched-episodes/:userId/:seriesId', async (req, res) => {
   const { userId, seriesId } = req.params;
 
@@ -2682,7 +2678,7 @@ app.get('/api/watched-episodes/:userId/:seriesId', async (req, res) => {
   }
 });
 
-// Follow a show
+// Sekot seriālam
 app.post('/api/follow-show', requireAuth, async (req, res) => {
   const { tmdb_series_id } = req.body;
   const userId = req.userId;
@@ -2702,7 +2698,7 @@ app.post('/api/follow-show', requireAuth, async (req, res) => {
   }
 });
 
-// Unfollow show
+// Atsekot seriālam
 app.post('/api/unfollow-show', requireAuth, async (req, res) => {
   const { tmdb_series_id } = req.body;
   const userId = req.userId;
@@ -2720,7 +2716,7 @@ app.post('/api/unfollow-show', requireAuth, async (req, res) => {
   }
 });
 
-// Get followed shows for user
+// Iegūst lietotāja sekotos seriālus
 app.get('/api/followed-shows/:userId', async (req, res) => {
   const { userId } = req.params;
 
@@ -2737,9 +2733,9 @@ app.get('/api/followed-shows/:userId', async (req, res) => {
   }
 });
 
-// ===== USER FOLLOWS (follow other users) =====
+// ===== LIETOTĀJU SEKOŠANA (sekošana citiem lietotājiem) =====
 
-// Follow a user
+// Sekot lietotājam
 app.post('/api/users/:id/follow', requireAuth, async (req, res) => {
   const followingId = parseInt(req.params.id);
   const followerId = req.userId;
@@ -2763,7 +2759,7 @@ app.post('/api/users/:id/follow', requireAuth, async (req, res) => {
       [followerId, followingId]
     );
 
-    // Create a notification for the followed user
+    // Izveido paziņojumu lietotājam, kuram seko
     try {
       const [followerRows] = await db.promise().query('SELECT username FROM users WHERE id = ?', [followerId]);
       const followerName = followerRows.length > 0 ? followerRows[0].username : 'Someone';
@@ -2776,7 +2772,7 @@ app.post('/api/users/:id/follow', requireAuth, async (req, res) => {
       console.error('Error creating follow notification:', notifErr);
     }
 
-    // Check milestone cosmetics for the user gaining a follower
+    // Pārbauda sasniegumu kosmētiku lietotājam, kurš iegūst sekotāju
     checkAndAwardMilestones(followingId).catch(() => {});
 
     res.json({ message: 'Now following user' });
@@ -2786,7 +2782,7 @@ app.post('/api/users/:id/follow', requireAuth, async (req, res) => {
   }
 });
 
-// Unfollow a user
+// Atsekot lietotājam
 app.delete('/api/users/:id/follow', requireAuth, async (req, res) => {
   const followingId = parseInt(req.params.id);
   const followerId = req.userId;
@@ -2803,7 +2799,7 @@ app.delete('/api/users/:id/follow', requireAuth, async (req, res) => {
   }
 });
 
-// Check if current user follows a user
+// Pārbauda, vai pašreizējais lietotājs seko lietotājam
 app.get('/api/users/:id/follow-status', requireAuth, async (req, res) => {
   const followingId = parseInt(req.params.id);
   const followerId = req.userId;
@@ -2820,7 +2816,7 @@ app.get('/api/users/:id/follow-status', requireAuth, async (req, res) => {
   }
 });
 
-// Get follower/following counts for a user
+// Iegūst lietotāja sekotāju/sekošanas skaitu
 app.get('/api/users/:id/follow-counts', async (req, res) => {
   const userId = parseInt(req.params.id);
 
@@ -2843,7 +2839,7 @@ app.get('/api/users/:id/follow-counts', async (req, res) => {
   }
 });
 
-// Get common followed shows between current user and another user
+// Iegūst kopīgos sekotos seriālus starp pašreizējo un citu lietotāju
 app.get('/api/users/:id/common-shows', requireAuth, async (req, res) => {
   const otherUserId = parseInt(req.params.id);
   const currentUserId = req.userId;
@@ -2875,7 +2871,7 @@ app.get('/api/users/:id/common-shows', requireAuth, async (req, res) => {
   }
 });
 
-// Get a user's favorites (public view)
+// Iegūst lietotāja favorītus (publiskais skats)
 app.get('/api/users/:id/public-favorites', async (req, res) => {
   const userId = parseInt(req.params.id);
 
@@ -2891,7 +2887,7 @@ app.get('/api/users/:id/public-favorites', async (req, res) => {
   }
 });
 
-// Get notifications for user
+// Iegūst lietotāja paziņojumus
 app.get('/api/notifications', requireAuth, async (req, res) => {
   const userId = req.userId;
 
@@ -2911,7 +2907,7 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
   }
 });
 
-// Mark all notifications as read (must be before /:id/read to avoid param matching)
+// Atzīmē visus paziņojumus kā izlasītus (jābūt pirms /:id/read, lai izvairītos no parametra sakritības)
 app.post('/api/notifications/mark-all-read', requireAuth, async (req, res) => {
   const userId = req.userId;
 
@@ -2928,7 +2924,7 @@ app.post('/api/notifications/mark-all-read', requireAuth, async (req, res) => {
   }
 });
 
-// Mark notification as read
+// Atzīmē paziņojumu kā izlasītu
 app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
@@ -2946,7 +2942,7 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
   }
 });
 
-// Delete all notifications for user (must be before /:id to avoid param matching)
+// Dzēš visus lietotāja paziņojumus (jābūt pirms /:id, lai izvairītos no parametra sakritības)
 app.delete('/api/notifications', requireAuth, async (req, res) => {
   const userId = req.userId;
 
@@ -2963,7 +2959,7 @@ app.delete('/api/notifications', requireAuth, async (req, res) => {
   }
 });
 
-// Delete a single notification
+// Dzēš vienu paziņojumu
 app.delete('/api/notifications/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
@@ -2981,7 +2977,7 @@ app.delete('/api/notifications/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Select badge to display on profile
+// Izvēlas profilā rādāmo žetonu
 app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
   const { userId } = req.params;
   const { badgeId } = req.body;
@@ -2992,7 +2988,7 @@ app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
   }
 
   try {
-    // Allow clearing badge selection
+    // Atļauj notīrīt žetona izvēli
     if (badgeId === null || badgeId === undefined) {
       await db.promise().query(
         'UPDATE users SET selected_badge_id = NULL WHERE id = ?',
@@ -3001,7 +2997,7 @@ app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
       return res.json({ message: 'Badge removed from profile' });
     }
 
-    // Verify the badge belongs to this user (check unified user_badges table)
+    // Pārbauda, vai žetons pieder šim lietotājam (pārbauda vienoto user_badges tabulu)
     const [ownedBadges] = await db.promise().query(
       'SELECT id FROM user_badges WHERE id = ? AND user_id = ?',
       [badgeId, userId]
@@ -3011,7 +3007,7 @@ app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
       return res.status(404).json({ message: 'Badge not found' });
     }
 
-    // Update users table with selected badge
+    // Atjaunina users tabulu ar izvēlēto žetonu
     await db.promise().query(
       'UPDATE users SET selected_badge_id = ? WHERE id = ?',
       [badgeId, userId]
@@ -3024,9 +3020,9 @@ app.post('/api/users/:userId/select-badge', requireAuth, async (req, res) => {
   }
 });
 
-// ==================== COSMETICS ENDPOINTS ====================
+// ==================== KOSMETIKAS GALAPUNKTI ====================
 
-// Get user's earned cosmetics inventory
+// Iegūst lietotāja nopelnītās kosmētikas inventāru
 app.get('/api/users/:userId/cosmetics', async (req, res) => {
   try {
     const [rows] = await db.promise().query(
@@ -3044,7 +3040,7 @@ app.get('/api/users/:userId/cosmetics', async (req, res) => {
   }
 });
 
-// Get user's active (equipped) cosmetics — public endpoint
+// Iegūst lietotāja aktīvo (aprīkoto) kosmētiku — publisks galapunkts
 app.get('/api/users/:userId/active-cosmetics', async (req, res) => {
   try {
     const [users] = await db.promise().query(
@@ -3073,7 +3069,7 @@ app.get('/api/users/:userId/active-cosmetics', async (req, res) => {
   }
 });
 
-// Equip a cosmetic
+// Aprīko kosmētiku
 app.post('/api/users/:userId/equip-cosmetic', requireAuth, async (req, res) => {
   const { userId } = req.params;
   const { cosmeticId, slot } = req.body;
@@ -3086,14 +3082,14 @@ app.post('/api/users/:userId/equip-cosmetic', requireAuth, async (req, res) => {
   }
 
   try {
-    // Verify ownership
+    // Pārbauda īpašumtiesības
     const [owned] = await db.promise().query(
       'SELECT id FROM user_cosmetics WHERE user_id = ? AND cosmetic_id = ?',
       [userId, cosmeticId]
     );
     if (owned.length === 0) return res.status(404).json({ message: 'Cosmetic not owned' });
 
-    // Verify cosmetic type matches slot
+    // Pārbauda, vai kosmētikas tips atbilst slotam
     const [cosmetic] = await db.promise().query('SELECT type FROM cosmetics WHERE id = ?', [cosmeticId]);
     if (cosmetic.length === 0) return res.status(404).json({ message: 'Cosmetic not found' });
     if (cosmetic[0].type !== slot) return res.status(400).json({ message: 'Cosmetic type does not match slot' });
@@ -3108,7 +3104,7 @@ app.post('/api/users/:userId/equip-cosmetic', requireAuth, async (req, res) => {
   }
 });
 
-// Unequip a cosmetic
+// Noņem kosmētiku
 app.post('/api/users/:userId/unequip-cosmetic', requireAuth, async (req, res) => {
   const { userId } = req.params;
   const { slot } = req.body;
@@ -3130,7 +3126,7 @@ app.post('/api/users/:userId/unequip-cosmetic', requireAuth, async (req, res) =>
   }
 });
 
-// Get full cosmetics catalog with sources
+// Iegūst pilnu kosmētikas katalogu ar avotiem
 app.get('/api/cosmetics/catalog', async (req, res) => {
   try {
     const [cosmetics] = await db.promise().query('SELECT * FROM cosmetics ORDER BY type, rarity DESC, name');
@@ -3153,7 +3149,7 @@ app.get('/api/cosmetics/catalog', async (req, res) => {
   }
 });
 
-// Admin: Create cosmetic
+// Administrators: izveidot kosmētiku
 app.post('/api/admin/cosmetics', requireAuth, requireAdmin, async (req, res) => {
   const { name, description, type, effect_key, config, preview_image, rarity } = req.body;
   if (!name?.trim() || !type || !effect_key?.trim()) {
@@ -3172,7 +3168,7 @@ app.post('/api/admin/cosmetics', requireAuth, requireAdmin, async (req, res) => 
   }
 });
 
-// Admin: Update cosmetic
+// Administrators: atjaunināt kosmētiku
 app.put('/api/admin/cosmetics/:id', requireAuth, requireAdmin, async (req, res) => {
   const { name, description, type, effect_key, config, preview_image, rarity } = req.body;
   try {
@@ -3188,7 +3184,7 @@ app.put('/api/admin/cosmetics/:id', requireAuth, requireAdmin, async (req, res) 
   }
 });
 
-// Admin: Delete cosmetic
+// Administrators: dzēst kosmētiku
 app.delete('/api/admin/cosmetics/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     await db.promise().query('DELETE FROM cosmetics WHERE id = ?', [req.params.id]);
@@ -3199,7 +3195,7 @@ app.delete('/api/admin/cosmetics/:id', requireAuth, requireAdmin, async (req, re
   }
 });
 
-// Admin: Award cosmetic to user
+// Administrators: piešķirt lietotājam kosmētiku
 app.post('/api/admin/cosmetics/:id/award', requireAuth, requireAdmin, async (req, res) => {
   const { userId: targetUserId } = req.body;
   if (!targetUserId) return res.status(400).json({ message: 'userId is required' });
@@ -3218,7 +3214,7 @@ app.post('/api/admin/cosmetics/:id/award', requireAuth, requireAdmin, async (req
   }
 });
 
-// Admin: Get all cosmetic sources
+// Administrators: iegūt visus kosmētikas avotus
 app.get('/api/admin/cosmetic-sources', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [rows] = await db.promise().query('SELECT * FROM cosmetic_sources ORDER BY cosmetic_id, source_type');
@@ -3229,7 +3225,7 @@ app.get('/api/admin/cosmetic-sources', requireAuth, requireAdmin, async (req, re
   }
 });
 
-// Admin: Link cosmetic to source (quiz or milestone)
+// Administrators: saistīt kosmētiku ar avotu (viktorīnu vai sasniegumu)
 app.post('/api/admin/cosmetic-sources', requireAuth, requireAdmin, async (req, res) => {
   const { cosmetic_id, source_type, quiz_id, min_score, milestone_type, milestone_value } = req.body;
   if (!cosmetic_id || !source_type) return res.status(400).json({ message: 'cosmetic_id and source_type are required' });
@@ -3245,7 +3241,7 @@ app.post('/api/admin/cosmetic-sources', requireAuth, requireAdmin, async (req, r
   }
 });
 
-// Admin: Delete cosmetic source
+// Administrators: dzēst kosmētikas avotu
 app.delete('/api/admin/cosmetic-sources/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     await db.promise().query('DELETE FROM cosmetic_sources WHERE id = ?', [req.params.id]);
@@ -3256,7 +3252,7 @@ app.delete('/api/admin/cosmetic-sources/:id', requireAuth, requireAdmin, async (
   }
 });
 
-// Get user's profile comments (comments posted by the user)
+// Iegūst lietotāja profila komentārus (lietotāja publicētos komentārus)
 app.get('/api/users/:userId/comments', async (req, res) => {
   const { userId } = req.params;
 
@@ -3287,7 +3283,7 @@ db.connect(err => {
   if (err) throw err;
   console.log('MySQL connected');
   
-  // Create user_favorites table if not exists
+  // Izveido user_favorites tabulu, ja tā neeksistē
   db.query(`CREATE TABLE IF NOT EXISTS user_favorites (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3300,7 +3296,7 @@ db.connect(err => {
     else console.log('user_favorites table ready');
   });
 
-  // Create quizzes table
+  // Izveido quizzes tabulu
   db.query(`CREATE TABLE IF NOT EXISTS quizzes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
@@ -3318,7 +3314,7 @@ db.connect(err => {
     else console.log('quizzes table ready');
   });
 
-  // Add new columns to quizzes table if they don't exist (migration)
+  // Pievieno jaunas kolonnas quizzes tabulai, ja tās neeksistē (migrācija)
   const quizColumns = [
     "ALTER TABLE quizzes ADD COLUMN category VARCHAR(50) DEFAULT 'series'",
     "ALTER TABLE quizzes ADD COLUMN difficulty VARCHAR(20) DEFAULT 'medium'",
@@ -3332,10 +3328,10 @@ db.connect(err => {
     db.query(sql, () => {}); // Ignore errors if column already exists
   }
 
-  // Migrate user_badges to support multiple badge types per quiz
+  // Migrē user_badges, lai atbalstītu vairākus žetonu tipus katrai viktorīnai
   db.query("ALTER TABLE user_badges ADD COLUMN badge_type VARCHAR(20) NOT NULL DEFAULT 'default'", () => {});
 
-  // Create quiz_questions table
+  // Izveido quiz_questions tabulu
   db.query(`CREATE TABLE IF NOT EXISTS quiz_questions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     quiz_id INT NOT NULL,
@@ -3356,12 +3352,12 @@ db.connect(err => {
     else console.log('quiz_questions table ready');
   });
 
-  // Migrate existing quiz_questions table to support up to 8 options
+  // Migrē esošo quiz_questions tabulu, lai atbalstītu līdz 8 opcijām
   ['option_e', 'option_f', 'option_g', 'option_h'].forEach(col => {
     db.query(`ALTER TABLE quiz_questions ADD COLUMN ${col} VARCHAR(255)`, () => {});
   });
 
-  // Create user_badges table (unified: quiz badges + standalone badges)
+  // Izveido user_badges tabulu (vienota: viktorīnu žetoni + atsevišķie žetoni)
   db.query(`CREATE TABLE IF NOT EXISTS user_badges (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3379,7 +3375,7 @@ db.connect(err => {
     else console.log('user_badges table ready');
   });
 
-  // Migration: add new columns to user_badges if upgrading from old schema
+  // Migrācija: pievieno jaunas kolonnas user_badges tabulai, ja atjaunina no vecās shēmas
   db.query("ALTER TABLE user_badges ADD COLUMN badge_source VARCHAR(20) NOT NULL DEFAULT 'quiz'", () => {});
   db.query("ALTER TABLE user_badges ADD COLUMN source_id INT DEFAULT NULL", () => {});
   db.query("ALTER TABLE user_badges ADD COLUMN awarded_by INT DEFAULT NULL", () => {});
@@ -3387,7 +3383,7 @@ db.connect(err => {
   db.query("ALTER TABLE user_badges ADD COLUMN badge_name_override VARCHAR(255)", () => {});
   db.query("UPDATE user_badges SET source_id = quiz_id WHERE source_id IS NULL AND quiz_id IS NOT NULL", () => {});
 
-  // Standalone badges (admin-created badge definitions)
+  // Atsevišķie žetoni (administratora izveidotas žetonu definīcijas)
   db.query(`CREATE TABLE IF NOT EXISTS standalone_badges (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -3401,7 +3397,7 @@ db.connect(err => {
     else console.log('standalone_badges table ready');
   });
 
-  // Create quiz_attempts table (track all attempts)
+  // Izveido quiz_attempts tabulu (seko visiem mēģinājumiem)
   db.query(`CREATE TABLE IF NOT EXISTS quiz_attempts (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3415,7 +3411,7 @@ db.connect(err => {
     else console.log('quiz_attempts table ready');
   });
 
-  // Create user_shows table (replaces watched_shows + followed_shows)
+  // Izveido user_shows tabulu (aizstāj watched_shows + followed_shows)
   db.query(`CREATE TABLE IF NOT EXISTS user_shows (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3431,7 +3427,7 @@ db.connect(err => {
     else console.log('user_shows table ready');
   });
 
-  // Create watched_episodes table
+  // Izveido watched_episodes tabulu
   db.query(`CREATE TABLE IF NOT EXISTS watched_episodes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3446,7 +3442,7 @@ db.connect(err => {
     else console.log('watched_episodes table ready');
   });
 
-  // Create user_follows table (follow other users)
+  // Izveido user_follows tabulu (sekošana citiem lietotājiem)
   db.query(`CREATE TABLE IF NOT EXISTS user_follows (
     id INT PRIMARY KEY AUTO_INCREMENT,
     follower_id INT NOT NULL,
@@ -3460,7 +3456,7 @@ db.connect(err => {
     else console.log('user_follows table ready');
   });
 
-  // Create notifications table
+  // Izveido notifications tabulu
   db.query(`CREATE TABLE IF NOT EXISTS notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3475,31 +3471,31 @@ db.connect(err => {
     else console.log('notifications table ready');
   });
 
-  // Add selected_badge_id column to users if not exists
+  // Pievieno selected_badge_id kolonnu users tabulai, ja tā neeksistē
   db.query(`ALTER TABLE users ADD COLUMN selected_badge_id INT`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for selected_badge_id');
   });
 
-  // Add is_banned column to users if not exists
+  // Pievieno is_banned kolonnu users tabulai, ja tā neeksistē
   db.query(`ALTER TABLE users ADD COLUMN is_banned TINYINT DEFAULT 0`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for is_banned');
   });
 
-  // Add created_at column to users if not exists
+  // Pievieno created_at kolonnu users tabulai, ja tā neeksistē
   db.query(`ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for created_at');
   });
 
-  // Add avatar_config column to users if not exists
+  // Pievieno avatar_config kolonnu users tabulai, ja tā neeksistē
   db.query(`ALTER TABLE users ADD COLUMN avatar_config TEXT DEFAULT NULL`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for avatar_config');
   });
 
-  // Create cosmetics table (catalog of all cursor trails and background effects)
+  // Izveido cosmetics tabulu (visu kursora pēdu un fona efektu katalogs)
   db.query(`CREATE TABLE IF NOT EXISTS cosmetics (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
@@ -3515,7 +3511,7 @@ db.connect(err => {
     else console.log('cosmetics table ready');
   });
 
-  // Create cosmetic_sources table (how cosmetics are earned)
+  // Izveido cosmetic_sources tabulu (kā kosmētika tiek nopelnīta)
   db.query(`CREATE TABLE IF NOT EXISTS cosmetic_sources (
     id INT PRIMARY KEY AUTO_INCREMENT,
     cosmetic_id INT NOT NULL,
@@ -3531,7 +3527,7 @@ db.connect(err => {
     else console.log('cosmetic_sources table ready');
   });
 
-  // Create user_cosmetics table (earned inventory)
+  // Izveido user_cosmetics tabulu (nopelnītais inventārs)
   db.query(`CREATE TABLE IF NOT EXISTS user_cosmetics (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -3546,7 +3542,7 @@ db.connect(err => {
     else console.log('user_cosmetics table ready');
   });
 
-  // Add active cosmetic columns to users
+  // Pievieno aktīvās kosmētikas kolonnas users tabulai
   db.query(`ALTER TABLE users ADD COLUMN active_cursor_trail INT DEFAULT NULL`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for active_cursor_trail');
@@ -3557,9 +3553,9 @@ db.connect(err => {
   });
 });
 
-// ==================== ADMIN ENDPOINTS ====================
+// ==================== ADMINISTRATORA GALAPUNKTI ====================
 
-// Get all users (admin)
+// Iegūst visus lietotājus (administrators)
 app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [users] = await db.promise().query(
@@ -3572,7 +3568,7 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// Update user role (admin)
+// Atjaunina lietotāja lomu (administrators)
 app.put('/api/admin/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
@@ -3591,7 +3587,7 @@ app.put('/api/admin/users/:id/role', requireAuth, requireAdmin, async (req, res)
   }
 });
 
-// Ban/unban user (admin)
+// Bloķē/atbloķē lietotāju (administrators)
 app.put('/api/admin/users/:id/ban', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { banned } = req.body;
@@ -3607,7 +3603,7 @@ app.put('/api/admin/users/:id/ban', requireAuth, requireAdmin, async (req, res) 
   }
 });
 
-// Delete user (admin)
+// Dzēš lietotāju (administrators)
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   if (parseInt(id) === req.userId) {
@@ -3622,7 +3618,7 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) =
   }
 });
 
-// Get all badges with stats (admin)
+// Iegūst visus žetonus ar statistiku (administrators)
 app.get('/api/admin/badges', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [badges] = await db.promise().query(
@@ -3639,7 +3635,7 @@ app.get('/api/admin/badges', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// Get all reviews with user info (admin)
+// Iegūst visas atsauksmes ar lietotāja informāciju (administrators)
 app.get('/api/admin/reviews', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [reviews] = await db.promise().query(
@@ -3658,7 +3654,7 @@ app.get('/api/admin/reviews', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// Site stats (admin)
+// Vietnes statistika (administrators)
 app.get('/api/admin/stats', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [[userCount]] = await db.promise().query('SELECT COUNT(*) AS count FROM users');
@@ -3677,7 +3673,7 @@ app.get('/api/admin/stats', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// Add quote (admin)
+// Pievieno citātu (administrators)
 app.post('/api/admin/quotes', requireAuth, requireAdmin, async (req, res) => {
   const { text, author } = req.body;
   if (!text || !text.trim()) {
@@ -3693,10 +3689,10 @@ app.post('/api/admin/quotes', requireAuth, requireAdmin, async (req, res) => {
 });
 
 
-// Serve frontend (SPA fallback) - keep only at the end
+// Servē priekšgalsistēmu (SPA rezerves ceļš) - turēt tikai beigās
 app.use(express.static(path.join(__dirname, "dist")));
 
-// Catch-all: serve index.html for SPA (Express 5 compatible)
+// Visu pārķerošais: servē index.html SPA lietotnei (saderīgs ar Express 5)
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });

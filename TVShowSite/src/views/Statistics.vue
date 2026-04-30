@@ -1,82 +1,22 @@
-﻿<template>
+<template>
   <div class="stats-page">
 
-    <!-- ── Hero ── -->
-    <section class="hero" ref="hero">
-      <div class="hero-wave" aria-hidden="true"></div>
-      <div class="hero-chart-line" aria-hidden="true">
-        <svg class="hero-chart-svg" viewBox="0 0 2400 170" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <defs></defs>
-          <!-- tile 1: ECG heartbeat — flat baseline, sharp dip, tall spike, rebound, flat -->
-          <path fill="rgba(255,255,255,0.012)" d="
-            M0,88
-            L62,88 L70,110 L80,24 L90,152 L98,84 L130,84
-            L175,84 L180,92 L188,58 L194,140 L200,80 L240,80
-            L310,80 L318,98 L326,12 L338,158 L348,76 L390,76
-            L430,76 L436,86 L445,68 L452,104 L460,78 L500,78
-            L558,78 L564,116 L574,18 L586,148 L596,82 L640,82
-            L685,82 L692,94 L700,44 L710,136 L718,88 L745,88
-            L800,88 L808,72 L818,8 L830,162 L840,84 L880,84
-            L920,84 L926,108 L934,50 L944,130 L952,80 L990,80
-            L1045,80 L1052,90 L1062,26 L1074,154 L1084,78 L1120,78
-            L1160,78 L1165,96 L1174,62 L1182,120 L1190,82 L1200,82
-            L1200,170 L0,170 Z"/>
-          <path fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="square" d="
-            M0,88
-            L62,88 L70,110 L80,24 L90,152 L98,84 L130,84
-            L175,84 L180,92 L188,58 L194,140 L200,80 L240,80
-            L310,80 L318,98 L326,12 L338,158 L348,76 L390,76
-            L430,76 L436,86 L445,68 L452,104 L460,78 L500,78
-            L558,78 L564,116 L574,18 L586,148 L596,82 L640,82
-            L685,82 L692,94 L700,44 L710,136 L718,88 L745,88
-            L800,88 L808,72 L818,8 L830,162 L840,84 L880,84
-            L920,84 L926,108 L934,50 L944,130 L952,80 L990,80
-            L1045,80 L1052,90 L1062,26 L1074,154 L1084,78 L1120,78
-            L1160,78 L1165,96 L1174,62 L1182,120 L1190,82 L1200,82"/>
-          <!-- tile 2: different beat pattern for seamless loop -->
-          <path fill="rgba(255,255,255,0.012)" d="
-            M1200,82
-            L1255,82 L1262,106 L1272,30 L1282,150 L1290,86 L1325,86
-            L1370,86 L1376,78 L1386,16 L1398,160 L1408,80 L1450,80
-            L1495,80 L1502,100 L1512,54 L1522,138 L1530,82 L1565,82
-            L1605,82 L1612,90 L1622,42 L1632,128 L1640,84 L1680,84
-            L1730,84 L1736,112 L1746,22 L1758,156 L1768,78 L1810,78
-            L1855,78 L1860,88 L1870,60 L1878,116 L1886,80 L1920,80
-            L1965,80 L1972,70 L1982,10 L1994,164 L2004,82 L2045,82
-            L2090,82 L2097,96 L2106,36 L2118,146 L2128,76 L2165,76
-            L2210,76 L2216,102 L2226,48 L2236,132 L2244,84 L2280,84
-            L2340,84 L2346,90 L2358,32 L2370,154 L2380,88 L2400,88
-            L2400,170 L1200,170 Z"/>
-          <path fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="square" d="
-            M1200,82
-            L1255,82 L1262,106 L1272,30 L1282,150 L1290,86 L1325,86
-            L1370,86 L1376,78 L1386,16 L1398,160 L1408,80 L1450,80
-            L1495,80 L1502,100 L1512,54 L1522,138 L1530,82 L1565,82
-            L1605,82 L1612,90 L1622,42 L1632,128 L1640,84 L1680,84
-            L1730,84 L1736,112 L1746,22 L1758,156 L1768,78 L1810,78
-            L1855,78 L1860,88 L1870,60 L1878,116 L1886,80 L1920,80
-            L1965,80 L1972,70 L1982,10 L1994,164 L2004,82 L2045,82
-            L2090,82 L2097,96 L2106,36 L2118,146 L2128,76 L2165,76
-            L2210,76 L2216,102 L2226,48 L2236,132 L2244,84 L2280,84
-            L2340,84 L2346,90 L2358,32 L2370,154 L2380,88 L2400,88"/>
-        </svg>
+    <!-- ── Galvene ── -->
+    <HeroBand variant="statistics" ref="hero">
+      <div class="hero-text">
+        <h1>{{ t('siteStatistics') }}</h1>
+        <p>{{ t('browsePopular') }}</p>
       </div>
-      <div class="hero-inner">
-        <div class="hero-text">
-          <h1>{{ t('siteStatistics') }}</h1>
-          <p>{{ t('browsePopular') }}</p>
-        </div>
-      </div>
-    </section>
+    </HeroBand>
 
-    <!-- ── Stats Frame: clips gradient + panel to same rounded rect ── -->
+    <!-- ── Statistikas rāmis: apgriež gradientu un paneli vienā noapaļotā taisnstūrī ── -->
     <div class="stats-frame">
       <div class="glass-gradient" aria-hidden="true"></div>
 
-    <!-- ── Stats Canvas (background panel) ── -->
+    <!-- ── Statistikas audekls (fona panelis) ── -->
     <div class="stats-canvas">
 
-    <!-- ── Site Section Header ── -->
+    <!-- ── Vietnes sadaļas galvene ── -->
     <div class="section-divider section-site reveal" data-delay="0">
       <div class="sd-inner sd-float">
         <div class="sd-icon"><SvgIcon name="globe" :size="18" /></div>
@@ -87,7 +27,7 @@
       </div>
     </div>
 
-    <!-- ── Top KPI Cards ── -->
+    <!-- ── Augšējās KPI kartītes ── -->
     <div class="kpi-row">
       <div class="kpi-card kpi-green reveal" data-delay="0">
         <div class="kpi-top">
@@ -138,7 +78,7 @@
       </div>
     </div>
 
-    <!-- ── Middle Row: Doughnut + Area Chart ── -->
+    <!-- ── Vidējā rinda: riņķa diagramma + laukuma diagramma ── -->
     <div class="mid-row">
       <div class="panel panel-donut reveal" data-delay="0">
         <div class="panel-hd">
@@ -172,7 +112,7 @@
       </div>
     </div>
 
-    <!-- ── User Section Header ── -->
+    <!-- ── Lietotāja sadaļas galvene ── -->
     <div class="section-divider section-user reveal" data-delay="0">
       <div class="sd-inner sd-float">
         <div class="sd-icon sd-icon-user"><SvgIcon name="user" :size="18" /></div>
@@ -190,7 +130,7 @@
       </div>
     </div>
 
-    <!-- ── Bottom Row ── -->
+    <!-- ── Apakšējā rinda ── -->
     <div class="bot-row" id="userExportArea">
       <div class="panel panel-profit reveal" data-delay="0">
         <div class="panel-hd">
@@ -260,12 +200,13 @@ import { Chart, registerables } from 'chart.js';
 import axios from 'axios';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 import SvgIcon from '@/components/SvgIcon.vue';
+import HeroBand from '@/components/HeroBand.vue';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 Chart.register(...registerables);
 
 export default {
-  components: { SvgIcon },
+  components: { SvgIcon, HeroBand },
   data() {
     return {
       isLoggedIn: false,
@@ -367,15 +308,16 @@ export default {
             backgroundColor: ['rgba(112,233,116,0.85)', 'rgba(70,210,150,0.85)', 'rgba(60,190,120,0.85)'],
             borderColor: ['rgba(112,233,116,1)', 'rgba(70,210,150,1)', 'rgba(60,190,120,1)'],
             borderWidth: 2,
-            hoverOffset: 10,
+            hoverOffset: 4,
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           cutout: '72%',
+          layout: { padding: 18 },
           animation: { duration: 1200, easing: 'easeOutQuart' },
-          plugins: { legend: { display: false }, tooltip: this._tooltipStyle() },
+          plugins: { legend: { display: false }, tooltip: this._donutTooltipStyle() },
         }
       });
     },
@@ -559,6 +501,45 @@ export default {
       };
     },
 
+    _donutTooltipStyle() {
+      const base = this._tooltipStyle();
+      return {
+        ...base,
+        padding: 10,
+        titleFont: { size: 11, weight: '700' },
+        bodyFont: { size: 11 },
+        callbacks: {
+          title: (items) => this._wrapTooltipText(items?.[0]?.label || ''),
+          label: (context) => {
+            const index = context.dataIndex;
+            if (index === 0) return `${this.t('highestRated')}: ${this.formatRating(this.siteStats.highestRated)}/5`;
+            if (index === 1) return `${this.t('mostReviewed')}: ${this.siteStats.mostReviewed?.review_count || 0} ${this.t('reviews')}`;
+            if (index === 2) return `${this.t('lowestRated')}: ${this.formatRating(this.siteStats.lowestRated)}/5`;
+            return '';
+          }
+        }
+      };
+    },
+
+    _wrapTooltipText(text) {
+      const words = String(text || '').split(' ');
+      const lines = [];
+      let line = '';
+
+      words.forEach(word => {
+        const next = line ? `${line} ${word}` : word;
+        if (next.length > 20 && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = next;
+        }
+      });
+
+      if (line) lines.push(line);
+      return lines.slice(0, 3);
+    },
+
     async downloadStatsPdf() {
       if (!this.isLoggedIn || !this.hasEnoughReviews) return;
       try {
@@ -569,7 +550,7 @@ export default {
         const username = auth?.user?.username || 'user';
         const filename = `TVshow-Personal-Stats-${username}-${new Date().toISOString().slice(0,10)}.pdf`;
 
-        // Build a clean, printable export element (white background, tidy layout)
+        // Veido tīru, drukājamu eksporta elementu (balts fons, sakārtots izkārtojums)
         const exportEl = document.createElement('div');
         exportEl.style.boxSizing = 'border-box';
         exportEl.style.padding = '22px';
@@ -579,7 +560,7 @@ export default {
         exportEl.style.fontFamily = 'Helvetica, Arial, sans-serif';
         exportEl.style.fontSize = '13px';
 
-        // Header
+        // Galvene
         const header = document.createElement('div');
         header.style.display = 'flex';
         header.style.justifyContent = 'space-between';
@@ -594,7 +575,7 @@ export default {
         `;
         exportEl.appendChild(header);
 
-        // User KPI row (simple cards)
+        // Lietotāja KPI rinda (vienkāršas kartītes)
         const kpiRow = document.createElement('div');
         kpiRow.style.display = 'flex';
         kpiRow.style.gap = '12px';
@@ -617,8 +598,8 @@ export default {
         kpiRow.appendChild(makeKpi(this.t('notYourStyle') || 'Not your style', `${this.formatRating(us.lowestRated)}/5`, '#c96b2b'));
         exportEl.appendChild(kpiRow);
 
-        // Helper: render an existing canvas to a dataURL at higher resolution
-        // Preserves chart contrast by painting the chart panel background
+        // Palīgs: atveido esošu audeklu par dataURL augstākā izšķirtspējā
+        // Saglabā diagrammas kontrastu, krāsojot diagrammas paneļa fonu
         const canvasToDataUrl = (canvas, targetWidth = 920) => {
           if (!canvas) return null;
           const rect = canvas.getBoundingClientRect();
@@ -630,7 +611,7 @@ export default {
           temp.height = cssH * scale;
           const tctx = temp.getContext('2d');
 
-          // Determine a solid background color from the nearest panel (fallback to dark)
+          // Nosaka vienkrāsainu fonu no tuvākā paneļa (rezervē tumšu)
           let bgColor = '#06140a';
           try {
             const panelEl = canvas.closest && canvas.closest('.panel') || canvas.parentElement || document.body;
@@ -646,20 +627,20 @@ export default {
               }
             }
           } catch (e) {
-            /* ignore and use fallback */
+            /* Ignorē un izmanto rezerves variantu */
           }
 
           tctx.fillStyle = bgColor;
           tctx.fillRect(0, 0, temp.width, temp.height);
 
-          // draw using the canvas's internal pixel size to preserve clarity
+          // Zīmē ar audekla iekšējo pikseļu izmēru, lai saglabātu asumu
           const srcW = canvas.width || cssW;
           const srcH = canvas.height || cssH;
           tctx.drawImage(canvas, 0, 0, srcW, srcH, 0, 0, temp.width, temp.height);
           return temp.toDataURL('image/png');
         };
 
-        // Attach charts (profit + userBar) as high-res images
+        // Pievieno diagrammas (profit + userBar) kā augstas izšķirtspējas attēlus
         const chartIds = ['profitChart', 'userBarChart'];
         for (const id of chartIds) {
           const c = this.$el.querySelector(`#${id}`);
@@ -676,15 +657,15 @@ export default {
           }
         }
 
-        // Place the export element off-screen for rendering
+        // Novieto eksporta elementu ārpus ekrāna atveidošanai
         exportEl.style.position = 'fixed';
         exportEl.style.left = '-9999px';
         document.body.appendChild(exportEl);
 
-        // Allow images to settle
+        // Ļauj attēliem nostabilizēties
         await new Promise(r => setTimeout(r, 120));
 
-        // Render exportEl to a canvas and then split into A4 pages if needed
+        // Atveido exportEl audeklā un pēc tam, ja vajag, sadala A4 lapās
         const rendered = await html2canvas(exportEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
         const imgData = rendered.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
@@ -699,7 +680,7 @@ export default {
         if (renderedHeightPt <= pdfH) {
           pdf.addImage(imgData, 'PNG', 10, 10, pdfW, renderedHeightPt);
         } else {
-          // slice vertically into pages
+          // Vertikāli sadala lapās
           let position = 0;
           const pageHeightPx = Math.floor(pdfH / pxToPt);
           while (position < imgHpx) {
@@ -763,7 +744,8 @@ export default {
     },
 
     initHeroWave() {
-      const hero = this.$refs.hero;
+      const heroRef = this.$refs.hero;
+      const hero = heroRef?.$el || heroRef;
       if (!hero) return;
       const wave = hero.querySelector('.hero-wave');
       if (!wave) return;
@@ -794,7 +776,7 @@ export default {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Age all points
+        // Novecina visus punktus
         for (let i = trail.length - 1; i >= 0; i--) {
           trail[i].age += dt;
           if (trail[i].age >= MAX_TRAIL_AGE) trail.splice(i, 1);
@@ -806,7 +788,7 @@ export default {
           return;
         }
 
-        // Draw continuous trail as connected segments
+        // Zīmē nepārtrauktu pēdu kā savienotus segmentus
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.filter = 'blur(4px)';
@@ -814,7 +796,7 @@ export default {
         for (let i = 1; i < trail.length; i++) {
           const p0 = trail[i - 1];
           const p1 = trail[i];
-          // Use the younger (newer) point's age for this segment
+          // Šim segmentam izmanto jaunākā punkta vecumu
           const life = 1 - p0.age / MAX_TRAIL_AGE;
           if (life <= 0) continue;
 
@@ -847,7 +829,7 @@ export default {
         }
       };
       this._heroLeaveHandler = () => {
-        // Trail keeps fading naturally via age — no special handling needed
+        // Pēda dabiski dziest pēc vecuma — īpaša apstrāde nav vajadzīga
       };
 
       hero.addEventListener('mousemove', this._heroMoveHandler);
@@ -871,7 +853,6 @@ export default {
     this.$nextTick(() => {
         this.initParallax();
         this.initTilt();
-        this.initHeroWave();
       });
   },
 
@@ -884,28 +865,21 @@ export default {
         card.removeEventListener('mouseleave', onLeave);
       });
     }
-    if (this._heroWaveRaf) cancelAnimationFrame(this._heroWaveRaf);
-    if (this._heroResizeObs) this._heroResizeObs.disconnect();
-    const hero = this.$refs.hero;
-    if (hero) {
-      hero.removeEventListener('mousemove', this._heroMoveHandler);
-      hero.removeEventListener('mouseleave', this._heroLeaveHandler);
-    }
     [this.donutChart, this.siteChart, this.profitChart, this.userBarChart].forEach(c => c?.destroy());
   }
 };
 </script>
 
 <style scoped>
-/* Reset global div table layout for this page */
+/* Atiestata globālo div tabulas izkārtojumu šai lapai */
 div {
   display: revert;
   width: revert;
   table-layout: revert;
 }
 
-/* ═══ PAGE ═══ */
-/* Outer frame: clips the gradient and the canvas to the same rounded rect */
+/* ═══ LAPA ═══ */
+/* Ārējais rāmis: apgriež gradientu un audeklu vienā noapaļotā taisnstūrī */
 .stats-frame {
   max-width: 1340px;
   margin: 2rem auto 3rem;
@@ -915,7 +889,7 @@ div {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Gradient behind the canvas — backdrop-filter will blur it */
+/* Gradients aiz audekla — backdrop-filter to izpludinās */
 .glass-gradient {
   position: absolute;
   inset: 0;
@@ -943,7 +917,7 @@ div {
     inset 0 0 10px 5px rgba(255, 255, 255, 0.08);
 }
 
-/* top edge highlight line */
+/* Augšējās malas izgaismojuma līnija */
 .stats-canvas::before {
   content: '';
   position: absolute;
@@ -955,7 +929,7 @@ div {
   pointer-events: none;
 }
 
-/* left edge highlight line */
+/* Kreisās malas izgaismojuma līnija */
 .stats-canvas::after {
   content: '';
   position: absolute;
@@ -974,7 +948,7 @@ div {
   position: relative;
 }
 
-/* ═══ SECTION DIVIDERS ═══ */
+/* ═══ SADAĻU ATDALĪTĀJI ═══ */
 .section-divider {
   width: auto;
   margin: 2.5rem auto 1.25rem;
@@ -1072,7 +1046,7 @@ div {
   opacity: 0.45;
 }
 
-/* ═══ HERO ═══ */
+/* ═══ GALVENE ═══ */
 .hero {
   background: var(--hero-gradient);
   padding: 20px 1.5rem;
@@ -1086,7 +1060,7 @@ div {
   min-height: 100px;
 }
 
-/* subtle gradient overlay inside hero */
+/* Smalks gradienta pārklājums galvenē */
 .hero::before {
   content: '';
   position: absolute;
@@ -1104,7 +1078,7 @@ div {
   z-index: 2;
 }
 
-/* shimmer sweep */
+/* Mirdzuma pārvilciens */
 .hero::after {
   content: '';
   position: absolute;
@@ -1147,11 +1121,11 @@ div {
 
 .hero-inner h1, .hero-text h1 {
   margin: 0 0 2px;
-  font-size: 50px;
+  font-size: clamp(1.2rem, 2.8vw, 1.9rem);
   font-weight: 800;
   color: var(--text-color);
   text-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  animation: textSlideUp 0.7s cubic-bezier(0.16,0.84,0.24,1) both;
+  animation: statsHeroTextFloat 5.8s ease-in-out infinite;
 }
 
 .hero-inner p, .hero-text p {
@@ -1159,10 +1133,11 @@ div {
   font-size: 18px;
   color: var(--subtitle-color);
   opacity: 0.85;
-  animation: textSlideUp 0.7s 0.12s cubic-bezier(0.16,0.84,0.24,1) both;
+  animation: statsHeroTextFloat 6.2s ease-in-out infinite;
+  animation-delay: -1.8s;
 }
 
-/* ═══ HERO CHART LINE ═══ */
+/* ═══ GALVENES DIAGRAMMAS LĪNIJA ═══ */
 .hero-chart-line {
   position: absolute;
   inset: 0;
@@ -1186,7 +1161,7 @@ div {
   to   { transform: translateX(-50%); }
 }
 
-/* ═══ LAYOUT ═══ */
+/* ═══ IZKĀRTOJUMS ═══ */
 .kpi-row, .mid-row, .bot-row {
   max-width: 1300px;
   margin: 0 auto 1.5rem;
@@ -1199,17 +1174,22 @@ div {
 .mid-row { grid-template-columns: 300px 1fr; }
 .bot-row { grid-template-columns: 1fr 1fr; }
 
-/* rows that immediately follow a section divider need no extra top margin */
+/* Rindām uzreiz pēc sadaļas atdalītāja nevajag papildu augšējo malu */
 .section-divider + .kpi-row,
 .section-divider + .bot-row,
 .section-divider + .mid-row {
   margin-top: 0;
 }
 
-/* ═══ PARALLAX REVEAL ═══ */
+/* ═══ PARALAKSES PARĀDĪŠANA ═══ */
 @keyframes textSlideUp {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes statsHeroTextFloat {
+  0%, 100% { transform: translateY(0) scale(1); filter: saturate(1); }
+  50% { transform: translateY(-6px) scale(1.012); filter: saturate(1.08); }
 }
 
 .reveal {
@@ -1223,7 +1203,7 @@ div {
   transform: translateY(0) scale(1);
 }
 
-/* ═══ KPI CARDS ═══ */
+/* ═══ KPI KARTĪTES ═══ */
 .kpi-card {
   border-radius: 20px;
   padding: 22px 20px 0;
@@ -1294,7 +1274,7 @@ div {
 .kpi-wave { margin: auto 0 0; height: 50px; margin-left: -20px; margin-right: -20px; }
 .kpi-wave svg { width: 100%; height: 100%; display: block; }
 
-/* ═══ PANELS ═══ */
+/* ═══ PANEĻI ═══ */
 .panel {
   background-color: rgba(6, 10, 6, 0.62);
   background-image:
@@ -1320,7 +1300,7 @@ div {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  /* start after the rounded corner width to avoid the corner blob */
+  /* Sāk pēc noapaļotā stūra platuma, lai izvairītos no stūra laukuma */
   background: linear-gradient(90deg, transparent 20px, rgba(255,255,255,0.75) 50%, transparent calc(100% - 20px));
   pointer-events: none;
   z-index: 1;
@@ -1331,7 +1311,7 @@ div {
   position: absolute;
   top: 0; left: 0;
   width: 1px; height: 100%;
-  /* fade in below the rounded corner */
+  /* Pakāpeniski parādās zem noapaļotā stūra */
   background: linear-gradient(180deg, transparent 20px, rgba(255,255,255,0.55) 60px, transparent calc(100% - 20px));
   pointer-events: none;
   z-index: 1;
@@ -1357,7 +1337,7 @@ div {
 .leg-lbl { font-size: 0.75rem; color: var(--subtitle-color); opacity: 0.7; }
 
 /* Donut */
-.donut-wrap { position: relative; width: 200px; height: 200px; margin: 0 auto 20px; }
+.donut-wrap { position: relative; width: 230px; height: 230px; margin: 0 auto 20px; }
 .donut-wrap canvas { width: 100% !important; height: 100% !important; }
 
 .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
@@ -1373,15 +1353,15 @@ div {
 .chart-wrap canvas { width: 100% !important; height: 100% !important; }
 .chart-bar-wrap { height: 160px; margin-top: 14px; }
 
-/* PDF download button */
+/* PDF lejupielādes poga */
 .panel-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .pdf-btn { padding: 0.45rem 0.9rem; background: linear-gradient(135deg, var(--gradient-start), var(--medium-bg-color)); color: var(--text-color); border-radius: 10px; font-weight: 700; border: 1px solid rgba(112,233,116,0.18); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.15s; }
 .pdf-btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
 .pdf-btn:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
 
-/* Profit panel — inherits glass from .panel */
+/* Peļņas panelis — manto stikla efektu no .panel */
 
-/* ═══ LOGIN PROMPT ═══ */
+/* ═══ PIETEIKŠANĀS AICINĀJUMS ═══ */
 .login-prompt {
   display: flex;
   flex-direction: column;
@@ -1410,7 +1390,7 @@ div {
 
 .lp-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 16px rgba(112,233,116,0.1); border-color: rgba(112,233,116,0.4); }
 
-/* ═══ USER KPIs ═══ */
+/* ═══ LIETOTĀJA KPI ═══ */
 .user-kpis { display: flex; gap: 10px; margin-bottom: 0; }
 
 .uk-item {
@@ -1440,12 +1420,12 @@ div {
 h1 {
   padding: 0;
 }
-/* ═══ RESPONSIVE ═══ */
+/* ═══ RESPONSĪVAIS IZKĀRTOJUMS ═══ */
 @media (max-width: 1100px) {
   .kpi-row { grid-template-columns: repeat(2, 1fr); }
   .mid-row { grid-template-columns: 1fr; }
   .bot-row { grid-template-columns: 1fr; }
-  .donut-wrap { width: 180px; height: 180px; }
+  .donut-wrap { width: 200px; height: 200px; }
 }
 
 @media (max-width: 640px) {
@@ -1465,5 +1445,7 @@ h1 {
   .reveal { opacity: 1; transform: none; transition: none; }
   .hero::after { animation: none; }
   .hero-chart-svg { animation: none; }
+  .hero-inner h1, .hero-text h1, .hero-inner p, .hero-text p { animation: none; }
 }
 </style>
+

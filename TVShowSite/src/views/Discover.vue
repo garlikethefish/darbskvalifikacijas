@@ -1,13 +1,9 @@
 <template>
   <div class="discover-page">
-    <div class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1>{{ t('discoverTitle') }}</h1>
-          <p class="subtitle">{{ t('discoverSubtitle') }}</p>
-        </div>
-      </div>
-    </div>
+    <HeroBand variant="discover">
+      <h1>{{ t('discoverTitle') }}</h1>
+      <p class="subtitle">{{ t('discoverSubtitle') }}</p>
+    </HeroBand>
 
     <section v-if="loading" class="loading">{{ t('scanning') }}</section>
 
@@ -118,10 +114,11 @@
 <script>
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 import SvgIcon from '@/components/SvgIcon.vue'
+import HeroBand from '@/components/HeroBand.vue'
 
 export default {
   name: "Discover",
-  components: { SvgIcon },
+  components: { SvgIcon, HeroBand },
   data() {
     return {
       loading: true,
@@ -208,17 +205,17 @@ export default {
       this._loadingMore = false;
     },
     loadMore() {
-      // Add two full rows per click (fill partial row first if needed)
+      // Ar katru klikšķi pievieno divas pilnas rindas (ja vajag, vispirms aizpilda daļēju rindu)
       const cols = this.computeCols() || 1;
       const remainder = this.visible % cols;
       let toAdd = 0;
       if (remainder !== 0) {
-        // fill the partial row
+        // aizpilda daļējo rindu
         toAdd += (cols - remainder);
-        // then add two more full rows
+        // pēc tam pievieno vēl divas pilnas rindas
         toAdd += cols * 2;
       } else {
-        // no partial row, just add two rows
+        // nav daļējas rindas, vienkārši pievieno divas rindas
         toAdd += cols * 2;
       }
       this.visible = Math.min(this.visible + toAdd, this.recommendations.length);
@@ -227,7 +224,7 @@ export default {
       const grid = this.$refs.grid;
       if (!grid) return 1;
 
-      // Prefer measuring actual rendered cards in the first row
+      // Dod priekšroku faktiski atveidoto kartīšu mērīšanai pirmajā rindā
       const cards = grid.querySelectorAll('.show-card');
       if (cards.length > 0) {
         const firstTop = cards[0].offsetTop;
@@ -238,21 +235,21 @@ export default {
         if (count > 0) return count;
       }
 
-      // Fallback to width-based calculation
+      // Rezerves variants: aprēķins pēc platuma
       const gridWidth = grid.clientWidth;
-      const minCard = 200; // card width in CSS
+      const minCard = 200; // kartītes platums CSS
       return Math.max(1, Math.floor((gridWidth + 16) / (minCard + 16)));
     },
 
     updateColumns() {
       this.columns = this.computeCols();
 
-      // attach resize listener once
+      // Pievieno izmēra maiņas klausītāju vienreiz
       if (!this._hasResize) {
         window.addEventListener('resize', this.updateColumns);
         this._hasResize = true;
       }
-      // make sure observer is active if more items available
+      // Pārliecinās, ka novērotājs ir aktīvs, ja pieejami vēl vienumi
       this.$nextTick(() => {
         if (this.filteredRecommendations.length > this.visible) this.setupObserver();
       });
@@ -261,7 +258,7 @@ export default {
     ,clearFilters() {
       this.selectedGenre = '';
       this.selectedRating = 0;
-      // reset visible to initial count (but not greater than filtered length)
+      // Atiestata redzamo skaitu uz sākotnējo (bet ne lielāku par filtrēto garumu)
       this.visible = Math.min(10, this.filteredRecommendations.length || 10);
     }
     ,ensureVisibleWithinFiltered() {
@@ -293,7 +290,7 @@ export default {
   async mounted() {
     this.currentLanguage = getCurrentLanguage();
     await this.loadRecommendations();
-    // start intersection observer for autoload
+    // Palaiž intersection observer automātiskai ielādei
     this.setupObserver();
 
     this._languageChangedHandler = async (e) => {
@@ -314,11 +311,11 @@ export default {
 
 <style scoped>
 .discover-page {
-  overflow-x: hidden; /* prevent horizontal scroll */
+  overflow-x: hidden; /* Novērš horizontālo ritināšanu */
   box-sizing: border-box;
 }
 
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   margin-bottom: 2rem;
   overflow: hidden;
@@ -424,7 +421,7 @@ export default {
 .grid {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center; /* center incomplete last rows */
+  justify-content: center; /* Centrē nepilnās pēdējās rindas */
   gap: 1.25rem;
   align-items: flex-start;
 }
@@ -437,8 +434,8 @@ export default {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  padding: 0.9rem; /* inset content so image aligns with .info */
-  width: 200px; /* fixed card width helps centering last-row items */
+  padding: 0.9rem; /* Ieliek atkāpi saturam, lai attēls līdzinātos ar .info */
+  width: 200px; /* Fiksēts kartītes platums palīdz centrēt pēdējās rindas vienumus */
   min-width: 200px;
   min-height: 460px;
   position: relative;
@@ -455,7 +452,7 @@ export default {
 
 .show-card img {
   width: 100%;
-  aspect-ratio: 2 / 3; /* flexible height */
+  aspect-ratio: 2 / 3; /* Elastīgs augstums */
   object-fit: cover;
   display: block;
   border-radius: 10px;
@@ -523,7 +520,7 @@ export default {
 .info h3 {
   font-size: clamp(1rem, 2vw, 1.2rem);
   margin-bottom: 0.25rem;
-  word-break: break-word; /* prevents overflow */
+  word-break: break-word; /* Novērš pārplūdi */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -539,7 +536,7 @@ export default {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 1.3em; /* reserve single-line height */
+  min-height: 1.3em; /* rezervē vienas rindas augstumu */
 }
 
 .score {
@@ -556,7 +553,7 @@ export default {
   margin-bottom: 1rem;
   line-height: 1.2em;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* reserve space for 2 lines */
+  -webkit-line-clamp: 2; /* rezervē vietu 2 rindām */
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: break-word;
@@ -571,7 +568,7 @@ export default {
   color: var(--text-color);
   font-weight: bold;
   text-decoration: none;
-  margin-top: auto; /* push button to bottom */
+  margin-top: auto; /* Nobīda pogu uz apakšu */
   font-size: clamp(0.85rem, 1.5vw, 1rem);
   border: 1px solid rgba(112, 233, 116, 0.2);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -697,12 +694,12 @@ export default {
   animation: fadeUp 360ms cubic-bezier(.16,.84,.24,1) forwards;
   opacity: 0;
   will-change: transform, opacity;
-  /* faster stagger to avoid long sequential pop-in */
+  /* Ātrāka nobīde, lai izvairītos no ilgas secīgas parādīšanās */
   animation-delay: calc(var(--i) * 36ms);
 }
 
 @keyframes fadeUp {
-  /* pop + rotate entrance (faster feel) */
+  /* Parādīšanās ar uznirstošu un rotācijas efektu (ātrāka sajūta) */
   0% {
     opacity: 0;
     transform: translateY(18px) rotateX(10deg) scale(0.985);

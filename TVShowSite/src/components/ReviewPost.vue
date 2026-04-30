@@ -286,7 +286,7 @@ export default {
     avgStars() {
       return Math.round(this.averageRating);
     },
-    // Check if current user can delete this review
+    // Pārbauda, vai pašreizējais lietotājs var dzēst šo atsauksmi
     canDeleteReview() {
       if (!this.isLoggedIn) return false;
       return this.currentUsername === this.review.username || this.userRole === 'admin';
@@ -480,7 +480,7 @@ export default {
         this.isReacting = false;
       }
     },
-    // Check if current user can delete a comment
+    // Pārbauda, vai pašreizējais lietotājs var dzēst komentāru
     canDeleteComment(comment) {
       if (!this.isLoggedIn) return false;
       return this.currentUsername === comment.username || this.userRole === 'admin';
@@ -724,7 +724,7 @@ export default {
 
 
 <style scoped>
-/* Layout & Container Styles */
+/* Izkārtojuma un konteinera stili */
 .review-wrapper {
   display: flex;
   justify-content: center;
@@ -764,7 +764,7 @@ export default {
   margin-bottom: 0;
 }
 
-/* Series Section */
+/* Seriāla sadaļa */
 .series-section {
   background: linear-gradient(180deg, rgba(18, 20, 20, 0.8) 0%, var(--section-dark-color) 100%);
   max-width: 280px;
@@ -937,7 +937,7 @@ export default {
   cursor: wait;
 }
 
-/* Right Container */
+/* Labais konteiners */
 .right-container {
   display: flex;
   flex-direction: column;
@@ -947,7 +947,7 @@ export default {
   gap: 15px;
 }
 
-/* Top Section - User Info */
+/* Augšējā sadaļa - lietotāja informācija */
 .top-section {
   display: flex;
   align-items: flex-start;
@@ -1094,7 +1094,7 @@ export default {
   gap: 4px;
 }
 
-/* Delete Button */
+/* Dzēšanas poga */
 .review-delete-button {
   position: absolute;
   top: 0;
@@ -1125,7 +1125,7 @@ export default {
   height: 24px;
 }
 
-/* Content Section */
+/* Satura sadaļa */
 .content-section {
   display: flex;
   flex-direction: column;
@@ -1163,7 +1163,7 @@ export default {
   -webkit-box-orient: vertical;
 }
 
-/* Bottom Section - Actions */
+/* Apakšējā sadaļa - darbības */
 .bottom-section {
   display: flex;
   align-items: center;
@@ -1271,7 +1271,7 @@ export default {
   min-width: 20px;
 }
 
-/* Comments Section */
+/* Komentāru sadaļa */
 .comment-section {
   background: linear-gradient(180deg, rgba(30, 28, 39, 0.8) 0%, rgba(112, 233, 116, 0.05) 100%);
   border-top: 2px solid rgba(112, 233, 116, 0.2);
@@ -1450,7 +1450,7 @@ export default {
   background: rgba(255, 100, 100, 1);
 }
 
-/* Comment Input */
+/* Komentāra ievade */
 .comment-input {
   display: flex;
   width: 100%;
@@ -1504,7 +1504,7 @@ export default {
   transform: translateY(0);
 }
 
-/* Delete Modal */
+/* Dzēšanas modālais logs */
 .delete-modal {
   position: fixed;
   top: 0;
@@ -1592,14 +1592,14 @@ export default {
   border-color: var(--accent-color);
 }
 
-/* Button Resets */
+/* Pogu atiestatījumi */
 button {
   cursor: pointer;
   background-color: transparent;
   border: none;
 }
 
-/* Media Queries */
+/* Mediju vaicājumi */
 @media (max-width: 900px) {
   .review-container {
     flex-direction: column;

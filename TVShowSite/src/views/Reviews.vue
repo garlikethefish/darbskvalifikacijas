@@ -1,14 +1,10 @@
 <template>
   <div class="reviews-page">
-    <!-- Hero Section -->
-    <div class="hero">
-      <div class="hero-band">
-        <div class="hero-inner">
-          <h1>{{ t('communityReviews') }}</h1>
-          <p class="subtitle">{{ t('discoverReviews') }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- Galvenes sadaļa -->
+    <HeroBand variant="reviews">
+      <h1>{{ t('communityReviews') }}</h1>
+      <p class="subtitle">{{ t('discoverReviews') }}</p>
+    </HeroBand>
 
     <div class="controls-container">
       <div class="controls-wrapper">
@@ -110,11 +106,12 @@
 <script>
 import axios from 'axios'
 import ReviewPost from '@/components/ReviewPost.vue'
+import HeroBand from '@/components/HeroBand.vue'
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js'
 
 export default {
   name: 'Reviews',
-  components: { ReviewPost },
+  components: { ReviewPost, HeroBand },
   data() {
     return {
       reviews: [],
@@ -175,14 +172,14 @@ export default {
     filteredAndSortedReviews() {
       let filtered = [...this.reviews];
 
-      // Apply series title filter if coming from series detail page
+      // Pielieto seriāla nosaukuma filtru, ja nāk no seriāla detaļu lapas
       if (this.seriesTitleFilter) {
         filtered = filtered.filter(review => 
           review.series_title === this.seriesTitleFilter
         );
       }
 
-      // Apply filters
+      // Pielieto filtrus
       if (this.selectedFilters.users.length > 0) {
         filtered = filtered.filter(review => 
           this.selectedFilters.users.includes(review.username)
@@ -207,7 +204,7 @@ export default {
         );
       }
 
-      // Apply sorting
+      // Pielieto kārtošanu
       switch (this.selectedSort) {
         case 'date-asc':
           filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -257,7 +254,7 @@ export default {
       this.filterOptions.users = Array.from(users).sort();
       this.filterOptions.series = Array.from(series).sort();
       this.filterOptions.episodes = Array.from(episodes).sort();
-      // ensure visibleReviews isn't larger than available
+      // Nodrošina, ka visibleReviews nav lielāks par pieejamo skaitu
       this.visibleReviews = Math.min(this.visibleReviews || 0, this.filteredAndSortedReviews.length || 0) || this.visibleReviews;
     },
     async fetchReviews() {
@@ -333,7 +330,7 @@ export default {
   mounted() {
     this.currentLanguage = getCurrentLanguage();
     
-    // Check for series filter from query params
+    // Pārbauda seriāla filtru no query parametriem
     const seriesId = this.$route.query.seriesId;
     const seriesTitle = this.$route.query.seriesTitle;
     if (seriesId && seriesTitle) {
@@ -362,7 +359,7 @@ export default {
   margin: 0;
 }
 
-/* Hero Section */
+/* Galvenes sadaļa */
 .hero {
   margin-bottom: 2rem;
   overflow: hidden;
@@ -464,7 +461,7 @@ export default {
   }
 }
 
-/* Page Content */
+/* Lapas saturs */
 .reviews-page > .controls-container {
   max-width: 300px;
   margin: 30px auto;
@@ -648,7 +645,7 @@ export default {
   color: var(--subtitle-color);
 }
 
-/* Grid Layout - Multiple reviews per row */
+/* Režģa izkārtojums - vairākas atsauksmes rindā */
 .reviews-container.layout-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
@@ -659,7 +656,7 @@ export default {
   padding: 0 20px 20px;
 }
 
-/* Single Column Layout - Bigger, more prominent reviews */
+/* Vienas kolonnas izkārtojums - lielākas, pamanāmākas atsauksmes */
 .reviews-container.layout-single {
   display: flex;
   flex-direction: column;
@@ -669,7 +666,7 @@ export default {
   padding: 0 20px 20px;
 }
 
-/* Single layout reviews are bigger and more prominent */
+/* Vienas kolonnas izkārtojumā atsauksmes ir lielākas un pamanāmākas */
 .reviews-container.layout-single :deep(.review-container) {
   max-height: none;
   padding: 30px;
@@ -705,7 +702,7 @@ export default {
   font-size: 16px;
 }
 
-/* Responsive Grid */
+/* Responsīvais režģis */
 @media (max-width: 1200px) {
   .reviews-container.layout-grid {
     grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));

@@ -34,7 +34,7 @@ export default {
     setLang(lang) {
       this.currentLanguage = lang;
       setLanguage(lang);
-      // Emit custom event for global language change
+      // Izsūta pielāgotu notikumu globālai valodas maiņai
       window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
       this.$emit('language-change', lang);
     }
