@@ -229,7 +229,7 @@ export default {
   letter-spacing: 0;
   color: var(--text-color);
   text-align: center;
-  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 6px 18px var(--text-shadow-color, rgba(0, 0, 0, 0.45));
   animation: heroTextFloat 5.8s ease-in-out infinite;
 }
 
@@ -254,8 +254,8 @@ export default {
 .site-hero-loop span {
   position: absolute;
   display: block;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid var(--surface-border, rgba(255, 255, 255, 0.13));
+  background: var(--glass-bg-soft, rgba(255, 255, 255, 0.018));
   box-shadow: 0 0 18px rgba(112, 233, 116, 0.08);
   animation-duration: 10s;
   animation-timing-function: ease-in-out;
@@ -326,7 +326,7 @@ export default {
   animation-name: heroTilesDrift;
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.22);
+  color: color-mix(in srgb, var(--text-color) 30%, transparent);
   border: 0;
   background: transparent;
   box-shadow: none;

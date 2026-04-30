@@ -42,13 +42,13 @@ export default {
   max-width: 260px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.98);
+  background: var(--tooltip-bg, rgba(0, 0, 0, 0.98));
   border: 2px solid var(--accent-color, #70e974);
-  color: #fff;
+  color: var(--tooltip-text, #fff);
   font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.5;
-  box-shadow: 0 12px 32px 4px rgba(0,0,0,0.55), 0 0 0 2px var(--accent-color, #70e974);
+  box-shadow: 0 12px 32px 4px var(--shadow-color-strong, rgba(0,0,0,0.55)), 0 0 0 2px var(--accent-color, #70e974);
   white-space: normal;
   text-align: center;
   opacity: 1;

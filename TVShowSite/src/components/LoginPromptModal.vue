@@ -88,10 +88,10 @@ export default {
   max-width: 360px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(0,0,0,0.95);
+  background: var(--tooltip-bg, rgba(0,0,0,0.95));
   border: 2px solid var(--accent-color, #70e974);
-  color: #fff;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.55), 0 0 0 2px var(--accent-color, #70e974);
+  color: var(--tooltip-text, #fff);
+  box-shadow: 0 12px 32px var(--shadow-color-strong, rgba(0,0,0,0.55)), 0 0 0 2px var(--accent-color, #70e974);
   text-align: center;
   font-weight: 600;
 }
@@ -107,14 +107,14 @@ export default {
 .btn {
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  color: #fff;
+  border: 1px solid var(--surface-border, rgba(255,255,255,0.08));
+  background: var(--surface-bg-soft, rgba(255,255,255,0.04));
+  color: var(--tooltip-text, #fff);
   cursor: pointer;
 }
 .btn.primary {
   background: var(--accent-color, #70e974);
-  color: #022;
+  color: var(--on-accent-color, #022);
   font-weight: 700;
 }
 </style>

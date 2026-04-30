@@ -1212,15 +1212,15 @@ div {
   min-height: 150px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(6, 10, 6, 0.62);
+  background-color: var(--surface-bg);
   background-image:
     radial-gradient(circle 220px at var(--gx, -500px) var(--gy, -500px), rgba(255,255,255,0.12), transparent 70%),
     linear-gradient(135deg, rgba(0,60,30,0.1) 0%, transparent 70%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--surface-border);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 8px 32px var(--shadow-color-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 -1px 0 rgba(255, 255, 255, 0.05);
   transition: transform 0.45s cubic-bezier(0.16,0.84,0.24,1), box-shadow 0.28s;
@@ -1276,19 +1276,19 @@ div {
 
 /* ═══ PANEĻI ═══ */
 .panel {
-  background-color: rgba(6, 10, 6, 0.62);
+  background-color: var(--surface-bg);
   background-image:
     radial-gradient(circle 280px at var(--gx, -500px) var(--gy, -500px), rgba(255,255,255,0.09), transparent 60%),
     linear-gradient(135deg, rgba(0,60,30,0.1) 0%, transparent 70%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--surface-border);
   padding: 22px;
   overflow: hidden;
   position: relative;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 8px 32px var(--shadow-color-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 -1px 0 rgba(255, 255, 255, 0.05);
   transition: border-color 0.3s, box-shadow 0.3s, transform 0.45s cubic-bezier(0.16,0.84,0.24,1);
@@ -1370,7 +1370,7 @@ div {
   gap: 14px;
   padding: 2rem 1.5rem;
   text-align: center;
-  background: rgba(6, 10, 20, 0.55);
+  background: var(--surface-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 16px;

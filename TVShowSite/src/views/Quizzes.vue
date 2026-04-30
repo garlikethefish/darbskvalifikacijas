@@ -1375,8 +1375,8 @@ export default {
 }
 .daily-start-btn:hover { background: #8cf590; transform: translateY(-2px); }
 .daily-start-btn:disabled {
-  background: #555;
-  color: #999;
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
   cursor: not-allowed;
   opacity: 0.75;
 }
@@ -1498,7 +1498,7 @@ export default {
   transition: background 0.2s, transform 0.2s;
 }
 .card-btn:hover:not(:disabled) { background: #8cf590; transform: translateY(-2px); }
-.card-btn:disabled { background: #555; color: #999; cursor: not-allowed; opacity: 0.7; }
+.card-btn:disabled { background: var(--disabled-bg); color: var(--disabled-text); cursor: not-allowed; opacity: 0.7; }
 .quiz-card.completed .card-btn:disabled { background: rgba(112,233,116,0.15); color: var(--accent-color); opacity: 1; }
 
 /* ======= VIKTORĪNAS PILDĪTĀJS ======= */
@@ -1573,7 +1573,7 @@ export default {
 /* ======= MODĀLIE LOGI ======= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+  background: var(--overlay-bg); display: flex; align-items: center; justify-content: center;
   z-index: 1000; backdrop-filter: blur(4px);
 }
 .modal-content {

@@ -117,9 +117,9 @@
           </div>
 
           <div class="actions">
-            <router-link :to="`/create-review?seriesId=${series.id}`" class="btn btn-primary">
+            <button class="btn btn-primary" type="button" @click="handleWriteReviewClick">
               {{ t('writeReview') }}
-            </router-link>
+            </button>
             <router-link :to="`/reviews?seriesId=${series.id}&seriesTitle=${encodeURIComponent(series.title)}`" class="btn btn-secondary">
               {{ t('seeAllReviews') }}
             </router-link>
@@ -160,6 +160,15 @@
       <h2>{{ t('seriesNotFound') }}</h2>
       <router-link to="/" class="btn btn-primary">{{ t('backHome') }}</router-link>
     </div>
+
+    <LoginPromptModal
+      :show="loginPromptVisible"
+      :message="t('loginRequiredToReview')"
+      :confirmText="t('login')"
+      :cancelText="t('cancel')"
+      @confirm="goToLoginForReview"
+      @cancel="loginPromptVisible = false"
+    />
   </div>
 </template>
 
@@ -171,11 +180,12 @@ import FollowShow from '@/components/FollowShow.vue';
 import Tooltip from '@/components/Tooltip.vue';
 import SvgIcon from '@/components/SvgIcon.vue';
 import HeroBand from '@/components/HeroBand.vue';
+import LoginPromptModal from '@/components/LoginPromptModal.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
 export default {
   name: 'SeriesDetail',
-  components: { ReviewPost, WatchedStatus, FollowShow, Tooltip, SvgIcon, HeroBand },
+  components: { ReviewPost, WatchedStatus, FollowShow, Tooltip, SvgIcon, HeroBand, LoginPromptModal },
   data() {
     return {
       series: null,
@@ -192,6 +202,7 @@ export default {
         y: 0
       }
       ,
+      loginPromptVisible: false,
       showFullDescription: false
     };
   },
@@ -278,6 +289,18 @@ export default {
     },
     toggleDescription() {
       this.showFullDescription = !this.showFullDescription;
+    },
+    handleWriteReviewClick() {
+      if (this.isLoggedIn) {
+        this.$router.push(`/create-review?seriesId=${this.series.id}`);
+        return;
+      }
+      this.loginPromptVisible = true;
+    },
+    goToLoginForReview() {
+      this.loginPromptVisible = false;
+      const next = encodeURIComponent(`/create-review?seriesId=${this.series.id}`);
+      this.$router.push(`/login?next=${next}`);
     },
     async fetchSeriesDetails() {
       const seriesId = this.$route.params.id;
