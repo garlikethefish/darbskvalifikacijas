@@ -93,7 +93,7 @@
       </div>
 
       <!-- Rezultātu modālais logs -->
-      <div v-else-if="showResults && quizResult" class="modal-overlay" @click.self="handleResultsClose">
+      <div v-else-if="showResults && quizResult" class="modal-overlay quiz-state-overlay" @click.self="handleResultsClose">
         <div class="modal-content results-modal">
           <div class="results-header">
             <h2>{{ t('quizResults') }}</h2>
@@ -139,11 +139,11 @@
                 :class="cosmetic.rarity"
               >
                 <div class="cosmetic-unlock-icon">
-                  {{ cosmetic.type === 'cursor_trail' ? '✨' : '🎨' }}
+                  <SvgIcon :name="getEffectIcon(cosmetic.effect_key, cosmetic.type)" :size="38" />
                 </div>
                 <p class="cosmetic-unlock-text">{{ t('newCosmeticUnlocked') }}</p>
-                <p class="cosmetic-unlock-name">{{ cosmetic.name }}</p>
-                <span class="cosmetic-rarity-tag" :class="cosmetic.rarity">{{ cosmetic.rarity }}</span>
+                <p class="cosmetic-unlock-name">{{ getCosmeticName(cosmetic) }}</p>
+                <span class="cosmetic-rarity-tag" :class="cosmetic.rarity">{{ getRarityLabel(cosmetic.rarity) }}</span>
               </div>
             </template>
 
@@ -495,19 +495,6 @@
       <!-- VIKTORĪNU SARAKSTA SKATS -->
       <template v-if="!activeQuiz">
 
-        <!-- Administratora josla -->
-        <div v-if="isAdmin" class="admin-bar">
-          <span class="admin-label"><SvgIcon name="shield-star" :size="16" /> Admin</span>
-          <div class="admin-bar-actions">
-            <button type="button" class="admin-add-btn" @click.stop="openAdminPanel">
-              + New Quiz
-            </button>
-            <button type="button" class="admin-add-btn admin-badge-btn" @click.stop="openBadgePanel">
-              + New Badge
-            </button>
-          </div>
-        </div>
-
         <!-- Dienas viktorīnas sadaļa -->
         <div v-if="dailyQuiz" class="daily-quiz-section">
           <div class="section-label">
@@ -539,29 +526,37 @@
         </div>
 
         <!-- Kategoriju cilnes -->
-        <div class="filter-bar">
-          <div class="category-tabs">
-            <button 
-              v-for="cat in categories" :key="cat.key"
-              type="button"
-              class="cat-tab" 
-              :class="{ active: selectedCategory === cat.key }"
-              @click="selectedCategory = cat.key"
-            >
-              <SvgIcon :name="cat.icon" :size="16" />
-              <span>{{ t(cat.label) }}</span>
-            </button>
-          </div>
-          <div class="difficulty-filter">
-            <button 
-              v-for="diff in difficulties" :key="diff.key"
-              type="button"
-              class="diff-tab"
-              :class="{ active: selectedDifficulty === diff.key, [diff.key]: true }"
-              @click="selectedDifficulty = diff.key"
-            >
-              {{ t(diff.label) }}
-            </button>
+        <div class="controls-container quiz-filter-panel">
+          <div class="controls-wrapper quiz-filter-wrapper">
+            <div class="filter-controls quiz-filter-row">
+              <label>{{ t('category') }}</label>
+            <div class="category-tabs">
+              <button 
+                v-for="cat in categories" :key="cat.key"
+                type="button"
+                class="cat-tab" 
+                :class="{ active: selectedCategory === cat.key }"
+                @click="selectedCategory = cat.key"
+              >
+                <SvgIcon :name="cat.icon" :size="16" />
+                <span>{{ t(cat.label) }}</span>
+              </button>
+            </div>
+            </div>
+            <div class="filter-controls quiz-filter-row">
+              <label>{{ t('difficulty') }}</label>
+              <div class="difficulty-filter">
+                <button 
+                  v-for="diff in difficulties" :key="diff.key"
+                  type="button"
+                  class="diff-tab"
+                  :class="{ active: selectedDifficulty === diff.key, [diff.key]: true }"
+                  @click="selectedDifficulty = diff.key"
+                >
+                  {{ t(diff.label) }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -667,6 +662,55 @@ import HeroBand from '@/components/HeroBand.vue'
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
+const EFFECT_COPY = {
+  particle_sparkle: { en: 'Sparkle Trail', lv: 'Dzirksteļu pēda' },
+  particle_fire: { en: 'Fire Trail', lv: 'Uguns pēda' },
+  particle_snow: { en: 'Snow Trail', lv: 'Sniega pēda' },
+  glow_smooth: { en: 'Smooth Glow', lv: 'Maigs mirdzums' },
+  glow_rainbow: { en: 'Rainbow Glow', lv: 'Varavīksnes mirdzums' },
+  particle_fairydust: { en: 'Fairy Dust', lv: 'Pasaku putekļi' },
+  particle_bubble: { en: 'Bubble Trail', lv: 'Burbuļu pēda' },
+  smooth_wavy: { en: 'Wavy Background', lv: 'Viļņots fons' },
+  flowing_ribbons: { en: 'Flowing Ribbons', lv: 'Plūstošas lentes' },
+  rainbow_cursor: { en: 'Rainbow Cursor', lv: 'Varavīksnes kursors' },
+  canvas_cursor: { en: 'Canvas Cursor', lv: 'Audekla kursors' },
+  fluid_cursor: { en: 'Fluid Cursor', lv: 'Plūstošs kursors' },
+  particles_stars: { en: 'Star Field', lv: 'Zvaigžņu lauks' },
+  particles_bubbles: { en: 'Bubble Field', lv: 'Burbuļu lauks' },
+  particles_fireflies: { en: 'Fireflies', lv: 'Spīdvaboles' },
+  pattern_dots: { en: 'Dot Pattern', lv: 'Punktu raksts' },
+  pattern_waves: { en: 'Wave Pattern', lv: 'Viļņu raksts' },
+  pattern_grid: { en: 'Grid Pattern', lv: 'Režģa raksts' }
+};
+
+const EFFECT_ICONS = {
+  particle_sparkle: 'sparkle',
+  particle_fire: 'bonfire',
+  particle_snow: 'snowflake',
+  glow_smooth: 'glow',
+  glow_rainbow: 'rainbow',
+  particle_fairydust: 'magic',
+  particle_bubble: 'drops',
+  smooth_wavy: 'soundwave',
+  flowing_ribbons: 'planet3',
+  rainbow_cursor: 'rainbow',
+  canvas_cursor: 'magic',
+  fluid_cursor: 'drops',
+  particles_stars: 'stars',
+  particles_bubbles: 'cloud-drops',
+  particles_fireflies: 'lightning',
+  pattern_dots: 'star-rings',
+  pattern_waves: 'water',
+  pattern_grid: 'planet3'
+};
+
+const RARITY_KEYS = {
+  common: 'rarityCommon',
+  rare: 'rarityRare',
+  epic: 'rarityEpic',
+  legendary: 'rarityLegendary'
+};
+
 export default {
   data() {
     return {
@@ -757,6 +801,17 @@ export default {
   methods: {
     t(key) {
       return getTranslation(key, this.currentLanguage);
+    },
+    getEffectIcon(effectKey, type) {
+      return EFFECT_ICONS[effectKey] || (type === 'cursor_trail' ? 'sparkle' : 'palette');
+    },
+    getCosmeticName(cosmetic) {
+      const copy = EFFECT_COPY[cosmetic?.effect_key];
+      if (!copy) return cosmetic?.name || '';
+      return copy[this.currentLanguage] || copy.en || cosmetic?.name || '';
+    },
+    getRarityLabel(rarity) {
+      return this.t(RARITY_KEYS[rarity] || 'rarityCommon');
     },
     isLocked(quiz) {
       return this.quizLockStatus[quiz.id] && !this.quizLockStatus[quiz.id].canRetake;
@@ -1323,7 +1378,14 @@ export default {
 }
 
 /* Galvenais konteiners */
-.quizzes-container { max-width: 1200px; margin: 0 auto 60px; padding: 0 20px; }
+.quizzes-container {
+  max-width: 1180px;
+  margin: 28px auto 64px;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
 
 /* Ielāde */
 .loading-spinner { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 20px; }
@@ -1331,19 +1393,26 @@ export default {
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* ======= DIENAS VIKTORĪNAS SADAĻA ======= */
-.daily-quiz-section { margin-bottom: 32px; }
+.daily-quiz-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .section-label {
   display: inline-flex; align-items: center; gap: 8px;
   font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
-  color: var(--accent-color); margin-bottom: 14px;
+  color: var(--accent-color);
 }
 .daily-quiz-card {
-  display: flex; background: var(--dark-bg-color); border-radius: 14px; overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.18); cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  border: 1px solid rgba(112,233,116,0.15);
+  display: grid; grid-template-columns: minmax(240px, 32%) 1fr;
+  background: var(--glass-bg); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.2); cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
-.daily-quiz-card:hover { transform: translateY(-4px); box-shadow: 0 10px 36px rgba(0,0,0,0.26); }
+.daily-quiz-card:hover { transform: translateY(-4px); box-shadow: 0 26px 58px rgba(0,0,0,0.28); border-color: rgba(112,233,116,0.28); }
 .daily-quiz-card.login-required,
 .quiz-card.login-required {
   cursor: default;
@@ -1353,7 +1422,7 @@ export default {
   transform: none;
 }
 .daily-poster {
-  width: 260px; min-height: 180px; flex-shrink: 0;
+  min-height: 190px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--gradient-start), var(--medium-bg-color));
   background-size: cover; background-position: center; position: relative;
 }
@@ -1362,11 +1431,11 @@ export default {
   background: linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(30,28,39,0.85) 100%);
 }
 .daily-badges { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 6px; z-index: 1; }
-.daily-info { flex: 1; padding: 22px 24px; display: flex; flex-direction: column; gap: 8px; }
+.daily-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .daily-title-row { display: flex; align-items: center; gap: 10px; color: var(--text-color); }
 .daily-title-row h3 { margin: 0; font-size: 1.3rem; font-weight: 700; }
-.daily-desc { color: var(--subtitle-color); font-size: 0.9rem; line-height: 1.5; margin: 0; flex-grow: 1; }
-.daily-meta { display: flex; gap: 16px; margin-top: 4px; }
+.daily-desc { color: var(--subtitle-color); font-size: 0.9rem; line-height: 1.5; margin: 0; flex-grow: 1; max-width: 68ch; }
+.daily-meta { display: flex; gap: 16px; margin-top: auto; flex-wrap: wrap; }
 .daily-start-btn {
   align-self: flex-start; margin-top: 8px;
   background: var(--accent-color); color: var(--dark-bg-color); border: none;
@@ -1382,22 +1451,71 @@ export default {
 }
 
 /* ======= FILTRA JOSLA ======= */
-.filter-bar { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 24px; align-items: center; }
-.category-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.controls-container {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 24px;
+  background: linear-gradient(180deg, var(--dark-bg-color) 0%, rgba(112, 233, 116, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(112, 233, 116, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+.controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.filter-controls {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.filter-controls label {
+  font-weight: 700;
+  color: var(--accent-color);
+  font-size: 0.95em;
+  text-align: right;
+}
+.category-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  min-width: 0;
+}
 .cat-tab {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 8px; border: 1.5px solid transparent;
-  background: var(--dark-bg-color); color: var(--subtitle-color);
+  padding: 7px 10px; border-radius: 7px; border: 1px solid transparent;
+  background: var(--glass-bg-soft); color: var(--subtitle-color);
   font-size: 0.82rem; font-weight: 600; cursor: pointer;
   transition: all 0.2s;
+  min-height: 34px;
 }
 .cat-tab:hover { border-color: var(--accent-color); color: var(--text-color); }
 .cat-tab.active { background: var(--accent-color); color: var(--dark-bg-color); border-color: var(--accent-color); }
-.difficulty-filter { display: flex; gap: 6px; margin-left: auto; }
+.difficulty-filter {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+}
 .diff-tab {
-  padding: 6px 12px; border-radius: 6px; border: 1.5px solid transparent;
-  background: var(--dark-bg-color); color: var(--subtitle-color);
+  padding: 6px 10px; border-radius: 6px; border: 1px solid transparent;
+  background: rgba(255,255,255,0.045); color: var(--subtitle-color);
   font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  min-height: 32px;
 }
 .diff-tab:hover { border-color: var(--accent-color); }
 .diff-tab.active.all { background: var(--accent-color); color: var(--dark-bg-color); border-color: var(--accent-color); }
@@ -1408,8 +1526,9 @@ export default {
 /* ======= VIKTORĪNU REŽĢIS ======= */
 .quizzes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  gap: 22px;
+  align-items: stretch;
 }
 .no-quizzes {
   grid-column: 1 / -1; text-align: center; padding: 60px 20px;
@@ -1418,31 +1537,37 @@ export default {
 
 /* ======= VIKTORĪNAS KARTĪTE ======= */
 .quiz-card {
-  background: var(--dark-bg-color); border-radius: 12px; overflow: hidden;
+  background: var(--glass-bg); border-radius: 14px; overflow: hidden;
   display: flex; flex-direction: column;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 16px 38px rgba(0,0,0,0.18);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   cursor: pointer; position: relative;
+  min-height: 354px;
+  height: 100%;
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
-.quiz-card:hover { transform: translateY(-5px); box-shadow: 0 8px 28px rgba(0,0,0,0.22); }
+.quiz-card:hover { transform: translateY(-5px); box-shadow: 0 24px 54px rgba(0,0,0,0.26); border-color: rgba(112,233,116,0.28); }
 .quiz-card.locked { opacity: 0.55; cursor: not-allowed; }
-.quiz-card.locked:hover { transform: none; box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+.quiz-card.locked:hover { transform: none; box-shadow: 0 16px 38px rgba(0,0,0,0.18); }
 .quiz-card.completed { border: 1.5px solid var(--accent-color); cursor: default; }
 .quiz-card.completed:hover { transform: none; }
 
 /* Kartītes plakāts */
 .card-poster {
-  position: relative; height: 110px;
+  position: relative; height: 124px;
   background: linear-gradient(135deg, var(--gradient-start) 0%, var(--medium-bg-color) 100%);
   background-size: cover; background-position: center top;
+  flex: 0 0 auto;
 }
 .card-poster-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(30,28,39,0.88) 100%);
 }
 .card-badges {
-  position: absolute; bottom: 8px;
-  display: flex; gap: 5px; margin-left: 10px; z-index: 1;
+  position: absolute; left: 10px; right: 10px; bottom: 10px;
+  display: flex; gap: 6px; z-index: 1; flex-wrap: wrap;
 }
 .cat-badge, .diff-badge {
   font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;
@@ -1465,18 +1590,24 @@ export default {
 }
 
 /* Kartītes saturs */
-.card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; width:auto;}
-.card-title-row { display: flex; align-items: center; gap: 8px; }
-.card-title-row h3 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-color); line-height: 1.3; }
+.card-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; width:auto; min-width: 0;}
+.card-title-row { display: flex; align-items: flex-start; gap: 8px; min-height: 2.7em; }
+.card-title-row .svg-icon { flex: 0 0 auto; margin-top: 1px; }
+.card-title-row h3 {
+  margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-color); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .card-desc {
   color: var(--subtitle-color); font-size: 0.82rem; line-height: 1.5;
-  margin: 0; flex-grow: 1;
+  margin: 0;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  min-height: 2.46rem;
 }
 
 /* Kartītes metadatu rinda */
 .card-meta {
-  display: flex; align-items: center; gap: 12px; margin-top: 4px;
+  display: flex; align-items: center; gap: 12px; margin-top: auto;
+  min-height: 22px;
 }
 .meta-item {
   display: inline-flex; align-items: center; gap: 4px;
@@ -1492,10 +1623,11 @@ export default {
 /* Kartītes poga */
 .card-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; margin-top: 6px; padding: 10px; border: none; border-radius: 8px;
+  width: 100%; margin-top: 2px; padding: 10px; border: none; border-radius: 8px;
   background: var(--accent-color); color: var(--dark-bg-color);
   font-weight: 700; font-size: 0.88rem; cursor: pointer;
   transition: background 0.2s, transform 0.2s;
+  min-height: 40px;
 }
 .card-btn:hover:not(:disabled) { background: #8cf590; transform: translateY(-2px); }
 .card-btn:disabled { background: var(--disabled-bg); color: var(--disabled-text); cursor: not-allowed; opacity: 0.7; }
@@ -1503,13 +1635,19 @@ export default {
 
 /* ======= VIKTORĪNAS PILDĪTĀJS ======= */
 .quiz-taker {
-  background: var(--dark-bg-color); border-radius: 14px; padding: 44px;
-  max-width: 860px; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  background: var(--glass-bg); border-radius: 16px; padding: 36px;
+  max-width: 920px; width: 100%; margin: 0 auto; box-shadow: 0 24px 58px rgba(0,0,0,0.24);
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-sizing: border-box;
 }
 .quiz-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 40px; gap: 16px; padding-bottom: 20px;
-  border-bottom: 2px solid var(--accent-color);
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr) minmax(90px, 1fr);
+  align-items: center;
+  margin-bottom: 32px; gap: 16px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--surface-border-strong);
 }
 .back-btn {
   background: none; border: none; color: var(--accent-color); cursor: pointer;
@@ -1519,30 +1657,36 @@ export default {
 }
 .back-btn:hover { color: #8cf590; }
 .quiz-header h2 {
-  flex: 1; margin: 0; font-size: 1.6rem; color: var(--text-color);
+  margin: 0; font-size: 1.6rem; color: var(--text-color);
   display: flex; align-items: center; gap: 10px; text-align: center; justify-content: center;
+  min-width: 0;
+  line-height: 1.25;
 }
 .progress-info {
-  background: var(--medium-bg-color); padding: 8px 16px; border-radius: 16px;
+  justify-self: end;
+  background: var(--glass-bg-soft); padding: 8px 16px; border-radius: 16px;
   font-weight: 600; color: var(--accent-color); font-size: 0.9rem; white-space: nowrap;
+  border: 1px solid var(--surface-border);
 }
 
 /* Jautājums */
-.question-container { margin-bottom: 40px; }
-.question-text { font-size: 1.35rem; margin: 0 0 32px 0; color: var(--text-color); line-height: 1.6; font-weight: 600; }
-.options { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+.question-container { display: flex; flex-direction: column; gap: 26px; margin-bottom: 0; }
+.question-text { font-size: 1.35rem; margin: 0; color: var(--text-color); line-height: 1.6; font-weight: 600; }
+.options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 0; }
 .option-label {
   display: flex; align-items: flex-start; gap: 14px; padding: 16px;
-  background: var(--medium-bg-color); border-radius: 8px; cursor: pointer;
+  background: var(--glass-bg-soft); border-radius: 10px; cursor: pointer;
   transition: all 0.2s; border: 2px solid transparent;
+  min-height: 56px;
+  box-sizing: border-box;
 }
-.option-label:hover { background: var(--background-color); border-color: var(--accent-color); transform: translateX(3px); }
+.option-label:hover { background: rgba(112,233,116,0.08); border-color: var(--accent-color); transform: translateX(3px); }
 .option-label input:checked ~ .option-text { color: var(--accent-color); font-weight: 600; }
 .option-input { flex-shrink: 0; width: 20px; height: 20px; cursor: pointer; margin-top: 2px; accent-color: var(--accent-color); }
 .option-text { flex: 1; color: var(--text-color); font-size: 1rem; line-height: 1.5; }
 
 /* Jautājumu navigācija */
-.question-nav { display: flex; gap: 16px; justify-content: space-between; }
+.question-nav { display: flex; gap: 16px; justify-content: space-between; margin-top: 4px; }
 .nav-btn, .submit-btn {
   flex: 1; padding: 14px 24px; border: 2px solid var(--accent-color);
   background: transparent; color: var(--accent-color); border-radius: 8px;
@@ -1560,26 +1704,50 @@ export default {
 /* Jautājumu indikatori */
 .question-indicator {
   display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
-  margin-top: 40px; padding-top: 24px; border-top: 1.5px solid var(--medium-bg-color);
+  margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--surface-border);
 }
 .indicator-dot {
   width: 12px; height: 12px; border-radius: 50%;
-  background: var(--medium-bg-color); cursor: pointer;
+  background: var(--glass-bg-soft); cursor: pointer;
   transition: all 0.2s; border: 2px solid transparent;
 }
 .indicator-dot.answered { background: var(--accent-color); }
-.indicator-dot.active { width: 20px; border-color: var(--accent-color); box-shadow: 0 0 8px rgba(112,233,116,0.4); }
+.indicator-dot.active { border-color: var(--accent-color); box-shadow: 0 0 8px rgba(112,233,116,0.4); }
 
 /* ======= MODĀLIE LOGI ======= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: var(--overlay-bg); display: flex; align-items: center; justify-content: center;
   z-index: 1000; backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 .modal-content {
-  background: var(--dark-bg-color); border-radius: 14px; padding: 36px;
+  background: var(--glass-bg-strong); border-radius: 14px; padding: 36px;
   max-width: 500px; width: 90%; box-shadow: 0 14px 44px rgba(0,0,0,0.3);
   max-height: 90vh; overflow-y: auto;
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-sizing: border-box;
+}
+.quiz-state-overlay {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  width: auto;
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  align-items: flex-start;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.quiz-state-overlay .modal-content {
+  width: auto;
+  max-width: min(500px, 100%);
+  max-height: none;
+  margin: 0;
+  overflow: visible;
 }
 .results-modal { text-align: center; }
 .results-header { border-bottom: 2px solid var(--accent-color); padding-bottom: 20px; margin-bottom: 28px; }
@@ -1590,14 +1758,26 @@ export default {
 .score-display { display: flex; justify-content: center; padding: 24px 0; }
 .score-circle {
   width: 120px; height: 120px; border-radius: 50%;
-  background: var(--medium-bg-color); display: flex; align-items: center; justify-content: center;
+  background: var(--glass-bg-soft); display: flex; align-items: center; justify-content: center;
   border: 3px solid var(--accent-color); box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 .score-display.passed .score-circle { background: rgba(112,233,116,0.12); border-color: var(--accent-color); }
 .score-text { font-size: 2.4rem; font-weight: 800; color: var(--accent-color); }
 
 /* Rezultātu informācija */
-.results-info { color: var(--text-color); padding: 20px; background: var(--medium-bg-color); border-radius: 10px; }
+.results-info {
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  color: var(--text-color);
+  padding: 20px;
+  background: var(--glass-bg-soft);
+  border-radius: 10px;
+  border: 1px solid var(--surface-border);
+  overflow-wrap: anywhere;
+}
 .results-info p { margin: 12px 0; font-size: 1.05rem; line-height: 1.6; }
 .results-info p:first-child { margin-top: 0; }
 .results-info p:last-child { margin-bottom: 0; }
@@ -1609,6 +1789,10 @@ export default {
   background: linear-gradient(135deg, rgba(112,233,116,0.12), rgba(112,233,116,0.05));
   border: 1.5px solid var(--accent-color); border-radius: 12px;
   padding: 24px; text-align: center; animation: slideIn 0.4s ease;
+  align-self: stretch;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
 }
 @keyframes slideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 .badge-icon { font-size: 3rem; margin-bottom: 10px; display: inline-block; animation: bounce 0.8s ease infinite; }
@@ -1621,13 +1805,25 @@ export default {
   background: linear-gradient(135deg, rgba(120, 80, 255, 0.12), rgba(120, 80, 255, 0.04));
   border: 1.5px solid #ab47bc; border-radius: 12px;
   padding: 24px; text-align: center; animation: slideIn 0.4s ease;
+  align-self: stretch;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
 }
 .cosmetic-notification.rare { border-color: #42a5f5; background: linear-gradient(135deg, rgba(66, 165, 245, 0.12), rgba(66, 165, 245, 0.04)); }
 .cosmetic-notification.epic { border-color: #ab47bc; background: linear-gradient(135deg, rgba(171, 71, 188, 0.12), rgba(171, 71, 188, 0.04)); }
 .cosmetic-notification.legendary { border-color: #ffd54f; background: linear-gradient(135deg, rgba(255, 213, 79, 0.15), rgba(255, 213, 79, 0.05)); }
-.cosmetic-unlock-icon { font-size: 2.5rem; margin-bottom: 8px; animation: bounce 0.8s ease infinite; }
+.cosmetic-unlock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ce93d8;
+  margin-bottom: 8px;
+  animation: bounce 0.8s ease infinite;
+}
+.cosmetic-unlock-icon .svg-icon { color: currentColor; }
 .cosmetic-unlock-text { font-size: 1.1rem; font-weight: 800; color: #ce93d8; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.8px; }
-.cosmetic-unlock-name { font-size: 0.95rem; color: var(--subtitle-color); margin: 0 0 6px 0; font-weight: 600; }
+.cosmetic-unlock-name { font-size: 0.95rem; color: var(--subtitle-color); margin: 0 0 6px 0; font-weight: 600; overflow-wrap: anywhere; }
 .cosmetic-rarity-tag { font-size: 0.7rem; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
 .cosmetic-rarity-tag.common { color: #bdbdbd; }
 .cosmetic-rarity-tag.rare { color: #42a5f5; }
@@ -1635,55 +1831,68 @@ export default {
 .cosmetic-rarity-tag.legendary { color: #ffd54f; }
 
 /* Rezultātu darbības */
-.results-actions { display: flex; gap: 16px; margin-top: 20px; }
+.results-actions { display: flex; gap: 16px; align-self: center; margin-top: 20px; width: auto; max-width: 100%; min-width: 0; box-sizing: border-box; }
 .retry-btn, .close-btn {
   flex: 1; padding: 14px 24px; border: none; border-radius: 8px;
   font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; min-height: 46px;
   display: flex; align-items: center; justify-content: center;
+  min-width: 0;
 }
 .retry-btn { background: var(--accent-color); color: var(--dark-bg-color); }
+.results-actions .retry-btn,
+.results-actions .close-btn { flex: 0 1 210px; }
 .retry-btn:hover { background: #8cf590; transform: translateY(-2px); }
-.close-btn { background: var(--medium-bg-color); color: var(--text-color); border: 1.5px solid var(--accent-color); }
+.close-btn { background: var(--glass-bg-soft); color: var(--text-color); border: 1.5px solid var(--accent-color); }
 .close-btn:hover { background: var(--accent-color); color: var(--dark-bg-color); transform: translateY(-2px); }
 
 /* Gaidīšanas laika modālais logs */
 .cooldown-modal { text-align: center; border: 1.5px solid #ff6b6b; }
 .cooldown-header { display: flex; align-items: center; justify-content: center; gap: 10px; border-bottom: 2px solid #ff6b6b; padding-bottom: 20px; margin-bottom: 24px; }
-.cooldown-header h2 { font-size: 1.5rem; margin: 0; color: #ff6b6b; font-weight: 700; }
-.cooldown-body { display: flex; flex-direction: column; gap: 20px; }
+.cooldown-header h2 { font-size: 1.5rem; margin: 0; color: #ff6b6b; font-weight: 700; overflow-wrap: anywhere; }
+.cooldown-body { display: flex; flex-direction: column; align-items: center; gap: 20px; }
 .cooldown-message { color: var(--text-color); font-size: 1rem; line-height: 1.6; margin: 0; }
 .cooldown-timer {
+  width: auto;
+  max-width: 100%;
+  align-self: center;
   background: linear-gradient(135deg, rgba(255,107,107,0.12), rgba(255,107,107,0.05));
   border: 1.5px solid #ff6b6b; border-radius: 10px; padding: 24px;
 }
 .timer-display { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .timer-value { font-size: 3rem; font-weight: 800; color: #ff6b6b; }
 .timer-label { font-size: 0.85rem; color: var(--subtitle-color); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
-.cooldown-details { background: var(--medium-bg-color); border-radius: 8px; padding: 16px; }
+.cooldown-details { width: auto; max-width: 100%; background: var(--glass-bg-soft); border: 1px solid var(--surface-border); border-radius: 8px; padding: 16px; box-sizing: border-box; }
 .cooldown-details p { margin: 8px 0; font-size: 0.9rem; color: var(--text-color); }
 .retry-time { color: #ff6b6b; font-weight: 700; font-size: 1rem; }
-.cooldown-actions { display: flex; gap: 12px; margin-top: 12px; }
-.cooldown-actions .close-btn { background: #ff6b6b; border-color: #ff6b6b; color: #fff; flex: 1; }
+.cooldown-actions { display: flex; gap: 12px; margin-top: 12px; width: auto; max-width: 100%; }
+.cooldown-actions .close-btn { background: #ff6b6b; border-color: #ff6b6b; color: #fff; flex: 0 1 auto; }
 .cooldown-actions .close-btn:hover { background: #e55555; border-color: #e55555; }
 
 /* ======= RESPONSĪVAIS IZKĀRTOJUMS ======= */
 @media (max-width: 768px) {
   .hero-inner h1 { font-size: 1.8rem; }
-  .daily-quiz-card { flex-direction: column; }
-  .daily-poster { width: 100%; min-height: 140px; }
+  .quizzes-container { margin-top: 24px; gap: 22px; padding: 0 16px; }
+  .daily-quiz-card { grid-template-columns: 1fr; }
+  .daily-poster { width: 100%; min-height: 150px; }
   .daily-poster-overlay { background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(30,28,39,0.85) 100%); }
-  .filter-bar { flex-direction: column; gap: 10px; }
-  .difficulty-filter { margin-left: 0; }
-  .quizzes-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .controls-container { max-width: 430px; padding: 18px; }
+  .filter-controls { grid-template-columns: 1fr; gap: 8px; }
+  .filter-controls label { text-align: left; }
+  .category-tabs,
+  .difficulty-filter { justify-content: flex-start; }
+  .quizzes-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
   .quiz-taker { padding: 28px; border-radius: 12px; }
-  .quiz-header { flex-direction: column; text-align: center; gap: 12px; }
+  .quiz-header { grid-template-columns: 1fr; text-align: center; gap: 12px; justify-items: center; }
   .quiz-header h2 { font-size: 1.35rem; }
-  .question-text { font-size: 1.15rem; margin-bottom: 24px; }
-  .options { gap: 10px; margin-bottom: 28px; }
+  .progress-info { justify-self: center; }
+  .question-container { gap: 22px; }
+  .question-text { font-size: 1.15rem; }
+  .options { gap: 10px; }
   .option-label { padding: 14px; gap: 12px; }
   .question-nav { gap: 10px; }
   .nav-btn, .submit-btn { padding: 12px 18px; font-size: 0.9rem; min-height: 42px; }
-  .modal-content { padding: 24px; margin: 16px; }
+  .modal-content { padding: 24px; margin: 16px; width: auto;}
+  .quiz-state-overlay .modal-content { margin: 0; }
   .results-header h2 { font-size: 1.4rem; }
   .score-circle { width: 100px; height: 100px; }
   .score-text { font-size: 1.8rem; }
@@ -1692,14 +1901,15 @@ export default {
 @media (max-width: 500px) {
   .hero-inner h1 { font-size: 1.3rem; }
   .subtitle { font-size: 0.9rem; }
+  .quizzes-container { margin-top: 20px; padding: 0 12px; gap: 18px; }
   .daily-info { padding: 16px; }
   .daily-title-row h3 { font-size: 1.1rem; }
-  .category-tabs { gap: 4px; }
-  .cat-tab { padding: 6px 10px; font-size: 0.75rem; }
-  .diff-tab { padding: 5px 10px; font-size: 0.72rem; }
+  .cat-tab { padding: 6px 8px; font-size: 0.74rem; min-height: 30px; }
+  .diff-tab { padding: 5px 8px; font-size: 0.72rem; min-height: 28px; }
   .quizzes-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .card-poster { height: 90px; }
   .card-body { padding: 10px 12px 14px; gap: 6px; }
+  .card-title-row { min-height: 2.5em; }
   .card-title-row h3 { font-size: 0.88rem; }
   .card-desc { font-size: 0.75rem; -webkit-line-clamp: 2; }
   .card-meta { gap: 8px; }
@@ -1708,41 +1918,22 @@ export default {
   .quiz-taker { padding: 18px; margin: 8px; }
   .quiz-header { margin-bottom: 24px; padding-bottom: 12px; }
   .quiz-header h2 { font-size: 1.2rem; }
+  .question-container { gap: 18px; }
   .question-text { font-size: 1.05rem; }
   .option-label { padding: 12px; gap: 10px; }
   .question-nav { flex-direction: column; gap: 8px; }
   .nav-btn, .submit-btn { width: 100%; padding: 12px; min-height: 42px; }
   .question-indicator { margin-top: 24px; padding-top: 16px; }
   .indicator-dot { width: 10px; height: 10px; }
-  .indicator-dot.active { width: 18px; }
+  .indicator-dot.active { width: 10px; }
   .modal-content { padding: 18px; max-width: 95%; border-radius: 12px; }
+  .results-info { padding: 16px; }
+  .results-actions { flex-direction: column; gap: 10px; }
   .score-circle { width: 86px; height: 86px; }
   .score-text { font-size: 1.5rem; }
   .badge-notification { padding: 18px; }
   .retry-btn, .close-btn { padding: 12px; font-size: 0.92rem; }
 }
-
-/* ======= ADMINISTRATORA JOSLA ======= */
-.admin-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  background: rgba(112,233,116,0.07); border: 1.5px solid rgba(112,233,116,0.2);
-  border-radius: 10px; padding: 10px 16px; margin-bottom: 20px;
-}
-.admin-label {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-  color: var(--accent-color);
-}
-.admin-bar-actions { display: flex; gap: 8px; }
-.admin-add-btn {
-  background: var(--accent-color); color: var(--dark-bg-color);
-  border: none; padding: 8px 18px; border-radius: 8px;
-  font-weight: 700; font-size: 0.9rem; cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-}
-.admin-add-btn:hover { background: #8cf590; transform: translateY(-2px); }
-.admin-badge-btn { background: #7c5cbf; color: #fff; }
-.admin-badge-btn:hover { background: #9a7fd4; }
 
 .badge-thumb {
   width: 40px; height: 40px; object-fit: contain; border-radius: 6px;

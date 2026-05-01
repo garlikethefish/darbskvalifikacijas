@@ -2,14 +2,14 @@
   <div class="avatar-maker">
     <!-- Sagataves -->
     <div class="presets-row">
-      <span class="presets-label">Presets:</span>
+      <span class="presets-label">{{ t('avatarPresets') }}:</span>
       <button
         v-for="preset in presets"
         :key="preset.name"
         class="preset-btn"
         @click="applyPreset(preset)"
-      >{{ preset.name }}</button>
-      <button class="preset-btn preset-clear" @click="clearAll">Clear</button>
+      >{{ getPresetName(preset) }}</button>
+      <button class="preset-btn preset-clear" @click="clearAll">{{ t('clear') }}</button>
     </div>
 
     <!-- Priekšskatījums -->
@@ -24,7 +24,7 @@
           crossorigin="anonymous"
         />
         <div v-if="!hasAnyPart" class="empty-preview">
-          <span>Select parts below</span>
+          <span>{{ t('avatarSelectPartsBelow') }}</span>
         </div>
       </div>
       <canvas ref="compositeCanvas" width="512" height="512" style="display:none;"></canvas>
@@ -38,7 +38,7 @@
         :class="['cat-tab', { active: activeCategory === cat.key }]"
         @click="activeCategory = cat.key"
       >
-        {{ cat.label }}
+        {{ t(cat.labelKey) }}
       </button>
     </div>
 
@@ -51,7 +51,7 @@
         @click="selectPart(activeCategory, null)"
       >
         <div class="none-x">✕</div>
-        <span>None</span>
+        <span>{{ t('none') }}</span>
       </div>
       <div
         v-for="part in availableParts[activeCategory] || []"
@@ -60,16 +60,16 @@
         :class="{ selected: selectedParts[activeCategory] === part }"
         @click="selectPart(activeCategory, part)"
       >
-        <img :src="getPartUrl(activeCategory, part)" :alt="formatPartName(part)" />
-        <span>{{ formatPartName(part) }}</span>
+        <img :src="getPartUrl(activeCategory, part)" :alt="formatPartName(activeCategory, part)" />
+        <span>{{ formatPartName(activeCategory, part) }}</span>
       </div>
     </div>
 
     <!-- Darbības -->
     <div class="avatar-actions">
       <button class="save-avatar-btn" @click="saveAvatar" :disabled="isSaving || !allRequiredSelected">
-        <span v-if="!isSaving">Save Avatar</span>
-        <span v-else>Saving...</span>
+        <span v-if="!isSaving">{{ t('saveAvatar') }}</span>
+        <span v-else>{{ t('saving') }}</span>
       </button>
     </div>
   </div>
@@ -89,11 +89,11 @@ export default {
       activeCategory: 'background',
       layerOrder: ['background', 'background_gradient', 'body_color', 'body_outline', 'eyes'],
       categories: [
-        { key: 'background', label: 'Background' },
-        { key: 'background_gradient', label: 'Gradient' },
-        { key: 'body_color', label: 'Body' },
-        { key: 'body_outline', label: 'Outline' },
-        { key: 'eyes', label: 'Eyes' }
+        { key: 'background', labelKey: 'avatarCategoryBackground' },
+        { key: 'background_gradient', labelKey: 'avatarCategoryGradient' },
+        { key: 'body_color', labelKey: 'avatarCategoryBody' },
+        { key: 'body_outline', labelKey: 'avatarCategoryOutline' },
+        { key: 'eyes', labelKey: 'avatarCategoryEyes' }
       ],
       selectedParts: {
         background: null,
@@ -112,6 +112,7 @@ export default {
       presets: [
         {
           name: 'Cool Blue',
+          nameKey: 'avatarPresetCoolBlue',
           config: {
             background: 'bg_blue.png',
             background_gradient: 'bg_blue_gradient.png',
@@ -122,6 +123,7 @@ export default {
         },
         {
           name: 'Pink Dream',
+          nameKey: 'avatarPresetPinkDream',
           config: {
             background: 'bg_pink.png',
             background_gradient: 'bg_pink_gradient.png',
@@ -147,14 +149,36 @@ export default {
   },
   methods: {
     t(key) {
-      return getTranslation(key, this.currentLanguage);
+      return getTranslation(key, getCurrentLanguage());
+    },
+    getPresetName(preset) {
+      return preset.nameKey ? this.t(preset.nameKey) : preset.name;
     },
     getPartUrl(category, filename) {
       if (!filename) return '';
       return `/assets/profile_parts/${category}/${filename}`;
     },
-    formatPartName(filename) {
+    formatPartName(category, filename) {
       if (!filename) return '';
+      const localizedNames = {
+        'background/bg_blue.png': 'Zils fons',
+        'background/bg_grey.png': 'Pelēks fons',
+        'background/bg_pink.png': 'Rozā fons',
+        'background_gradient/bg_blue_gradient.png': 'Zils gradients',
+        'background_gradient/bg_grey_gradient.png': 'Pelēks gradients',
+        'background_gradient/bg_pink_gradient.png': 'Rozā gradients',
+        'body_color/body_green_blue.png': 'Zaļi zils ķermenis',
+        'body_color/body_grey.png': 'Pelēks ķermenis',
+        'body_color/body_pink_red.png': 'Rozā sarkans ķermenis',
+        'body_outline/body_outline_green_blue.png': 'Zaļi zila kontūra',
+        'body_outline/body_outline_grey.png': 'Pelēka kontūra',
+        'body_outline/body_outline_pink_red.png': 'Rozā sarkana kontūra',
+        'eyes/eyes_open_grey.png': 'Atvērtas pelēkas acis',
+        'eyes/eyes_open_pink.png': 'Atvērtas rozā acis',
+        'eyes/eyes_wink_green.png': 'Zaļš piemiedziens'
+      };
+      const localizedName = localizedNames[`${category}/${filename}`];
+      if (getCurrentLanguage() === 'lv' && localizedName) return localizedName;
       return filename
         .replace(/\.\w+$/, '')
         .replace(/[_-]/g, ' ')

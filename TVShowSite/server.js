@@ -118,6 +118,46 @@ const dbConfig = {
 };
 
 const db = mysql.createConnection(dbConfig);
+
+const DEFAULT_COSMETIC_UNLOCKS = [
+  {
+    effectKey: 'rainbow_cursor',
+    name: 'Rainbow Cursor',
+    description: 'A colorful cursor trail with shifting tones.',
+    type: 'cursor_trail',
+    rarity: 'epic',
+    milestoneType: 'quiz_completions',
+    milestoneValue: 5
+  },
+  {
+    effectKey: 'fluid_cursor',
+    name: 'Fluid Cursor',
+    description: 'A liquid style cursor trail.',
+    type: 'cursor_trail',
+    rarity: 'epic',
+    milestoneType: 'review_count',
+    milestoneValue: 10
+  },
+  {
+    effectKey: 'smooth_wavy',
+    name: 'Wavy Background',
+    description: 'Smooth waves move across the profile background.',
+    type: 'background_effect',
+    rarity: 'rare',
+    milestoneType: 'quiz_completions',
+    milestoneValue: 3
+  },
+  {
+    effectKey: 'flowing_ribbons',
+    name: 'Flowing Ribbons',
+    description: 'Layered ribbons move through the profile background.',
+    type: 'background_effect',
+    rarity: 'epic',
+    milestoneType: 'follower_count',
+    milestoneValue: 5
+  }
+];
+
 // TMDB pamata konfiguracija
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.VITE_TMDB_API_KEY;
@@ -499,6 +539,90 @@ async function checkAndAwardMilestones(userId) {
   } catch (err) {
     console.error('checkAndAwardMilestones error:', err);
     return [];
+  }
+}
+
+async function ensureDefaultCosmeticUnlocks() {
+  try {
+    for (const item of DEFAULT_COSMETIC_UNLOCKS) {
+      const [existingCosmetics] = await db.promise().query(
+        'SELECT id FROM cosmetics WHERE effect_key = ? AND type = ? ORDER BY id ASC LIMIT 1',
+        [item.effectKey, item.type]
+      );
+
+      let cosmeticId = existingCosmetics[0]?.id;
+      if (!cosmeticId) {
+        const [created] = await db.promise().query(
+          'INSERT INTO cosmetics (name, description, type, effect_key, config, preview_image, rarity) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [item.name, item.description, item.type, item.effectKey, '{}', null, item.rarity]
+        );
+        cosmeticId = created.insertId;
+      }
+
+      const [existingSources] = await db.promise().query(
+        `SELECT id FROM cosmetic_sources
+         WHERE cosmetic_id = ?
+           AND source_type = 'milestone'
+           AND milestone_type = ?
+           AND milestone_value = ?
+         LIMIT 1`,
+        [cosmeticId, item.milestoneType, item.milestoneValue]
+      );
+
+      if (!existingSources.length) {
+        await db.promise().query(
+          'INSERT INTO cosmetic_sources (cosmetic_id, source_type, quiz_id, min_score, milestone_type, milestone_value) VALUES (?, ?, ?, ?, ?, ?)',
+          [cosmeticId, 'milestone', null, null, item.milestoneType, item.milestoneValue]
+        );
+      }
+
+      await awardDefaultCosmeticToQualifiedUsers(cosmeticId, item);
+    }
+    console.log('default cosmetic unlock sources ready');
+  } catch (err) {
+    console.error('Error ensuring default cosmetic unlocks:', err);
+  }
+}
+
+async function awardDefaultCosmeticToQualifiedUsers(cosmeticId, item) {
+  const milestoneQueries = {
+    review_count: `
+      SELECT user_id, COUNT(*) AS cnt
+      FROM reviews
+      GROUP BY user_id
+      HAVING cnt >= ?
+    `,
+    follower_count: `
+      SELECT following_id AS user_id, COUNT(*) AS cnt
+      FROM user_follows
+      GROUP BY following_id
+      HAVING cnt >= ?
+    `,
+    quiz_completions: `
+      SELECT user_id, COUNT(DISTINCT source_id) AS cnt
+      FROM user_badges
+      WHERE badge_source = 'quiz'
+      GROUP BY user_id
+      HAVING cnt >= ?
+    `
+  };
+
+  const query = milestoneQueries[item.milestoneType];
+  if (!query) return;
+
+  const [qualifiedUsers] = await db.promise().query(query, [item.milestoneValue]);
+  for (const user of qualifiedUsers) {
+    const [awardResult] = await db.promise().query(
+      'INSERT IGNORE INTO user_cosmetics (user_id, cosmetic_id, source_detail) VALUES (?, ?, ?)',
+      [user.user_id, cosmeticId, `milestone:${item.milestoneType}:${item.milestoneValue}`]
+    );
+
+    if (awardResult.affectedRows > 0) {
+      await db.promise().query(
+        'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, 0, ?, ?)',
+        [user.user_id, 'cosmetic_unlock', `You unlocked a new cosmetic: ${item.name} (${item.rarity})`]
+      ).catch(() => {});
+    }
   }
 }
 
@@ -3539,7 +3663,10 @@ db.connect(err => {
     FOREIGN KEY (cosmetic_id) REFERENCES cosmetics(id) ON DELETE CASCADE
   )`, (err) => {
     if (err) console.error('Error creating user_cosmetics table:', err);
-    else console.log('user_cosmetics table ready');
+    else {
+      console.log('user_cosmetics table ready');
+      ensureDefaultCosmeticUnlocks();
+    }
   });
 
   // Pievieno aktīvās kosmētikas kolonnas users tabulai

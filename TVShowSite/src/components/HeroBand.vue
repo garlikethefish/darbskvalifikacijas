@@ -65,16 +65,30 @@
     </div>
 
     <div
+      v-else-if="normalizedVariant === 'profile' || normalizedVariant === 'home'"
+      class="profile-wave-wrapper"
+      aria-hidden="true"
+    >
+      <div class="profile-wave profile-wave--back"></div>
+      <div class="profile-wave profile-wave--front"></div>
+    </div>
+
+    <div
       v-else
       class="site-hero-loop"
       :class="`site-hero-loop--${normalizedVariant}`"
       aria-hidden="true"
     >
-      <span v-for="n in 8" :key="n">
-        <SvgIcon
+      <span v-for="n in loopItemCount" :key="n">
+        <span
           v-if="normalizedVariant === 'quizzes'"
-          name="question"
-          :size="22"
+          class="quiz-question-mark"
+        >?</span>
+        <SvgIcon
+          v-if="normalizedVariant === 'home'"
+          name="tv"
+          :size="44"
+          class="home-tv-icon"
         />
       </span>
     </div>
@@ -113,6 +127,13 @@ export default {
   computed: {
     normalizedVariant() {
       return variants.has(this.variant) ? this.variant : 'home';
+    },
+    loopItemCount() {
+      if (this.normalizedVariant === 'home') return 9;
+      if (this.normalizedVariant === 'quizzes') return 5;
+      if (this.normalizedVariant === 'profile') return 6;
+      if (this.normalizedVariant === 'reviews') return 6;
+      return 8;
     }
   }
 };
@@ -171,6 +192,7 @@ export default {
 
 .site-hero-wave,
 .site-hero-chart-line,
+.profile-wave-wrapper,
 .site-hero-loop {
   position: absolute;
   inset: 0;
@@ -182,6 +204,7 @@ export default {
 }
 
 .site-hero-chart-line,
+.profile-wave-wrapper,
 .site-hero-loop {
   z-index: 1;
   overflow: hidden;
@@ -195,6 +218,39 @@ export default {
   height: 100%;
   animation: heroChartScroll 36s linear infinite;
   filter: drop-shadow(0 0 4px rgba(200, 255, 210, 0.15));
+}
+
+.profile-wave-wrapper {
+  background-image: linear-gradient(to top, rgba(18, 24, 32, 0.32) 0%, rgba(10, 14, 20, 0.12) 100%);
+}
+
+.profile-wave {
+  width: max(760px, 72vw);
+  height: max(760px, 72vw);
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  margin-left: calc(max(760px, 72vw) / -2);
+  margin-top: calc(max(760px, 72vw) / -2);
+  border-radius: 38%;
+  background: rgba(28, 38, 50, 0.48);
+  box-shadow:
+    inset 0 0 120px rgba(112, 233, 116, 0.1),
+    0 0 80px rgba(66, 165, 245, 0.08);
+  animation: profileWaveRotate 15s infinite linear;
+}
+
+.profile-wave--back {
+  top: 58%;
+  left: 45%;
+  border-radius: 44%;
+  background: rgba(52, 92, 74, 0.4);
+  animation-duration: 22s;
+  animation-direction: reverse;
+}
+
+.profile-wave--front {
+  left: 58%;
 }
 
 .site-hero-inner {
@@ -271,7 +327,63 @@ export default {
 .site-hero-loop span:nth-child(7) { left: 82%; top: 32%; animation-delay: -6s; }
 .site-hero-loop span:nth-child(8) { left: 92%; top: 66%; animation-delay: -11s; }
 
-.site-hero-loop--home span,
+.site-hero-loop--home span:nth-child(1),
+.site-hero-loop--quizzes span:nth-child(1) { left: 5%; top: 22%; }
+.site-hero-loop--home span:nth-child(2),
+.site-hero-loop--quizzes span:nth-child(2) { left: 26%; top: 66%; }
+.site-hero-loop--home span:nth-child(3),
+.site-hero-loop--quizzes span:nth-child(3) { left: 48%; top: 24%; }
+.site-hero-loop--home span:nth-child(4),
+.site-hero-loop--quizzes span:nth-child(4) { left: 70%; top: 68%; }
+.site-hero-loop--home span:nth-child(5),
+.site-hero-loop--quizzes span:nth-child(5) { left: 90%; top: 30%; }
+
+.site-hero-loop--home span:nth-child(1) { left: 4%; top: 18%; }
+.site-hero-loop--home span:nth-child(2) { left: 15%; top: 64%; }
+.site-hero-loop--home span:nth-child(3) { left: 27%; top: 30%; }
+.site-hero-loop--home span:nth-child(4) { left: 39%; top: 70%; }
+.site-hero-loop--home span:nth-child(5) { left: 51%; top: 20%; }
+.site-hero-loop--home span:nth-child(6) { left: 63%; top: 62%; }
+.site-hero-loop--home span:nth-child(7) { left: 75%; top: 28%; }
+.site-hero-loop--home span:nth-child(8) { left: 86%; top: 68%; }
+.site-hero-loop--home span:nth-child(9) { left: 94%; top: 34%; }
+
+.site-hero-loop--profile span:nth-child(1),
+.site-hero-loop--reviews span:nth-child(1) { left: 4%; top: 24%; }
+.site-hero-loop--profile span:nth-child(2),
+.site-hero-loop--reviews span:nth-child(2) { left: 22%; top: 64%; }
+.site-hero-loop--profile span:nth-child(3),
+.site-hero-loop--reviews span:nth-child(3) { left: 40%; top: 26%; }
+.site-hero-loop--profile span:nth-child(4),
+.site-hero-loop--reviews span:nth-child(4) { left: 58%; top: 68%; }
+.site-hero-loop--profile span:nth-child(5),
+.site-hero-loop--reviews span:nth-child(5) { left: 76%; top: 24%; }
+.site-hero-loop--profile span:nth-child(6),
+.site-hero-loop--reviews span:nth-child(6) { left: 92%; top: 62%; }
+
+.site-hero-loop--home span {
+  width: 76px;
+  height: 76px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  animation-name: heroLogoSquaresDrift;
+}
+
+.site-hero-loop--home span::before {
+  content: none;
+}
+
+.home-tv-icon {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.38);
+  filter: none;
+}
+
 .site-hero-loop--series span {
   width: 76px;
   height: 42px;
@@ -295,13 +407,44 @@ export default {
   animation-name: heroRadarDrift;
 }
 
-.site-hero-loop--reviews span,
 .site-hero-loop--review-detail span {
   width: 120px;
   height: 10px;
   border-radius: 999px;
   transform-origin: left center;
   animation-name: heroLinesDrift;
+}
+
+.site-hero-loop--reviews span {
+  width: 168px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform-origin: center;
+  animation-name: heroJaggedLinesDrift;
+}
+
+.site-hero-loop--reviews span::before,
+.site-hero-loop--reviews span::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 14px;
+  background: linear-gradient(90deg, rgba(112, 233, 116, 0.1), rgba(255, 255, 255, 0.22), rgba(40, 160, 255, 0.12));
+  clip-path: polygon(0 70%, 8% 20%, 16% 74%, 25% 28%, 34% 72%, 43% 18%, 52% 70%, 62% 26%, 72% 76%, 82% 24%, 91% 70%, 100% 34%, 100% 58%, 91% 94%, 82% 48%, 72% 100%, 62% 50%, 52% 94%, 43% 42%, 34% 96%, 25% 52%, 16% 98%, 8% 44%, 0 94%);
+  filter: drop-shadow(0 0 9px rgba(112, 233, 116, 0.18));
+}
+
+.site-hero-loop--reviews span::before {
+  top: 2px;
+}
+
+.site-hero-loop--reviews span::after {
+  bottom: 2px;
+  opacity: 0.46;
+  transform: translateX(18px) scaleX(0.76);
 }
 
 .site-hero-loop--review-detail span {
@@ -320,27 +463,55 @@ export default {
   background: rgba(112, 233, 116, 0.35);
 }
 
+.site-hero-loop--profile span::after {
+  content: '✦';
+  width: auto;
+  height: auto;
+  right: -12px;
+  top: -12px;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 18px;
+  line-height: 1;
+  animation: heroStarPulse 2.8s ease-in-out infinite;
+}
+
 .site-hero-loop--quizzes span {
-  width: 38px;
-  height: 38px;
-  animation-name: heroTilesDrift;
+  width: 72px;
+  height: 72px;
+  animation-name: heroQuestionDrift;
   display: grid;
   place-items: center;
-  color: color-mix(in srgb, var(--text-color) 30%, transparent);
   border: 0;
   background: transparent;
   box-shadow: none;
 }
 
-.site-hero-loop--quizzes .svg-icon {
-  color: currentColor;
+.quiz-question-mark {
+  display: block;
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 4.2rem;
+  line-height: 1;
+  font-weight: 900;
+  text-shadow: 0 0 22px rgba(112, 233, 116, 0.12);
 }
 
 .site-hero-loop--profile span {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  animation-name: heroOrbitDrift;
+  width: 132px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  animation-name: heroProfileWaveDrift;
+}
+
+.site-hero-loop--profile span::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='132' height='36' viewBox='0 0 132 36' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 20 C14 4 24 4 36 20 S58 36 70 20 S92 4 104 20 S122 36 130 20' fill='none' stroke='%2370e974' stroke-width='3' stroke-linecap='round' opacity='.46'/%3E%3Cpath d='M2 25 C14 9 24 9 36 25 S58 41 70 25 S92 9 104 25 S122 41 130 25' fill='none' stroke='%2342a5f5' stroke-width='2' stroke-linecap='round' opacity='.28'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  opacity: 0.92;
 }
 
 .site-hero-loop--auth span {
@@ -372,6 +543,11 @@ export default {
   to { transform: translateX(-50%); }
 }
 
+@keyframes profileWaveRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes heroTextFloat {
   0%, 100% { transform: translateY(0) scale(1); filter: saturate(1); }
   50% { transform: translateY(-6px) scale(1.012); filter: saturate(1.08); }
@@ -380,6 +556,11 @@ export default {
 @keyframes heroCardsDrift {
   0%, 100% { transform: translate3d(-28px, 10px, 0) rotate(-7deg) scale(0.94); opacity: 0.52; }
   50% { transform: translate3d(30px, -16px, 0) rotate(7deg) scale(1.08); opacity: 0.92; }
+}
+
+@keyframes heroLogoSquaresDrift {
+  0%, 100% { transform: translate3d(-32px, 12px, 0) rotate(-8deg) scale(0.92); opacity: 0.5; }
+  50% { transform: translate3d(34px, -18px, 0) rotate(8deg) scale(1.08); opacity: 0.9; }
 }
 
 @keyframes heroRadarDrift {
@@ -392,14 +573,34 @@ export default {
   50% { transform: translate3d(34px, -12px, 0) rotate(14deg) scaleX(1.14); opacity: 0.92; }
 }
 
+@keyframes heroJaggedLinesDrift {
+  0%, 100% { transform: translate3d(-34px, 12px, 0) rotate(-10deg) scaleX(0.88); opacity: 0.42; }
+  50% { transform: translate3d(36px, -14px, 0) rotate(10deg) scaleX(1.08); opacity: 0.88; }
+}
+
 @keyframes heroTilesDrift {
   0%, 100% { transform: translate3d(-26px, 12px, 0) rotate(-22deg) scale(0.88); opacity: 0.52; }
   50% { transform: translate3d(28px, -20px, 0) rotate(130deg) scale(1.16); opacity: 0.94; }
 }
 
+@keyframes heroQuestionDrift {
+  0%, 100% { transform: translate3d(-30px, 14px, 0) rotate(-12deg) scale(0.9); opacity: 0.38; }
+  50% { transform: translate3d(34px, -20px, 0) rotate(10deg) scale(1.14); opacity: 0.82; }
+}
+
 @keyframes heroOrbitDrift {
   0%, 100% { transform: translate3d(-24px, 12px, 0) scale(0.84); opacity: 0.5; }
   50% { transform: translate3d(26px, -24px, 0) scale(1.18); opacity: 0.94; }
+}
+
+@keyframes heroProfileWaveDrift {
+  0%, 100% { transform: translate3d(-30px, 10px, 0) rotate(-6deg) scale(0.92); opacity: 0.5; }
+  50% { transform: translate3d(32px, -18px, 0) rotate(6deg) scale(1.08); opacity: 0.9; }
+}
+
+@keyframes heroStarPulse {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.82); opacity: 0.48; }
+  50% { transform: translate3d(4px, -5px, 0) rotate(18deg) scale(1.18); opacity: 0.9; }
 }
 
 @keyframes heroAccessDrift {
@@ -440,6 +641,7 @@ export default {
 @media (prefers-reduced-motion: reduce) {
   .site-hero::after,
   .site-hero-chart-svg,
+  .profile-wave,
   .site-hero-loop span,
   :deep(h1),
   :deep(p),

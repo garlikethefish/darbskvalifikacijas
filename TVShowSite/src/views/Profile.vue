@@ -44,7 +44,8 @@
             </div>
 
             <!-- Profila attēla izvēles modālais logs (tikai īpašniekam) -->
-            <div v-if="isOwnProfile && showProfilePictureModal" class="modal-overlay" @click.self="showProfilePictureModal = false">
+            <teleport to="body">
+            <div v-if="isOwnProfile && showProfilePictureModal" class="modal-overlay profile-picture-modal-overlay" @click.self="showProfilePictureModal = false">
               <div class="modal-content pfp-modal-wide">
                 <div class="modal-header">
                   <h3>{{ t('selectProfilePicture') }}</h3>
@@ -55,8 +56,8 @@
                   <button :class="['pfp-tab', { active: pfpModalTab === 'maker' }]" @click="pfpModalTab = 'maker'">{{ t('avatarMaker') }}</button>
                   <button :class="['pfp-tab', { active: pfpModalTab === 'upload' }]" @click="pfpModalTab = 'upload'">{{ t('uploadImage') }}</button>
                 </div>
-                <div class="modal-body">
-                  <div v-if="pfpModalTab === 'defaults'">
+                <div class="modal-body pfp-modal-body">
+                  <div v-if="pfpModalTab === 'defaults'" class="pfp-tab-panel">
                     <div class="pfp-section-title">{{ t('chooseDefaultPicture') }}</div>
                     <div class="default-pfp-grid">
                       <div 
@@ -71,10 +72,10 @@
                       </div>
                     </div>
                   </div>
-                  <div v-if="pfpModalTab === 'maker'">
+                  <div v-if="pfpModalTab === 'maker'" class="pfp-tab-panel">
                     <AvatarMaker :userId="user.id" @saved="onAvatarSaved" />
                   </div>
-                  <div v-if="pfpModalTab === 'upload'">
+                  <div v-if="pfpModalTab === 'upload'" class="pfp-tab-panel upload-tab-panel">
                     <div class="pfp-section-title">{{ t('uploadCustomPicture') }}</div>
                     <div class="upload-area">
                       <input type="file" ref="fileInput" @change="handleFileUpload" accept="image/*" style="display: none;" />
@@ -88,6 +89,7 @@
                 </div>
               </div>
             </div>
+            </teleport>
 
             <div class="user-details">
               <div class="username-section">
@@ -181,6 +183,7 @@
         </div>
 
         <!-- Žetona apskates modālais logs -->
+        <teleport to="body">
         <div v-if="inspectBadge" class="badge-inspect-overlay" @click.self="closeBadgeInspect">
           <div class="badge-inspect-modal">
             <button class="badge-inspect-close" @click="closeBadgeInspect"><SvgIcon name="close" :size="18" /></button>
@@ -214,6 +217,7 @@
         </div>
 
         <!-- Kosmētikas sadaļa (tikai īpašniekam) -->
+        </teleport>
         <div v-if="activeProfileTab === 'cosmetics' && isOwnProfile" class="cosmetics-section">
           <SectionHeader><SvgIcon name="palette" :size="22" /> {{ t('cosmetics') }}</SectionHeader>
           <CosmeticsPanel :userId="user.id" :isOwnProfile="isOwnProfile" />
@@ -270,26 +274,28 @@
               <button v-if="fav.tmdb_id" class="remove-btn" @click.stop="removeFavorite(index)" title="Remove show"><SvgIcon name="close" :size="14" /></button>
             </div>
           </div>
-          <div v-if="showSelectModal" class="modal-overlay" @click.self="showSelectModal = false">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h3>{{ t('selectShowSlot') }} {{ selectingPosition + 1 }}</h3>
-                <button class="modal-close" @click="showSelectModal = false"><SvgIcon name="close" :size="18" /></button>
-              </div>
-              <div class="modal-body">
-                <input v-model="searchQuery" @input="searchShows" type="text" class="search-input" :placeholder="t('searchTVShows')" />
-                <div class="search-results">
-                  <div v-for="show in searchResults" :key="show.id" class="search-result" @click="selectShow(show)">
-                    <img v-if="show.poster_path" :src="`https://image.tmdb.org/t/p/w200${show.poster_path}`" :alt="show.name" />
-                    <div>
-                      <div class="result-title">{{ show.name }}</div>
-                      <div class="result-year" v-if="show.first_air_date">{{ show.first_air_date.split('-')[0] }}</div>
+          <teleport to="body">
+            <div v-if="showSelectModal" class="modal-overlay favorite-select-modal-overlay" @click.self="showSelectModal = false">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3>{{ t('selectShowSlot') }} {{ selectingPosition + 1 }}</h3>
+                  <button class="modal-close" @click="showSelectModal = false"><SvgIcon name="close" :size="18" /></button>
+                </div>
+                <div class="modal-body">
+                  <input v-model="searchQuery" @input="searchShows" type="text" class="search-input" :placeholder="t('searchTVShows')" />
+                  <div class="search-results">
+                    <div v-for="show in searchResults" :key="show.id" class="search-result" @click="selectShow(show)">
+                      <img v-if="show.poster_path" :src="`https://image.tmdb.org/t/p/w200${show.poster_path}`" :alt="show.name" />
+                      <div>
+                        <div class="result-title">{{ show.name }}</div>
+                        <div class="result-year" v-if="show.first_air_date">{{ show.first_air_date.split('-')[0] }}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </teleport>
         </div>
 
         <!-- Iecienīto seriālu sadaļa (apmeklētājs - tikai lasāma) -->
@@ -1441,6 +1447,14 @@ export default {
   z-index: 10000;
 }
 
+.profile-picture-modal-overlay {
+  z-index: 99999;
+}
+
+.favorite-select-modal-overlay {
+  z-index: 99990;
+}
+
 .modal-content {
   background: var(--dark-bg-color);
   border-radius: 16px;
@@ -1495,6 +1509,12 @@ export default {
 .pfp-modal-wide {
   max-width: 680px;
   width: 95%;
+  height: min(760px, 88vh);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .pfp-modal-tabs {
@@ -1531,6 +1551,23 @@ export default {
   font-size: 0.85rem;
   color: var(--subtitle-color);
   margin: 0;
+}
+
+.pfp-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pfp-tab-panel {
+  min-height: 100%;
+}
+
+.upload-tab-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .pfp-section-title {
@@ -1600,7 +1637,7 @@ export default {
   padding: 15px 25px;
   border: 2px solid var(--accent-color);
   background: var(--accent-color);
-  color: var(--text-color);
+  color: rgb(30, 28, 39);
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
@@ -1609,8 +1646,13 @@ export default {
 }
 
 .upload-btn:hover:not(:disabled) {
-  background: var(--medium-bg-color);
+  background: var(--accent-color);
+  filter: brightness(1.08);
   transform: translateY(-2px);
+}
+
+.upload-btn :deep(.svg-icon) {
+  color: rgb(30, 28, 39);
 }
 
 .upload-btn:disabled {
@@ -1648,6 +1690,9 @@ export default {
   border: 4px solid var(--accent-color);
   transition: all 0.3s ease;
   display: block;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 0;
 }
 
 .pfp-wrapper:hover .profile-icon {
@@ -1669,6 +1714,7 @@ export default {
   transition: opacity 0.3s ease;
   cursor: pointer;
   pointer-events: none;
+  z-index: 1;
 }
 
 .pfp-overlay span {
@@ -1713,6 +1759,7 @@ export default {
   align-items: center;
   justify-content: center;
   color: var(--accent-color);
+  z-index: 4;
 }
 
 /* Izvēlētais žetons uz profila ikonas */
@@ -1726,7 +1773,7 @@ export default {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
   transform: translate(20%, -20%);
 }
 
@@ -1781,7 +1828,9 @@ export default {
 .edit-username-form {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .username-input {
@@ -1791,12 +1840,17 @@ export default {
   border-radius: 8px;
   background: var(--background-color);
   color: var(--text-color);
-  max-width: 400px;
+  width: min(420px, 100%);
+  max-width: 100%;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .edit-buttons {
   display: flex;
   gap: 10px;
+  justify-content: center;
+  width: 100%;
 }
 
 /* Darbību pogas */
@@ -1824,6 +1878,11 @@ export default {
 
 .edit-btn {
   background-color: var(--accent-color);
+  color: rgb(30, 28, 39);
+}
+
+.edit-btn :deep(.svg-icon) {
+  color: rgb(30, 28, 39);
 }
 
 .edit-btn:hover {
@@ -1852,7 +1911,7 @@ export default {
 
 .save-btn {
   background-color: var(--accent-color);
-  color: var(--text-color);
+  color: rgb(30, 28, 39);
 }
 
 .save-btn:hover {
@@ -2054,7 +2113,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 10001;
   animation: badgeOverlayIn 0.25s ease;
 }
 
