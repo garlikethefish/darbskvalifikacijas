@@ -58,7 +58,7 @@ export default {
     },
     async followShow() {
       if (!localStorage.getItem('auth')) {
-        alert(this.t('pleaseLoginToFollowShows'));
+        this.$alert(this.t('pleaseLoginToFollowShows'));
         return;
       }
 
@@ -81,7 +81,7 @@ export default {
         }
       } catch (error) {
         console.error('Error following show:', error);
-        alert(this.t('errorFollowingShow'));
+        this.$alert(this.t('errorFollowingShow'));
       } finally {
         this.isLoading = false;
       }
@@ -108,7 +108,7 @@ export default {
         }
       } catch (error) {
         console.error('Error unfollowing show:', error);
-        alert(this.t('errorUnfollowingShow'));
+        this.$alert(this.t('errorUnfollowingShow'));
       } finally {
         this.isLoading = false;
       }

@@ -247,11 +247,11 @@ export default {
         if (!res.ok) {
           throw new Error(data.error || "Failed to post review");
         }
-        alert(this.t('reviewPostedSuccessfully'));
+        await this.$alert(this.t('reviewPostedSuccessfully'));
         this.$router.push(`/profile/${auth?.user?.id}`);
       } catch (err) {
         console.error("Failed to submit review:", err);
-        alert(err.message);
+        this.$alert(err.message);
       }
     }
   },

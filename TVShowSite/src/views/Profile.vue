@@ -51,11 +51,22 @@
                   <h3>{{ t('selectProfilePicture') }}</h3>
                   <button class="modal-close" @click="showProfilePictureModal = false"><SvgIcon name="close" :size="18" /></button>
                 </div>
-                <div class="pfp-modal-tabs">
-                  <button :class="['pfp-tab', { active: pfpModalTab === 'defaults' }]" @click="pfpModalTab = 'defaults'">{{ t('defaultIcons') }}</button>
-                  <button :class="['pfp-tab', { active: pfpModalTab === 'maker' }]" @click="pfpModalTab = 'maker'">{{ t('avatarMaker') }}</button>
-                  <button :class="['pfp-tab', { active: pfpModalTab === 'upload' }]" @click="pfpModalTab = 'upload'">{{ t('uploadImage') }}</button>
+                <div class="pfp-selector-header">
+                  <div class="pfp-modal-tabs">
+                    <button :class="['pfp-tab', { active: pfpModalTab === 'defaults' }]" @click="pfpModalTab = 'defaults'">{{ t('defaultIcons') }}</button>
+                    <button :class="['pfp-tab', { active: pfpModalTab === 'maker' }]" @click="pfpModalTab = 'maker'">{{ t('avatarMaker') }}</button>
+                  </div>
+                  <button
+                    type="button"
+                    class="pfp-upload-action"
+                    @click="triggerFileUpload"
+                    :disabled="isUploading"
+                  >
+                    <SvgIcon name="upload" :size="18" />
+                    <span>{{ isUploading ? t('uploading') : t('uploadImage') }}</span>
+                  </button>
                 </div>
+                <input type="file" ref="fileInput" @change="handleFileUpload" accept="image/*" style="display: none;" />
                 <div class="modal-body pfp-modal-body">
                   <div v-if="pfpModalTab === 'defaults'" class="pfp-tab-panel">
                     <div class="pfp-section-title">{{ t('chooseDefaultPicture') }}</div>
@@ -74,17 +85,6 @@
                   </div>
                   <div v-if="pfpModalTab === 'maker'" class="pfp-tab-panel">
                     <AvatarMaker :userId="user.id" @saved="onAvatarSaved" />
-                  </div>
-                  <div v-if="pfpModalTab === 'upload'" class="pfp-tab-panel upload-tab-panel">
-                    <div class="pfp-section-title">{{ t('uploadCustomPicture') }}</div>
-                    <div class="upload-area">
-                      <input type="file" ref="fileInput" @change="handleFileUpload" accept="image/*" style="display: none;" />
-                      <button class="upload-btn" @click="triggerFileUpload" :disabled="isUploading">
-                        <span v-if="!isUploading" style="display:inline-flex;align-items:center;gap:8px;"><SvgIcon name="upload" :size="18" /> {{ t('uploadImage') }}</span>
-                        <span v-else>{{ t('uploading') }}</span>
-                      </button>
-                      <p class="upload-hint">{{ t('uploadHint') }}</p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -739,7 +739,7 @@ export default {
       this.isEditingUsername = true;
     },
     triggerFileUpload() {
-      if (!this.isUploading) this.$refs.fileInput.click();
+      if (!this.isUploading) this.$refs.fileInput?.click();
     },
     onAvatarSaved(profilePicturePath) {
       const cacheBuster = Date.now();
@@ -749,7 +749,7 @@ export default {
       auth.user.profile_picture = profilePicturePath;
       localStorage.setItem('auth', JSON.stringify(auth));
       this.showProfilePictureModal = false;
-      alert(this.t('avatarSavedSuccessfully'));
+      this.$alert(this.t('avatarSavedSuccessfully'));
     },
     async selectDefaultProfilePicture(icon) {
       const defaultPath = `/assets/default_pfp_icons/${icon}`;
@@ -769,22 +769,22 @@ export default {
         this.user.profile_picture = defaultPath;
         auth.user.profile_picture = defaultPath;
         localStorage.setItem('auth', JSON.stringify(auth));
-        alert(this.t('profilePictureUpdatedSuccessfully'));
+        this.$alert(this.t('profilePictureUpdatedSuccessfully'));
         this.showProfilePictureModal = false;
       } catch(err) {
         console.error('Error selecting default profile picture:', err);
-        alert(err.message || this.t('profilePictureUpdateError'));
+        this.$alert(err.message || this.t('profilePictureUpdateError'));
       }
     },
     async handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) {
-        alert(this.t('selectImageFile'));
+        this.$alert(this.t('selectImageFile'));
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert(this.t('imageSizeLessThan5MB'));
+        this.$alert(this.t('imageSizeLessThan5MB'));
         return;
       }
       this.isUploading = true;
@@ -805,18 +805,18 @@ export default {
         this.profileImageUrl = `${newPicturePath}?t=${cacheBuster}`;
         auth.user.profile_picture = newPicturePath;
         localStorage.setItem('auth', JSON.stringify(auth));
-        alert(this.t('profilePictureUpdatedSuccessfully'));
+        this.$alert(this.t('profilePictureUpdatedSuccessfully'));
         this.showProfilePictureModal = false;
       } catch(err) {
         console.error('Upload error:', err);
-        alert(err.message || this.t('profilePictureUploadError'));
+        this.$alert(err.message || this.t('profilePictureUploadError'));
       } finally {
         this.isUploading = false;
-        this.$refs.fileInput.value = '';
+        if (this.$refs.fileInput) this.$refs.fileInput.value = '';
       }
     },
     async saveUsername() {
-      if (!this.newUsername.trim()) return alert(this.t('usernameCannotBeEmpty'));
+      if (!this.newUsername.trim()) return this.$alert(this.t('usernameCannotBeEmpty'));
       if (this.newUsername === this.user.username) return this.isEditingUsername = false;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
@@ -834,9 +834,9 @@ export default {
         this.isEditingUsername = false;
         auth.user.username = data.user.username;
         localStorage.setItem('auth', JSON.stringify({ loggedIn: true, user: this.user }));
-        alert(this.t('usernameUpdatedSuccessfully'));
+        await this.$alert(this.t('usernameUpdatedSuccessfully'));
         location.reload();
-      } catch(err) { alert(err.message || this.t('usernameUpdateError')); }
+      } catch(err) { this.$alert(err.message || this.t('usernameUpdateError')); }
     },
     async removeDisplayBadge() {
       try {
@@ -857,7 +857,7 @@ export default {
         localStorage.setItem('auth', JSON.stringify(auth));
       } catch (error) {
         console.error('Failed to remove badge:', error);
-        alert(this.t('errorRemovingBadge'));
+        this.$alert(this.t('errorRemovingBadge'));
       }
     },
     async selectDisplayBadge(badgeId) {
@@ -879,7 +879,7 @@ export default {
         localStorage.setItem('auth', JSON.stringify(auth));
       } catch (error) {
         console.error('Failed to select badge:', error);
-        alert(this.t('errorSelectingBadge'));
+        this.$alert(this.t('errorSelectingBadge'));
       }
     },
     openBadgeInspect(badge) {
@@ -1057,7 +1057,7 @@ export default {
         idx !== this.selectingPosition && fav.tmdb_id === show.id
       );
       if (isDuplicate) {
-        alert(this.t('duplicateFavoriteShow'));
+        this.$alert(this.t('duplicateFavoriteShow'));
         return;
       }
       this.favorites[this.selectingPosition] = {
@@ -1252,7 +1252,7 @@ export default {
       try {
         const profileRes = await fetch(`/api/users/${userId}/public-profile`);
         if (!profileRes.ok) {
-          alert(this.t('userNotFound'));
+          await this.$alert(this.t('userNotFound'));
           this.$router.push('/');
           return;
         }
@@ -1517,12 +1517,20 @@ export default {
   overflow: hidden;
 }
 
-.pfp-modal-tabs {
+.pfp-selector-header {
   display: flex;
-  gap: 4px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 20px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 0;
+}
+
+.pfp-modal-tabs {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
 }
 
 .pfp-tab {
@@ -1547,10 +1555,63 @@ export default {
   border-bottom-color: var(--accent-color);
 }
 
-.upload-hint {
-  font-size: 0.85rem;
-  color: var(--subtitle-color);
-  margin: 0;
+.pfp-upload-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--accent-color);
+  border-radius: 8px;
+  background: rgba(112, 233, 116, 0.12);
+  color: var(--accent-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.pfp-upload-action:hover:not(:disabled),
+.pfp-upload-action:focus-visible {
+  background: var(--accent-color);
+  color: rgb(30, 28, 39);
+  transform: translateY(-1px);
+}
+
+.pfp-upload-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pfp-upload-action :deep(.svg-icon) {
+  color: currentColor;
+}
+
+@media (max-width: 560px) {
+  .pfp-selector-header {
+    align-items: stretch;
+    flex-direction: column;
+    border-bottom: none;
+    gap: 10px;
+  }
+
+  .pfp-modal-tabs {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .pfp-tab {
+    flex: 1;
+    padding-inline: 12px;
+  }
+
+  .pfp-upload-action {
+    width: 100%;
+    margin-bottom: 0;
+  }
 }
 
 .pfp-modal-body {
@@ -1562,12 +1623,6 @@ export default {
 
 .pfp-tab-panel {
   min-height: 100%;
-}
-
-.upload-tab-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .pfp-section-title {
@@ -1625,39 +1680,6 @@ export default {
   font-size: 1.5rem;
   color: white;
   font-weight: bold;
-}
-
-.upload-area {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.upload-btn {
-  padding: 15px 25px;
-  border: 2px solid var(--accent-color);
-  background: var(--accent-color);
-  color: rgb(30, 28, 39);
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.upload-btn:hover:not(:disabled) {
-  background: var(--accent-color);
-  filter: brightness(1.08);
-  transform: translateY(-2px);
-}
-
-.upload-btn :deep(.svg-icon) {
-  color: rgb(30, 28, 39);
-}
-
-.upload-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .profile-header {

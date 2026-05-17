@@ -505,7 +505,7 @@ export default {
         this.showDeleteModal = false;
       } catch (e) {
         console.error('Error deleting review:', e);
-        alert(e.message || this.t('reviewDeleteError'));
+        this.$alert(e.message || this.t('reviewDeleteError'));
       }
     },
 
@@ -529,7 +529,7 @@ export default {
         this.showDeleteCommentModal = null;
       } catch (e) {
         console.error('Error deleting comment:', e);
-        alert(e.message || this.t('commentDeleteError'));
+        this.$alert(e.message || this.t('commentDeleteError'));
       }
     },
 

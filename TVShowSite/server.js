@@ -397,6 +397,55 @@ async function tmdbGetWithFallback(path, params = {}, language = 'en-US', fields
 function getConnection() {
   return mysql.createConnection(dbConfig);
 }
+
+function getSeedSqlFromEnv() {
+  if (process.env.DB_SEED_SQL_BASE64) {
+    return Buffer.from(process.env.DB_SEED_SQL_BASE64, 'base64').toString('utf8');
+  }
+
+  if (process.env.DB_SEED_SQL_PATH) {
+    const seedPath = path.isAbsolute(process.env.DB_SEED_SQL_PATH)
+      ? process.env.DB_SEED_SQL_PATH
+      : path.join(__dirname, process.env.DB_SEED_SQL_PATH);
+    return fs.readFileSync(seedPath, 'utf8');
+  }
+
+  return process.env.DB_SEED_SQL || '';
+}
+
+function prepareSeedSql(sql) {
+  return sql
+    .replace(/^\s*CREATE DATABASE\b[^;]*;\s*/gim, '')
+    .replace(/^\s*USE\s+`?[\w-]+`?\s*;\s*/gim, '');
+}
+
+async function maybeSeedDatabaseFromEnv() {
+  if (process.env.RUN_DB_SEED !== 'true') return;
+
+  const rawSql = getSeedSqlFromEnv();
+  if (!rawSql.trim()) {
+    console.warn('RUN_DB_SEED is true, but no seed SQL was provided');
+    return;
+  }
+
+  const [[userCount]] = await db.promise().query('SELECT COUNT(*) AS count FROM users');
+  if (userCount.count > 0 && process.env.DB_SEED_FORCE !== 'true') {
+    console.log('database seed skipped because users already exist');
+    return;
+  }
+
+  const seedConnection = mysql.createConnection({
+    ...dbConfig,
+    multipleStatements: true
+  });
+
+  try {
+    await seedConnection.promise().query(prepareSeedSql(rawSql));
+    console.log('database seed import completed');
+  } finally {
+    seedConnection.end();
+  }
+}
 const cachedGenresByLang = {};
 const genreCacheTimeByLang = {};
 const GENRE_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
@@ -3406,6 +3455,113 @@ app.get('/api/users/:userId/comments', async (req, res) => {
 db.connect(err => {
   if (err) throw err;
   console.log('MySQL connected');
+
+  db.query(`CREATE TABLE IF NOT EXISTS users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'user', 'guest') NOT NULL DEFAULT 'user',
+    profile_picture VARCHAR(255) DEFAULT 'defaultpfp.jpg',
+    selected_badge_id INT DEFAULT NULL,
+    is_banned TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    avatar_config TEXT DEFAULT NULL,
+    active_cursor_trail INT DEFAULT NULL,
+    active_background_effect INT DEFAULT NULL
+  )`, (err) => {
+    if (err) console.error('Error creating users table:', err);
+    else console.log('users table ready');
+  });
+
+  db.query(`CREATE TABLE IF NOT EXISTS reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    tmdb_series_id INT NOT NULL DEFAULT 0,
+    season_number INT NOT NULL DEFAULT 1,
+    episode_number INT NOT NULL DEFAULT 1,
+    rating TINYINT NOT NULL,
+    review_text TEXT NOT NULL,
+    date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    review_title VARCHAR(200) NOT NULL,
+    likes INT DEFAULT 0,
+    dislikes INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    INDEX user_id_for_idx (user_id),
+    INDEX idx_tmdb_series (tmdb_series_id),
+    INDEX idx_tmdb_series_season_episode (tmdb_series_id, season_number, episode_number),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_rating_valid CHECK (rating BETWEEN 1 AND 5)
+  )`, (err) => {
+    if (err) console.error('Error creating reviews table:', err);
+    else console.log('reviews table ready');
+  });
+
+  db.query(`CREATE TABLE IF NOT EXISTS review_reactions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    review_id INT NOT NULL,
+    is_like TINYINT NOT NULL,
+    UNIQUE KEY unique_user_review (user_id, review_id),
+    KEY review_id (review_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating review_reactions table:', err);
+    else console.log('review_reactions table ready');
+  });
+
+  db.query(`CREATE TABLE IF NOT EXISTS comments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    comment_text TEXT NOT NULL,
+    other_user_id INT DEFAULT NULL,
+    review_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY user_id_idx (user_id),
+    KEY other_user_id_idx (other_user_id),
+    KEY fk_review_id (review_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) console.error('Error creating comments table:', err);
+    else console.log('comments table ready');
+  });
+
+  db.query(`CREATE TABLE IF NOT EXISTS quotes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    text TEXT NOT NULL,
+    author VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) console.error('Error creating quotes table:', err);
+    else console.log('quotes table ready');
+  });
+
+  db.query("ALTER TABLE reviews ADD COLUMN likes INT DEFAULT 0", () => {});
+  db.query("ALTER TABLE reviews ADD COLUMN dislikes INT DEFAULT 0", () => {});
+  db.query("ALTER TABLE reviews ADD COLUMN comment_count INT DEFAULT 0", () => {});
+
+  const seedAdminUsername = process.env.SEED_ADMIN_USERNAME;
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL;
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+  if (seedAdminUsername && seedAdminEmail && seedAdminPassword) {
+    const hashedSeedPassword = bcrypt.hashSync(seedAdminPassword, 10);
+    db.query(
+      `INSERT INTO users (username, email, password, role)
+       SELECT ?, ?, ?, 'admin'
+       WHERE NOT EXISTS (
+         SELECT 1 FROM users WHERE username = ? OR email = ? LIMIT 1
+       )`,
+      [seedAdminUsername, seedAdminEmail, hashedSeedPassword, seedAdminUsername, seedAdminEmail],
+      (err, result) => {
+        if (err) console.error('Error seeding admin user:', err);
+        else if (result.affectedRows > 0) console.log('seed admin user ready');
+        else console.log('seed admin user already exists');
+      }
+    );
+  }
   
   // Izveido user_favorites tabulu, ja tā neeksistē
   db.query(`CREATE TABLE IF NOT EXISTS user_favorites (
@@ -3414,7 +3570,8 @@ db.connect(err => {
     tmdb_series_id INT NOT NULL,
     position INT NOT NULL,
     UNIQUE KEY unique_user_position (user_id, position),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT user_favorites_chk_1 CHECK (position BETWEEN 1 AND 5)
   )`, (err) => {
     if (err) console.error('Error creating user_favorites table:', err);
     else console.log('user_favorites table ready');
@@ -3425,13 +3582,16 @@ db.connect(err => {
     id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    icon_emoji VARCHAR(10),
+    icon_emoji VARCHAR(10) DEFAULT NULL,
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     category VARCHAR(50) DEFAULT 'series',
     difficulty VARCHAR(20) DEFAULT 'medium',
     icon_name VARCHAR(50) DEFAULT NULL,
     tmdb_series_id INT DEFAULT NULL,
-    created_by INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    quiz_image VARCHAR(255) DEFAULT NULL,
+    badge_name VARCHAR(100) DEFAULT NULL,
+    badge_rules TEXT,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
   )`, (err) => {
     if (err) console.error('Error creating quizzes table:', err);
@@ -3464,12 +3624,12 @@ db.connect(err => {
     option_b VARCHAR(255),
     option_c VARCHAR(255),
     option_d VARCHAR(255),
+    correct_answer CHAR(1) NOT NULL,
+    explanation TEXT,
     option_e VARCHAR(255),
     option_f VARCHAR(255),
     option_g VARCHAR(255),
     option_h VARCHAR(255),
-    correct_answer CHAR(1) NOT NULL,
-    explanation TEXT,
     FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
   )`, (err) => {
     if (err) console.error('Error creating quiz_questions table:', err);
@@ -3485,14 +3645,17 @@ db.connect(err => {
   db.query(`CREATE TABLE IF NOT EXISTS user_badges (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    badge_source VARCHAR(20) NOT NULL DEFAULT 'quiz',
-    source_id INT NOT NULL,
+    quiz_id INT DEFAULT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     badge_type VARCHAR(20) NOT NULL DEFAULT 'default',
     badge_image VARCHAR(255),
     badge_name_override VARCHAR(255),
+    badge_source VARCHAR(20) NOT NULL DEFAULT 'quiz',
+    source_id INT DEFAULT NULL,
     awarded_by INT DEFAULT NULL,
-    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_badge_type (user_id, quiz_id, badge_type),
     UNIQUE KEY unique_user_badge_src (user_id, badge_source, source_id, badge_type),
+    KEY quiz_id (quiz_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   )`, (err) => {
     if (err) console.error('Error creating user_badges table:', err);
@@ -3501,6 +3664,7 @@ db.connect(err => {
 
   // Migrācija: pievieno jaunas kolonnas user_badges tabulai, ja atjaunina no vecās shēmas
   db.query("ALTER TABLE user_badges ADD COLUMN badge_source VARCHAR(20) NOT NULL DEFAULT 'quiz'", () => {});
+  db.query("ALTER TABLE user_badges ADD COLUMN quiz_id INT DEFAULT NULL", () => {});
   db.query("ALTER TABLE user_badges ADD COLUMN source_id INT DEFAULT NULL", () => {});
   db.query("ALTER TABLE user_badges ADD COLUMN awarded_by INT DEFAULT NULL", () => {});
   db.query("ALTER TABLE user_badges ADD COLUMN badge_image VARCHAR(255)", () => {});
@@ -3677,6 +3841,10 @@ db.connect(err => {
   db.query(`ALTER TABLE users ADD COLUMN active_background_effect INT DEFAULT NULL`, (err) => {
     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error('Error altering users table:', err);
     else console.log('users table checked for active_background_effect');
+  });
+
+  maybeSeedDatabaseFromEnv().catch((err) => {
+    console.error('Error seeding database from SQL:', err);
   });
 });
 

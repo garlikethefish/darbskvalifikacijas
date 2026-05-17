@@ -536,7 +536,7 @@ export default {
           throw new Error(data.error || 'Registration failed');
         }
 
-        alert(this.t('registrationSuccess'));
+        await this.$alert(this.t('registrationSuccess'));
         this.switchForm('login');
 
         this.registerForm = {
@@ -552,7 +552,7 @@ export default {
     },
 
     forgotPassword() {
-      alert(this.t('forgotPasswordSoon'));
+      this.$alert(this.t('forgotPasswordSoon'));
     }
   },
   mounted() {

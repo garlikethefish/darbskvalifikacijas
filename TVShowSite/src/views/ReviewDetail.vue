@@ -184,7 +184,7 @@ export default {
         const data = await res.json();
         
         if (!res.ok) {
-          alert(this.t('reviewNotFound'));
+          await this.$alert(this.t('reviewNotFound'));
           this.$router.push('/reviews');
           return;
         }
@@ -200,12 +200,12 @@ export default {
         }
       } catch (err) {
         console.error('Error fetching review:', err);
-        alert(this.t('failedToLoadReview'));
+        this.$alert(this.t('failedToLoadReview'));
       }
     },
     async toggleLike() {
       if (!this.auth?.loggedIn) {
-        alert(this.t('pleaseLoginToReact'));
+        this.$alert(this.t('pleaseLoginToReact'));
         return;
       }
 
@@ -230,7 +230,7 @@ export default {
     },
     async toggleDislike() {
       if (!this.auth?.loggedIn) {
-        alert(this.t('pleaseLoginToReact'));
+        this.$alert(this.t('pleaseLoginToReact'));
         return;
       }
 

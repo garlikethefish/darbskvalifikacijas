@@ -120,6 +120,7 @@ export const translations = {
 
     // Cita saskarne
     loading: 'Loading...',
+    notice: 'Notice',
     noResults: 'No results found',
     error: 'Error',
     success: 'Success',
@@ -725,6 +726,7 @@ export const translations = {
 
     // Cita saskarne
     loading: 'Ielāde...',
+    notice: 'Paziņojums',
     noResults: 'Rezultāti nav atrasti',
     error: 'Kļūda',
     success: 'Sekmīgi',

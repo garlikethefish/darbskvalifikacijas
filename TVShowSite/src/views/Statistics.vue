@@ -702,7 +702,7 @@ export default {
         document.body.removeChild(exportEl);
       } catch (err) {
         console.error('PDF generation failed', err);
-        alert(this.t('pdfFailed') || 'Failed to generate PDF');
+        this.$alert(this.t('pdfFailed') || 'Failed to generate PDF');
       } finally {
         this.generatingPdf = false;
       }

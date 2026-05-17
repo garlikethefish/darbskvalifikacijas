@@ -138,7 +138,7 @@ export default {
     },
     async updateShowWatched() {
       if (!localStorage.getItem('auth')) {
-        alert(this.t('pleaseLoginMarkShowsWatched'));
+        await this.$alert(this.t('pleaseLoginMarkShowsWatched'));
         this.showWatched = false;
         return;
       }
@@ -160,13 +160,13 @@ export default {
         this.$emit('show-watched-updated', this.showWatched);
       } catch (error) {
         console.error('Error updating show watched status:', error);
-        alert(this.t('errorUpdatingWatchedStatus'));
+        this.$alert(this.t('errorUpdatingWatchedStatus'));
         this.showWatched = !this.showWatched;
       }
     },
     async toggleEpisodeWatched(seasonNumber, episodeNumber) {
       if (!localStorage.getItem('auth')) {
-        alert(this.t('pleaseLoginMarkEpisodesWatched'));
+        this.$alert(this.t('pleaseLoginMarkEpisodesWatched'));
         return;
       }
 
@@ -198,7 +198,7 @@ export default {
         this.$emit('episode-watched-updated', { seasonNumber, episodeNumber, watched: !isCurrentlyWatched });
       } catch (error) {
         console.error('Error updating episode watched status:', error);
-        alert(this.t('errorUpdatingEpisodeStatus'));
+        this.$alert(this.t('errorUpdatingEpisodeStatus'));
       }
     },
     isEpisodeWatched(seasonNumber, episodeNumber) {

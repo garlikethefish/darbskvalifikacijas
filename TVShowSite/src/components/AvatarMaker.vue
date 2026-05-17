@@ -293,7 +293,7 @@ export default {
         this.$emit('saved', uploadData.profilePicture);
       } catch (err) {
         console.error('Failed to save avatar:', err);
-        alert(this.t('avatarSaveError'));
+        this.$alert(this.t('avatarSaveError'));
       } finally {
         this.isSaving = false;
       }

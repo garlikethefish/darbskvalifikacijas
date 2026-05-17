@@ -639,19 +639,6 @@
             <span class="stat-label">{{ t('totalQuizzes') }}</span>
           </div>
         </div>
-
-        <div class="settings-section">
-          <h3>{{ t('dailyQuoteManagement') }}</h3>
-          <div class="form-group">
-            <label>{{ t('quoteText') }}</label>
-            <textarea v-model="newQuote.text" :placeholder="t('enterQuote')" class="form-input form-textarea"></textarea>
-          </div>
-          <div class="form-group">
-            <label>{{ t('author') }}</label>
-            <input v-model="newQuote.author" type="text" :placeholder="t('quoteAuthor')" class="form-input" />
-          </div>
-          <button class="primary-btn" @click="addQuote">{{ t('addQuote') }}</button>
-        </div>
       </div>
     </div>
 
@@ -836,7 +823,7 @@ export default {
             user.role = newRole;
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -861,7 +848,7 @@ export default {
             user.is_banned = banning ? 1 : 0;
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -883,7 +870,7 @@ export default {
             this.filterUsers();
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -914,14 +901,14 @@ export default {
       this.newBadge.questions.splice(idx, 1);
     },
     async createBadge() {
-      if (!this.newBadge.title.trim()) return alert(this.t('titleRequired'));
-      if (!this.newBadge.icon_emoji.trim()) return alert(this.t('iconEmojiRequired'));
-      if (this.newBadge.questions.length === 0) return alert(this.t('addAtLeastOneQuestion'));
+      if (!this.newBadge.title.trim()) return this.$alert(this.t('titleRequired'));
+      if (!this.newBadge.icon_emoji.trim()) return this.$alert(this.t('iconEmojiRequired'));
+      if (this.newBadge.questions.length === 0) return this.$alert(this.t('addAtLeastOneQuestion'));
       
       for (let i = 0; i < this.newBadge.questions.length; i++) {
         const q = this.newBadge.questions[i];
         if (!q.question_text || !q.option_a || !q.option_b || !q.correct_answer) {
-          return alert(this.tFormat('questionIncompleteTemplate', { index: i + 1 }));
+          return this.$alert(this.tFormat('questionIncompleteTemplate', { index: i + 1 }));
         }
       }
 
@@ -937,9 +924,9 @@ export default {
         this.showCreateBadge = false;
         this.newBadge = { title: '', description: '', icon_emoji: '', questions: [] };
         await this.fetchBadges();
-        alert(this.t('badgeQuizCreatedSuccessfully'));
+        this.$alert(this.t('badgeQuizCreatedSuccessfully'));
       } catch (err) {
-        alert(`${this.t('errorPrefix')} ${err.message}`);
+        this.$alert(`${this.t('errorPrefix')} ${err.message}`);
       } finally {
         this.isCreatingBadge = false;
       }
@@ -960,7 +947,7 @@ export default {
             this.allBadges = this.allBadges.filter(b => b.id !== badge.id);
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -1000,7 +987,7 @@ export default {
             this.filterReviews();
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -1017,7 +1004,7 @@ export default {
       }
     },
     async addQuote() {
-      if (!this.newQuote.text.trim()) return alert(this.t('quoteTextRequired'));
+      if (!this.newQuote.text.trim()) return this.$alert(this.t('quoteTextRequired'));
       try {
         const res = await fetch('/api/admin/quotes', {
           method: 'POST',
@@ -1026,9 +1013,9 @@ export default {
         });
         if (!res.ok) throw new Error('Failed');
         this.newQuote = { text: '', author: '' };
-        alert(this.t('quoteAdded'));
+        this.$alert(this.t('quoteAdded'));
       } catch (err) {
-        alert(`${this.t('errorPrefix')} ${err.message}`);
+        this.$alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
 
@@ -1218,16 +1205,16 @@ export default {
         this.badgeFormSaving = false;
       }
     },
-    awardStandaloneBadge(badge) {
-      const uid = prompt(this.t('enterUserIdToAwardBadge'));
+    async awardStandaloneBadge(badge) {
+      const uid = await this.$prompt(this.t('enterUserIdToAwardBadge'));
       if (!uid || isNaN(Number(uid))) return;
       fetch(`/api/admin/standalone-badges/${badge.id}/award`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ userId: Number(uid) })
       }).then(r => r.json()).then(data => {
-        alert(data.message === 'Badge awarded' ? this.t('badgeAwardedSuccessfully') : (data.message || this.t('errorAwardingBadge')));
-      }).catch(() => alert(this.t('errorAwardingBadge')));
+        this.$alert(data.message === 'Badge awarded' ? this.t('badgeAwardedSuccessfully') : (data.message || this.t('errorAwardingBadge')));
+      }).catch(() => this.$alert(this.t('errorAwardingBadge')));
     },
     confirmDeleteStandaloneBadge(badge) {
       this.confirmDialog = {
@@ -1245,7 +1232,7 @@ export default {
             this.allStandaloneBadges = this.allStandaloneBadges.filter(b => b.id !== badge.id);
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
@@ -1321,14 +1308,14 @@ export default {
             await this.fetchCosmetics();
             this.confirmDialog.show = false;
           } catch (err) {
-            alert(`${this.t('errorPrefix')} ${err.message}`);
+            this.$alert(`${this.t('errorPrefix')} ${err.message}`);
           }
         }
       };
     },
     async linkCosmeticSource() {
       if (!this.cosmeticSourceForm.cosmetic_id) {
-        alert(this.t('selectCosmetic'));
+        this.$alert(this.t('selectCosmetic'));
         return;
       }
       const body = {
@@ -1336,7 +1323,7 @@ export default {
         source_type: this.cosmeticSourceForm.source_type
       };
       if (body.source_type === 'quiz') {
-        if (!this.cosmeticSourceForm.quiz_id) { alert(this.t('selectQuiz')); return; }
+        if (!this.cosmeticSourceForm.quiz_id) { this.$alert(this.t('selectQuiz')); return; }
         body.quiz_id = this.cosmeticSourceForm.quiz_id;
         body.min_score = this.cosmeticSourceForm.min_score;
       } else {
@@ -1352,7 +1339,7 @@ export default {
         if (!res.ok) throw new Error('Failed to link source');
         await this.fetchCosmetics();
       } catch (err) {
-        alert(`${this.t('errorPrefix')} ${err.message}`);
+        this.$alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
     async deleteCosmeticSource(id) {
@@ -1364,12 +1351,12 @@ export default {
         if (!res.ok) throw new Error('Failed');
         await this.fetchCosmetics();
       } catch (err) {
-        alert(`${this.t('errorPrefix')} ${err.message}`);
+        this.$alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
     async awardCosmeticToUser() {
       if (!this.cosmeticAwardForm.cosmetic_id || !this.cosmeticAwardForm.userId) {
-        alert(this.t('selectCosmeticAndUserId'));
+        this.$alert(this.t('selectCosmeticAndUserId'));
         return;
       }
       try {
@@ -1382,10 +1369,10 @@ export default {
           const err = await res.json();
           throw new Error(err.error || 'Failed to award');
         }
-        alert(this.t('cosmeticAwardedSuccessfully'));
+        this.$alert(this.t('cosmeticAwardedSuccessfully'));
         this.cosmeticAwardForm = { cosmetic_id: '', userId: '' };
       } catch (err) {
-        alert(`${this.t('errorPrefix')} ${err.message}`);
+        this.$alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     }
   },

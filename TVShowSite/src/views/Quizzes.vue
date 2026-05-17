@@ -931,7 +931,7 @@ export default {
     },
     async startQuiz(quiz) {
       if (!this.isLoggedIn) {
-        alert(this.t('loginToTakeQuiz'));
+        this.$alert(this.t('loginToTakeQuiz'));
         return;
       }
       if (this.userBadges[quiz.id]) return;
@@ -968,18 +968,18 @@ export default {
     },
     async submitQuiz() {
       if (!this.isLoggedIn) {
-        alert(this.t('loginToTakeQuiz'));
+        await this.$alert(this.t('loginToTakeQuiz'));
         this.backToList();
         return;
       }
       const answeredCount = Object.values(this.answers).filter(a => a && a.trim()).length;
       if (answeredCount < this.activeQuiz.questions.length) {
-        alert(this.t('pleaseAnswerAllQuestions'));
+        this.$alert(this.t('pleaseAnswerAllQuestions'));
         return;
       }
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
-        if (!auth?.user?.id) { alert(this.t('mustBeLoggedInToSubmitQuiz')); return; }
+        if (!auth?.user?.id) { await this.$alert(this.t('mustBeLoggedInToSubmitQuiz')); return; }
         const res = await fetch(`/api/quizzes/${this.activeQuiz.id}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': auth.user.id.toString() },
@@ -1002,7 +1002,7 @@ export default {
         this.showResults = true;
       } catch (err) {
         console.error('Error submitting quiz:', err);
-        alert(err.message || this.t('failedToSubmitQuiz'));
+        this.$alert(err.message || this.t('failedToSubmitQuiz'));
       }
     },
     retakeQuiz() {
@@ -1110,7 +1110,7 @@ export default {
       }
     },
     async awardBadgeToUser(badgeId) {
-      const uid = prompt(this.t('enterUserIdToAwardBadge'));
+      const uid = await this.$prompt(this.t('enterUserIdToAwardBadge'));
       if (!uid || isNaN(Number(uid))) return;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
@@ -1121,13 +1121,13 @@ export default {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
-        alert(this.t('badgeAwardedSuccessfully'));
+        this.$alert(this.t('badgeAwardedSuccessfully'));
       } catch (err) {
-        alert(`${this.t('errorPrefix')} ${err.message}`);
+        this.$alert(`${this.t('errorPrefix')} ${err.message}`);
       }
     },
     async deleteBadge(badgeId) {
-      if (!confirm(this.t('deleteBadgeConfirm'))) return;
+      if (!await this.$confirm(this.t('deleteBadgeConfirm'))) return;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
         const res = await fetch(`/api/admin/standalone-badges/${badgeId}`, {
@@ -1137,7 +1137,7 @@ export default {
         if (!res.ok) throw new Error(this.t('failedToDeleteBadge'));
         await this.fetchStandaloneBadges();
       } catch (err) {
-        alert(err.message);
+        this.$alert(err.message);
       }
     },
     openAdminPanel() {
@@ -1260,7 +1260,7 @@ export default {
       }
     },
     async deleteQuiz(quizId) {
-      if (!confirm(this.t('deleteQuizConfirm'))) return;
+      if (!await this.$confirm(this.t('deleteQuizConfirm'))) return;
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
         const res = await fetch(`/api/admin/quizzes/${quizId}`, {
@@ -1270,7 +1270,7 @@ export default {
         if (!res.ok) throw new Error(this.t('failedToDeleteQuiz'));
         await this.fetchQuizzes();
       } catch (err) {
-        alert(err.message);
+        this.$alert(err.message);
       }
     },
     backToList() {

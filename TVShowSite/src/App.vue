@@ -15,6 +15,7 @@
   <footer>
     <Footer />
   </footer>
+  <CustomAlertHost />
   <CursorTrail v-if="activeCursorTrail" :effectKey="activeCursorTrail.effect_key" :config="parsedTrailConfig" />
   </SolarProvider>
 </template>
@@ -26,6 +27,7 @@ import Title from './components/Title.vue'
 import Footer from './components/Footer.vue'
 import CursorTrail from './components/CursorTrail.vue'
 import LanguageToggle from './components/LanguageToggle.vue'
+import CustomAlertHost from './components/CustomAlertHost.vue'
 import { getCurrentLanguage } from './services/translations.js'
 import axios from 'axios'
 import { SolarProvider } from '@solar-icons/vue/lib'
@@ -39,6 +41,7 @@ export default {
     Footer,
     CursorTrail,
     LanguageToggle,
+    CustomAlertHost,
     SolarProvider
   },
   computed: {
