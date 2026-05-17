@@ -86,13 +86,25 @@ export default {
 
 @media (max-width: 768px) {
   .language-toggle {
-    margin-right: 10px;
+    margin-right: 0;
     padding: 4px 8px;
   }
 
   .lang-btn {
     font-size: 12px;
     padding: 3px 6px;
+  }
+}
+
+@media (max-width: 500px) {
+  .language-toggle {
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .lang-btn {
+    font-size: 11px;
+    padding: 3px 4px;
   }
 }
 </style>

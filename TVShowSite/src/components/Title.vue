@@ -1,6 +1,6 @@
 <template>
     <div class="title-container">
-        <div></div>
+        <div class="left-section"></div>
         <div class="logo-section">
             <img class="title" @click="title" :src="logoSrc" />
         </div>
@@ -185,30 +185,55 @@ export default {
 }
 
 @media (max-width: 500px) {
+  .title-container {
+    gap: 8px;
+  }
+
+  .left-section {
+    display: none;
+  }
+
+  .logo-section {
+    flex: 0 1 auto;
+    justify-content: flex-start;
+  }
+
   .title {
-    max-width: 200px;
+    max-width: 145px;
     padding: 0;
-    height: 60px;
+    height: 52px;
+    object-fit: contain;
   }
   :global(.header-compact) .title {
-    height: 44px;
+    height: 40px;
     padding-bottom: 2px;
   }
   .login-button,
   .profile-button,
   .add-review-button {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
   .theme-toggle {
-    max-width: 40px;
-    height: 40px;
+    max-width: 34px;
+    height: 34px;
   }
   .right-section{
     display: flex;
-    gap: 8px;
-    margin-right: 10px;
+    gap: 6px;
+    margin-right: 4px;
+    min-width: 0;
   }
 
+}
+
+@media (max-width: 380px) {
+  .title {
+    max-width: 118px;
+  }
+
+  .right-section {
+    gap: 4px;
+  }
 }
 </style>

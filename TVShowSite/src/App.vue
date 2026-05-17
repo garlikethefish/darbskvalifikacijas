@@ -4,7 +4,7 @@
     <div class="header-top">
       <Title @language-change="onLanguageChange" />
     </div>
-    <HamburgerMenu @toggle="toggleMenu" />
+    <HamburgerMenu :isOpen="isMenuOpen" @toggle="toggleMenu" />
     <NavBar :isMenuOpen="isMenuOpen" @close="closeMenu" />
   </header>
 
@@ -144,7 +144,7 @@ header {
   flex-direction: column;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   overflow: hidden;
   background:
     linear-gradient(to bottom, transparent 0%, var(--dark-bg-color) 75%),
@@ -210,11 +210,18 @@ header > * {
 
 @media (max-width: 500px) {
   header {
-    padding: 10px 0;
+    overflow: visible;
+    padding: 8px 0;
   }
 
   .header-top {
-    padding: 0 10px;
+    padding: 0 8px 0 58px;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    overflow: visible;
   }
 }
 </style>

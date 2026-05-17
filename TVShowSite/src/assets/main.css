@@ -134,6 +134,12 @@ body
     position: relative;
 }
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body::before {
     content: '';
     position: fixed;
@@ -570,13 +576,22 @@ footer{
 }
 @media (max-width: 500px) {
     .series-container {
+        max-width: calc(100vw - 24px);
         width: 100%; 
         margin: 15px 0;
+    }
+
+    .series-container img {
+        aspect-ratio: 16 / 10;
+        height: auto;
+        max-width: 100%;
+        width: 100%;
     }
     
     p{
         min-width: 30px;
-        font-size: 22px; 
+        font-size: 16px;
+        line-height: 1.55;
     }
     
     
@@ -611,6 +626,7 @@ footer{
 
     .wide-text, .wide-text-centered {
         width: 90%;
+        max-width: calc(100vw - 32px);
     }
 
     .rounded-image {
@@ -652,4 +668,53 @@ footer{
      .series-container{
         width: 100%;
      }
+}
+
+@media (max-width: 768px) {
+    #app .controls-container,
+    #app .reviews-page > .controls-container {
+        margin: 20px auto;
+        max-width: min(520px, calc(100vw - 32px));
+        padding: 16px;
+        width: calc(100vw - 32px);
+    }
+
+    #app .controls-wrapper {
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    #app .sort-controls,
+    #app .filter-controls,
+    #app .layout-controls {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    #app .modern-select {
+        max-width: none;
+        min-height: 42px;
+        width: 100%;
+    }
+
+    #app .hero-band {
+        padding: 28px 0;
+    }
+
+    #app .hero-inner {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    #app .hero-inner h1 {
+        font-size: clamp(1.55rem, 8vw, 2.1rem);
+        line-height: 1.12;
+    }
+
+    #app .hero-inner .subtitle {
+        font-size: 0.95rem;
+        line-height: 1.45;
+    }
 }

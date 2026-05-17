@@ -1,10 +1,26 @@
 <template>
   <nav :class="['nav-links', { active: isMenuOpen }]">
-    <router-link class="link" to="/reviews" @click="$emit('close')">{{ t('reviews') }}</router-link>
-    <router-link class="link" to="/discover" @click="$emit('close')">{{ t('discover') }}</router-link>
-    <router-link class="link" to="/quizzes" @click="$emit('close')">{{ t('quizzes') }}</router-link>
-    <router-link class="link" to="/stats" @click="$emit('close')">{{ t('statistics') }}</router-link>
-    <router-link v-if="isAdmin" class="link admin-link" to="/admin" @click="$emit('close')"><SvgIcon name="shield" :size="16" /> {{ t('admin') }}</router-link>
+    <router-link class="link" to="/reviews" @click="$emit('close')">
+      <SvgIcon class="nav-icon" name="chat-dots" :size="20" />
+      {{ t('reviews') }}
+    </router-link>
+    <router-link class="link" to="/discover" @click="$emit('close')">
+      <SvgIcon class="nav-icon" name="target" :size="20" />
+      {{ t('discover') }}
+    </router-link>
+    <router-link class="link" to="/quizzes" @click="$emit('close')">
+      <SvgIcon class="nav-icon" name="gamepad" :size="20" />
+      {{ t('quizzes') }}
+    </router-link>
+    <router-link class="link" to="/stats" @click="$emit('close')">
+      <SvgIcon class="nav-icon" name="chart" :size="20" />
+      {{ t('statistics') }}
+    </router-link>
+    <router-link v-if="isAdmin" class="link admin-link" to="/admin" @click="$emit('close')">
+      <SvgIcon class="nav-icon" name="shield" :size="20" />
+      <SvgIcon class="admin-icon" name="shield" :size="16" />
+      {{ t('admin') }}
+    </router-link>
   </nav>
 </template>
 
@@ -60,7 +76,7 @@ export default {
   justify-content: center;
   gap: 20px;
   margin-top: 30px;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.25s ease;
 }
 
 .link {
@@ -76,36 +92,75 @@ export default {
   font-weight: 600;
 }
 
-@media (max-width: 500px) {
-    .nav-links a {
-        margin: 10px 0;
-        font-weight: bold;
-        padding-left: 10px;
-    }
-    .nav-links {
-        display: flex;
-        position: absolute;
-        top: 100px;
-        left: -100%;
-        width: 100%;
-        gap: 0;
-        background: linear-gradient(180deg, var(--dark-bg-color) 33%, var(--background-color) 100%);
-        border-bottom: 2px solid var(--text-color);
-        border-top: 2px solid var(--text-color);
-        transition: left 0.3s ease;
-        flex-direction: column;
-        padding: 20px;
-        box-sizing: border-box;
-        z-index: 1000;
-    }
-    .link {
-        margin: 10px 0;
-        padding-left: 10px;
-        color: var(--text-color);
-    }
+.nav-icon {
+  display: none;
+}
 
-    .nav-links.active {
-        left: 0;
-    }
+@media (max-width: 768px) {
+  .nav-links {
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    backdrop-filter: blur(22px) saturate(150%);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)),
+      rgba(30, 28, 39, 0.94);
+    border: 1px solid var(--surface-border-strong);
+    border-radius: 12px;
+    box-shadow: 0 18px 42px var(--shadow-color-strong);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    left: 12px;
+    margin-top: 0;
+    opacity: 0;
+    padding: 10px;
+    pointer-events: none;
+    position: absolute;
+    right: auto;
+    top: calc(100% + 8px);
+    transform: translateY(-10px);
+    width: min(260px, calc(100vw - 24px));
+    z-index: 1200;
+  }
+
+  :global([data-theme="light"]) .nav-links {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58)),
+      rgba(255, 255, 255, 0.94);
+  }
+
+  .link {
+    align-items: center;
+    border-radius: 8px;
+    color: var(--text-color);
+    display: flex;
+    font-weight: 700;
+    gap: 8px;
+    margin: 0;
+    min-height: 44px;
+    padding: 12px 14px;
+    width: 100%;
+  }
+
+  .link:hover,
+  .link.router-link-active {
+    background: var(--surface-bg-soft);
+    color: var(--accent-color);
+  }
+
+  .nav-icon {
+    color: currentColor;
+    display: inline-flex;
+  }
+
+  .admin-icon {
+    display: none;
+  }
+
+  .nav-links.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
 }
 </style>
