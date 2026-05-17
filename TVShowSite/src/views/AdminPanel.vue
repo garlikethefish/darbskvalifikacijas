@@ -513,7 +513,12 @@
                 <td><span class="cosmetic-type-tag" :class="c.type">{{ c.type === 'cursor_trail' ? t('cursor') : t('background') }}</span></td>
                 <td><code>{{ c.effect_key }}</code></td>
                 <td><span class="rarity-tag" :class="c.rarity">{{ c.rarity }}</span></td>
-                <td>{{ (allCosmeticSources.filter(s => s.cosmetic_id === c.id)).length }}</td>
+                <td>
+                  <span v-if="getCosmeticSourceLabels(c.id).length">
+                    {{ getCosmeticSourceLabels(c.id).join(', ') }}
+                  </span>
+                  <span v-else>0</span>
+                </td>
                 <td>
                   <button class="btn-sm btn-danger" @click="deleteCosmetic(c.id)">{{ t('delete') }}</button>
                 </td>
@@ -603,8 +608,7 @@
                 <td>{{ (allCosmetics.find(c => c.id === s.cosmetic_id) || {}).name || '#' + s.cosmetic_id }}</td>
                 <td>{{ s.source_type }}</td>
                 <td>
-                  <span v-if="s.source_type === 'quiz'">Quiz #{{ s.quiz_id }} (min {{ s.min_score }}%)</span>
-                  <span v-else>{{ s.milestone_type }} ≥ {{ s.milestone_value }}</span>
+                  <span>{{ getCosmeticSourceLabel(s) }}</span>
                 </td>
                 <td>
                   <button class="btn-sm btn-danger" @click="deleteCosmeticSource(s.id)">{{ t('remove') }}</button>
@@ -774,6 +778,29 @@ export default {
     t(key) { return getTranslation(key, this.currentLanguage); },
     tFormat(key, vars = {}) {
       return this.t(key).replace(/\{(\w+)\}/g, (_, token) => (vars[token] ?? `{${token}}`));
+    },
+    getCosmeticSourceLabels(cosmeticId) {
+      return this.allCosmeticSources
+        .filter(source => source.cosmetic_id === cosmeticId)
+        .map(source => this.getCosmeticSourceLabel(source));
+    },
+    getCosmeticSourceLabel(source) {
+      if (source.source_type === 'quiz') {
+        const quiz = this.allQuizzesForSource.find(q => q.id === source.quiz_id);
+        const title = quiz?.title || `#${source.quiz_id}`;
+        return `${this.t('scoreAtLeast')} ${source.min_score}% ${this.t('inQuiz')} "${title}"`;
+      }
+
+      if (source.source_type === 'milestone') {
+        const labels = {
+          review_count: `Write ${source.milestone_value} reviews`,
+          follower_count: `Get ${source.milestone_value} followers`,
+          quiz_completions: `Complete ${source.milestone_value} quizzes`
+        };
+        return labels[source.milestone_type] || `${source.milestone_type}: ${source.milestone_value}`;
+      }
+
+      return source.source_type || '';
     },
     formatDate(dateString) {
       if (!dateString) return 'N/A';

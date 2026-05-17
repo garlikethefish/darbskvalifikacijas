@@ -48,14 +48,9 @@
         <p v-if="getCosmeticDescription(item)" class="cosmetic-desc">{{ getCosmeticDescription(item) }}</p>
 
         <!-- Avota norāde bloķētiem vienumiem -->
-        <p v-if="!isOwned(item.id) && item.sources?.length" class="source-hint">
+        <p v-if="item.sources?.length" class="source-hint">
           <span v-for="src in item.sources" :key="src.id">
-            <template v-if="src.source_type === 'quiz'">
-              <SvgIcon name="target" :size="13" /> {{ t('scoreAtLeast') }} {{ src.min_score }}% {{ t('inQuiz') }} "{{ src.quiz_title }}"
-            </template>
-            <template v-else-if="src.source_type === 'milestone'">
-              {{ getMilestoneLabel(src.milestone_type, src.milestone_value) }}
-            </template>
+            <SvgIcon name="target" :size="13" /> {{ getSourceLabel(src) }}
           </span>
         </p>
 
@@ -325,6 +320,19 @@ export default {
       const entry = labels[type];
       if (entry) return entry[this.currentLanguage] || entry.en;
       return `${value} ${type}`;
+    },
+
+    getSourceLabel(source) {
+      if (source.source_type === 'quiz') {
+        const title = source.quiz_title || `#${source.quiz_id}`;
+        return `${this.t('scoreAtLeast')} ${source.min_score}% ${this.t('inQuiz')} "${title}"`;
+      }
+
+      if (source.source_type === 'milestone') {
+        return this.getMilestoneLabel(source.milestone_type, source.milestone_value);
+      }
+
+      return source.source_type || '';
     }
   }
 };
