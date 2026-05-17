@@ -636,6 +636,37 @@ export default {
   .site-hero-loop span {
     opacity: 0.6;
   }
+
+  .profile-wave-wrapper {
+    background-image: linear-gradient(to top, rgba(18, 24, 32, 0.42) 0%, rgba(10, 14, 20, 0.08) 100%);
+  }
+
+  .profile-wave {
+    width: 280px;
+    height: 280px;
+    top: 48%;
+    left: 55%;
+    margin-left: -140px;
+    margin-top: -140px;
+    background: rgba(36, 58, 70, 0.62);
+    box-shadow:
+      inset 0 0 54px rgba(112, 233, 116, 0.18),
+      0 0 38px rgba(66, 165, 245, 0.18);
+  }
+
+  .profile-wave--back {
+    width: 320px;
+    height: 320px;
+    top: 66%;
+    left: 42%;
+    margin-left: -160px;
+    margin-top: -160px;
+    background: rgba(72, 124, 92, 0.54);
+  }
+
+  .profile-wave--front {
+    left: 66%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
