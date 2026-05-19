@@ -3585,6 +3585,7 @@ db.connect(err => {
   const seedAdminUsername = process.env.SEED_ADMIN_USERNAME;
   const seedAdminEmail = process.env.SEED_ADMIN_EMAIL;
   const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const promoteAdminEmail = process.env.PROMOTE_ADMIN_EMAIL;
 
   if (seedAdminUsername && seedAdminEmail && seedAdminPassword) {
     const hashedSeedPassword = bcrypt.hashSync(seedAdminPassword, 10);
@@ -3599,6 +3600,18 @@ db.connect(err => {
         if (err) console.error('Error seeding admin user:', err);
         else if (result.affectedRows > 0) console.log('seed admin user ready');
         else console.log('seed admin user already exists');
+      }
+    );
+  }
+
+  if (promoteAdminEmail) {
+    db.query(
+      `UPDATE users SET role = 'admin' WHERE email = ?`,
+      [promoteAdminEmail],
+      (err, result) => {
+        if (err) console.error('Error promoting admin user:', err);
+        else if (result.affectedRows > 0) console.log(`promoted admin user: ${promoteAdminEmail}`);
+        else console.log(`no user found to promote for PROMOTE_ADMIN_EMAIL=${promoteAdminEmail}`);
       }
     );
   }
