@@ -848,7 +848,7 @@ export default {
     },
     async fetchQuizzes() {
       try {
-        const res = await fetch('/api/quizzes');
+        const res = await fetch(`/api/quizzes?lang=${encodeURIComponent(this.currentLanguage)}`);
         if (!res.ok) throw new Error('Failed to fetch quizzes');
         this.quizzes = await res.json();
         
@@ -942,7 +942,7 @@ export default {
       }
       try {
         const auth = JSON.parse(localStorage.getItem('auth'));
-        const res = await fetch(`/api/quizzes/${quiz.id}`, {
+        const res = await fetch(`/api/quizzes/${quiz.id}?lang=${encodeURIComponent(this.currentLanguage)}`, {
           headers: { 'Authorization': auth.user.id.toString() }
         });
         if (!res.ok) throw new Error('Failed to fetch quiz details');
@@ -1287,7 +1287,16 @@ export default {
     this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
       this.tmdbPosters = {};
-      await this.fetchTmdbPosters();
+      await this.fetchQuizzes();
+      if (this.activeQuiz) {
+        const auth = JSON.parse(localStorage.getItem('auth'));
+        if (auth?.user?.id) {
+          const res = await fetch(`/api/quizzes/${this.activeQuiz.id}?lang=${encodeURIComponent(this.currentLanguage)}`, {
+            headers: { 'Authorization': auth.user.id.toString() }
+          });
+          if (res.ok) this.activeQuiz = await res.json();
+        }
+      }
     };
     window.addEventListener('languageChanged', this._languageChangedHandler);
   },

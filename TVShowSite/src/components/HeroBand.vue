@@ -533,6 +533,175 @@ export default {
   animation-name: heroGridDrift;
 }
 
+:global([data-theme="light"]) .site-hero {
+  background: var(--hero-gradient);
+  border-bottom: 1px solid rgba(28, 166, 102, 0.16);
+  box-shadow: var(--hero-shadow);
+}
+
+:global([data-theme="light"]) .site-hero--home {
+  background:
+    radial-gradient(circle 740px at 12% 34%, rgba(18, 220, 126, 0.52), transparent 63%),
+    radial-gradient(circle 780px at 88% 34%, rgba(36, 168, 255, 0.62), transparent 65%),
+    linear-gradient(135deg, rgb(154, 255, 204) 0%, rgb(178, 244, 255) 42%, rgb(142, 211, 255) 100%) !important;
+}
+
+:global([data-theme="light"]) .site-hero--profile {
+  background:
+    radial-gradient(circle 700px at 16% 34%, rgba(18, 220, 126, 0.52), transparent 65%),
+    radial-gradient(circle 720px at 86% 34%, rgba(36, 168, 255, 0.62), transparent 65%),
+    linear-gradient(135deg, rgb(154, 255, 204) 0%, rgb(178, 244, 255) 44%, rgb(142, 211, 255) 100%) !important;
+}
+
+:global([data-theme="light"]) .site-hero--admin {
+  background:
+    radial-gradient(circle 520px at 18% 28%, rgba(28, 166, 102, 0.14), transparent 68%),
+    radial-gradient(circle 520px at 82% 32%, rgba(45, 139, 166, 0.15), transparent 66%),
+    linear-gradient(135deg, rgb(238, 250, 247) 0%, rgb(235, 247, 255) 55%, rgb(255, 255, 255) 100%);
+}
+
+:global([data-theme="light"]) .site-hero--statistics {
+  background:
+    radial-gradient(circle 620px at 12% 36%, rgba(28, 166, 102, 0.16), transparent 68%),
+    radial-gradient(circle 540px at 88% 34%, rgba(45, 139, 166, 0.13), transparent 66%),
+    linear-gradient(135deg, rgb(240, 251, 247) 0%, rgb(239, 248, 255) 56%, rgb(255, 255, 255) 100%);
+}
+
+:global([data-theme="light"]) .site-hero::before {
+  background:
+    linear-gradient(115deg, rgba(28, 166, 102, 0.1), transparent 46%),
+    linear-gradient(245deg, rgba(47, 111, 159, 0.08), transparent 52%);
+}
+
+:global([data-theme="light"]) .site-hero::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 30%,
+    rgba(255, 255, 255, 0.34) 50%,
+    rgba(255, 255, 255, 0.1) 70%,
+    transparent 100%
+  );
+  opacity: 0.7;
+}
+
+:global([data-theme="light"]) .site-hero :deep(h1) {
+  color: rgb(18, 36, 30);
+  text-shadow: none;
+}
+
+:global([data-theme="light"]) .site-hero :deep(p),
+:global([data-theme="light"]) .site-hero :deep(.subtitle),
+:global([data-theme="light"]) .site-hero :deep(.english-subtitle) {
+  color: rgb(61, 78, 91);
+  text-shadow: none;
+}
+
+:global([data-theme="light"]) .site-hero--home :deep(.quote-text) {
+  color: rgb(248, 255, 251) !important;
+  text-shadow: 0 3px 14px rgba(8, 24, 32, 0.72), 0 1px 2px rgba(8, 24, 32, 0.88) !important;
+}
+
+:global([data-theme="light"]) .site-hero--home :deep(.quote-series) {
+  color: rgb(229, 255, 238) !important;
+  opacity: 1 !important;
+  text-shadow: 0 2px 12px rgba(8, 24, 32, 0.64), 0 1px 2px rgba(8, 24, 32, 0.82) !important;
+}
+
+:global([data-theme="light"]) .site-hero--profile .site-hero-inner :deep(.subtitle) {
+  color: rgb(248, 255, 251) !important;
+  font-weight: 600;
+  opacity: 1 !important;
+  text-shadow: 0 3px 14px rgba(8, 24, 32, 0.72), 0 1px 2px rgba(8, 24, 32, 0.88) !important;
+}
+
+:global([data-theme="light"]) .site-hero--profile .site-hero-inner :deep(h1) {
+  color: rgb(248, 255, 251) !important;
+  text-shadow: 0 3px 14px rgba(8, 24, 32, 0.72), 0 1px 2px rgba(8, 24, 32, 0.88) !important;
+}
+
+:global([data-theme="light"]) .site-hero--profile .site-hero-inner :deep(.subtitle .svg-icon) {
+  color: rgb(229, 255, 238);
+  filter: drop-shadow(0 1px 2px rgba(8, 24, 32, 0.82));
+}
+
+:global([data-theme="light"]) .site-hero-loop span {
+  border-color: rgba(28, 166, 102, 0.12);
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12px 28px rgba(31, 41, 51, 0.07);
+}
+
+:global([data-theme="light"]) .home-tv-icon {
+  color: rgba(28, 166, 102, 0.24);
+}
+
+:global([data-theme="light"]) .quiz-question-mark {
+  color: rgba(28, 166, 102, 0.18);
+  text-shadow: 0 10px 24px rgba(28, 166, 102, 0.08);
+}
+
+:global([data-theme="light"]) .site-hero-loop--home span,
+:global([data-theme="light"]) .site-hero-loop--reviews span,
+:global([data-theme="light"]) .site-hero-loop--profile span,
+:global([data-theme="light"]) .site-hero-loop--quizzes span {
+  background: transparent;
+  box-shadow: none;
+}
+
+:global([data-theme="light"]) .site-hero-loop--reviews span::before,
+:global([data-theme="light"]) .site-hero-loop--reviews span::after {
+  background: linear-gradient(90deg, rgba(28, 166, 102, 0.16), rgba(47, 111, 159, 0.14), rgba(28, 166, 102, 0.1));
+  filter: none;
+}
+
+:global([data-theme="light"]) .site-hero-loop--profile span::after {
+  color: rgba(28, 166, 102, 0.48);
+}
+
+:global([data-theme="light"]) .profile-wave-wrapper {
+  background-image: linear-gradient(to top, rgba(112, 205, 255, 0.28), rgba(138, 255, 205, 0.08));
+}
+
+:global([data-theme="light"]) .profile-wave {
+  background: rgba(36, 168, 255, 0.46);
+  box-shadow:
+    inset 0 0 90px rgba(226, 250, 255, 0.7),
+    0 0 86px rgba(36, 168, 255, 0.42);
+}
+
+:global([data-theme="light"]) .profile-wave--back {
+  background: rgba(18, 220, 126, 0.38);
+}
+
+:global([data-theme="light"]) .site-hero--home .profile-wave {
+  background: rgba(36, 168, 255, 0.5);
+}
+
+:global([data-theme="light"]) .site-hero--home .profile-wave--back {
+  background: rgba(18, 220, 126, 0.4);
+}
+
+:global([data-theme="light"]) .site-hero--profile .profile-wave {
+  background: rgba(36, 168, 255, 0.52);
+}
+
+:global([data-theme="light"]) .site-hero--profile .profile-wave--back {
+  background: rgba(18, 220, 126, 0.42);
+}
+
+:global([data-theme="light"]) .site-hero-chart-svg {
+  filter: none;
+  opacity: 0.78;
+}
+
+:global([data-theme="light"]) .site-hero-chart-svg path[fill] {
+  fill: rgba(28, 166, 102, 0.06);
+}
+
+:global([data-theme="light"]) .site-hero-chart-svg path[stroke] {
+  stroke: rgba(28, 166, 102, 0.24);
+}
+
 @keyframes heroShimmer {
   0%, 100% { transform: translateX(-34%) skewX(-8deg); opacity: 0.46; }
   50% { transform: translateX(34%) skewX(-8deg); opacity: 0.98; }
@@ -666,6 +835,21 @@ export default {
 
   .profile-wave--front {
     left: 66%;
+  }
+
+  :global([data-theme="light"]) .profile-wave-wrapper {
+    background-image: linear-gradient(to top, rgba(112, 205, 255, 0.3), rgba(138, 255, 205, 0.08));
+  }
+
+  :global([data-theme="light"]) .profile-wave {
+    background: rgba(36, 168, 255, 0.52);
+    box-shadow:
+      inset 0 0 60px rgba(226, 250, 255, 0.72),
+      0 0 52px rgba(36, 168, 255, 0.42);
+  }
+
+  :global([data-theme="light"]) .profile-wave--back {
+    background: rgba(18, 220, 126, 0.44);
   }
 }
 

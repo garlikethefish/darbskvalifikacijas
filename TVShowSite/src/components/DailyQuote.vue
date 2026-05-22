@@ -7,6 +7,9 @@
 <style scoped>
 .quote-content {
   animation: heroIntro 880ms cubic-bezier(.2,.9,.25,1) both;
+  width: min(980px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 0 12px;
 }
 
 .quote-text {
@@ -29,6 +32,16 @@
   font-weight: 600;
   color: var(--accent-color);
   animation: heroIntro 880ms cubic-bezier(.2,.9,.25,1) 100ms both;
+}
+
+:global([data-theme="light"]) .quote-text {
+  color: rgb(248, 255, 251) !important;
+  text-shadow: 0 3px 14px rgba(8, 24, 32, 0.72), 0 1px 2px rgba(8, 24, 32, 0.88) !important;
+}
+
+:global([data-theme="light"]) .quote-series {
+  color: rgb(229, 255, 238) !important;
+  text-shadow: 0 2px 12px rgba(8, 24, 32, 0.64), 0 1px 2px rgba(8, 24, 32, 0.82) !important;
 }
 
 @keyframes heroIntro {

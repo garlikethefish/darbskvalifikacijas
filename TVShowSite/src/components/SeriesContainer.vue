@@ -3,22 +3,24 @@
     <img :src="getSeriesPictureUrl(series.series_picture)" alt="Series">
     <div class="title-block">
       <div class="title-row">
-        <div class="series-card-title">{{ displayTitle }}</div>
-        <span
-          v-if="showMachineTranslatedBadge"
-          class="machine-translation-icon"
-          aria-label="machine translated title"
-          @mouseenter="showTooltip"
-          @mouseleave="hideTooltip"
-          @focus="showTooltip"
-          @blur="hideTooltip"
-          tabindex="0"
-        >
-          <SvgIcon name="translate" :size="14" />
-          <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
-            {{ t('machineTranslatedTitleTooltip') }}
-          </Tooltip>
-        </span>
+        <div class="series-card-title">
+          {{ displayTitle }}
+          <span
+            v-if="showMachineTranslatedBadge"
+            class="machine-translation-icon"
+            aria-label="machine translated title"
+            @mouseenter="showTooltip"
+            @mouseleave="hideTooltip"
+            @focus="showTooltip"
+            @blur="hideTooltip"
+            tabindex="0"
+          >
+            <SvgIcon name="translate" :size="14" />
+            <Tooltip :show="tooltip.show" :x="tooltip.x" :y="tooltip.y">
+              {{ t('machineTranslatedTitleTooltip') }}
+            </Tooltip>
+          </span>
+        </div>
       </div>
       <div v-if="showEnglishSubtitle" class="card-subtitle">{{ series.english_title }}</div>
     </div>
@@ -181,7 +183,7 @@ export default {
     cursor: pointer;
     opacity: 1;
     transition: opacity 0.3s ease; 
-    z-index: 2;
+    z-index: 4;
 }
 .series-container {
     position: relative;
@@ -201,31 +203,74 @@ export default {
 }
 
 .title-row {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 8px;
-  width: auto;
+  display: block;
+  width: auto !important;
+  max-width: 100%;
+  table-layout: auto;
+}
+
+.series-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(3, 7, 12, 0.84) 0%,
+    rgba(3, 7, 12, 0.74) 24%,
+    rgba(3, 7, 12, 0.34) 58%,
+    rgba(3, 7, 12, 0.12) 100%
+  );
+}
+
+[data-theme="light"] .series-container::before {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 17, 24, 0.8) 0%,
+    rgba(8, 17, 24, 0.68) 26%,
+    rgba(8, 17, 24, 0.32) 60%,
+    rgba(8, 17, 24, 0.1) 100%
+  );
+}
+
+.series-container .caption-text {
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 3;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: rgb(12, 20, 24);
+  text-shadow: none;
 }
 
 .title-block {
   position: absolute;
   top: 10px;
   left: 10px;
-  right: 10px;
-  z-index: 2;
+  right: 122px;
+  width: auto !important;
+  max-width: calc(100% - 132px);
+  table-layout: auto;
+  z-index: 3;
   text-align: left;
   pointer-events: none;
 }
 
 .series-card-title {
-  color: var(--text-color);
+  color: rgb(255, 255, 255);
   margin: 0;
   font-size: 30px;
   line-height: 1.08;
   font-weight: 700;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
-  width:auto;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.78), 0 0 2px rgba(0, 0, 0, 0.95);
+  display: block;
+  width: auto !important;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+  table-layout: auto;
 }
 
 .machine-translation-icon {
@@ -242,6 +287,8 @@ export default {
   cursor: help;
   pointer-events: auto;
   position: relative;
+  margin-left: 4px;
+  vertical-align: 0.08em;
   background: rgba(15, 20, 15, 0.72);
   transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
@@ -252,16 +299,37 @@ export default {
   border-color: var(--accent-color);
 }
 
+[data-theme="light"] .series-container .machine-translation-icon {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.95);
+  color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.26);
+}
+
+[data-theme="light"] .series-container .machine-translation-icon:hover {
+  background: rgb(255, 255, 255);
+  border-color: var(--accent-color);
+}
+
+[data-theme="light"] .series-container .series-card-title {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.58), 0 0 14px rgba(255, 255, 255, 0.34);
+}
+
 /* Rīka padomu tagad apstrādā Tooltip.vue */
 
 .card-subtitle {
   margin-top: 2px;
   margin-bottom: 6px;
-  color: var(--subtitle-color);
+  color: rgba(255, 255, 255, 0.86);
   font-size: 0.82rem;
   font-weight: 500;
   line-height: 1.2;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.82), 0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+[data-theme="light"] .series-container .card-subtitle {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.52), 0 0 12px rgba(255, 255, 255, 0.3) !important;
 }
 
 @media (max-width: 500px){
@@ -293,7 +361,7 @@ export default {
     cursor: pointer;
     opacity: 1;
     transition: opacity 0.3s ease; 
-    z-index: 2;
+    z-index: 4;
 }
 
 .modal {

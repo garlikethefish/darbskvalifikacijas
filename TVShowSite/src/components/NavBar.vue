@@ -81,6 +81,7 @@ export default {
 
 .link {
   margin: 0 8px;
+  font-weight: 500;
 }
 
 .link:hover {
@@ -134,7 +135,7 @@ export default {
     border-radius: 8px;
     color: var(--text-color);
     display: flex;
-    font-weight: 700;
+    font-weight: 500;
     gap: 8px;
     margin: 0;
     min-height: 44px;

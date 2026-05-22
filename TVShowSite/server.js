@@ -239,6 +239,50 @@ async function translateTextToEnglish(text) {
   return translateTextWithMyMemory(text, 'lv', 'en');
 }
 
+async function translateTextForQuizLatvian(text) {
+  if (!hasMeaningfulText(text)) return text;
+  if (detectReviewLanguage(text) === 'lv') return text;
+  return translateTextToLatvian(text);
+}
+
+async function translateQuizFieldsToLatvian(item, fields) {
+  const localized = { ...item };
+  await Promise.all(fields.map(async (field) => {
+    if (hasMeaningfulText(localized[field])) {
+      localized[field] = await translateTextForQuizLatvian(localized[field]);
+    }
+  }));
+  return localized;
+}
+
+async function localizeQuizSummary(quiz, language) {
+  if (resolveAppLanguage(language) !== 'lv') return quiz;
+  return translateQuizFieldsToLatvian(quiz, ['title', 'description']);
+}
+
+async function localizeQuizDetail(quiz, questions, language) {
+  if (resolveAppLanguage(language) !== 'lv') return { ...quiz, questions };
+
+  const localizedQuiz = await translateQuizFieldsToLatvian(quiz, ['title', 'description']);
+  const questionFields = [
+    'question_text',
+    'option_a',
+    'option_b',
+    'option_c',
+    'option_d',
+    'option_e',
+    'option_f',
+    'option_g',
+    'option_h',
+    'explanation'
+  ];
+  const localizedQuestions = await Promise.all(
+    questions.map((question) => translateQuizFieldsToLatvian(question, questionFields))
+  );
+
+  return { ...localizedQuiz, questions: localizedQuestions };
+}
+
 async function translateTextWithMyMemory(text, sourceLanguage, targetLanguage) {
   if (!hasMeaningfulText(text)) return text;
 
@@ -2020,6 +2064,7 @@ app.delete('/api/comments/:id', requireAuth, async (req, res) => {
 // Iegūst visas viktorīnas
 app.get('/api/quizzes', async (req, res) => {
   try {
+    const language = resolveAppLanguage(req.query.lang);
     const [quizzes] = await db.promise().query(`
       SELECT q.id, q.title, q.description, q.icon_emoji, q.category, q.difficulty, q.icon_name, q.tmdb_series_id, q.quiz_image, q.badge_name, q.badge_rules, q.created_at,
         (SELECT COUNT(DISTINCT ub.user_id) FROM user_badges ub WHERE ub.badge_source = 'quiz' AND ub.source_id = q.id) AS completion_count,
@@ -2027,7 +2072,10 @@ app.get('/api/quizzes', async (req, res) => {
       FROM quizzes q
       ORDER BY q.created_at DESC
     `);
-    res.json(quizzes);
+    const localizedQuizzes = await Promise.all(
+      quizzes.map((quiz) => localizeQuizSummary(quiz, language))
+    );
+    res.json(localizedQuizzes);
   } catch (err) {
     console.error('Error fetching quizzes:', err);
     res.status(500).json({ message: 'Failed to fetch quizzes' });
@@ -2038,15 +2086,16 @@ app.get('/api/quizzes', async (req, res) => {
 app.get('/api/quizzes/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   try {
+    const language = resolveAppLanguage(req.query.lang);
     const [quiz] = await db.promise().query('SELECT id, title, description, icon_emoji, category, difficulty, icon_name, tmdb_series_id, quiz_image, badge_name, badge_rules FROM quizzes WHERE id = ?', [id]);
     if (quiz.length === 0) return res.status(404).json({ message: 'Quiz not found' });
 
     const [questions] = await db.promise().query(
-      'SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, option_f, option_g, option_h FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
+      'SELECT id, question_text, option_a, option_b, option_c, option_d, option_e, option_f, option_g, option_h, explanation FROM quiz_questions WHERE quiz_id = ? ORDER BY id',
       [id]
     );
 
-    res.json({ ...quiz[0], questions });
+    res.json(await localizeQuizDetail(quiz[0], questions, language));
   } catch (err) {
     console.error('Error fetching quiz:', err);
     res.status(500).json({ message: 'Failed to fetch quiz' });

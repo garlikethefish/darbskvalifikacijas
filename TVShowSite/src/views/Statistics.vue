@@ -290,6 +290,7 @@ export default {
       if (!canvas) return;
       if (this.donutChart) this.donutChart.destroy();
       const ctx = canvas.getContext('2d');
+      const palette = this._chartPalette();
 
       const hr = Number(this.siteStats.highestRated?.avg_rating) || 0;
       const mr = Number(this.siteStats.mostReviewed?.review_count) || 0;
@@ -305,8 +306,8 @@ export default {
           ],
           datasets: [{
             data: [Math.max(hr, 0.1), Math.max(mr / 10, 0.1), Math.max(lr, 0.1)],
-            backgroundColor: ['rgba(112,233,116,0.85)', 'rgba(70,210,150,0.85)', 'rgba(60,190,120,0.85)'],
-            borderColor: ['rgba(112,233,116,1)', 'rgba(70,210,150,1)', 'rgba(60,190,120,1)'],
+            backgroundColor: palette.donutBackground,
+            borderColor: palette.donutBorder,
             borderWidth: 2,
             hoverOffset: 4,
           }]
@@ -327,29 +328,30 @@ export default {
       if (!canvas) return;
       if (this.siteChart) this.siteChart.destroy();
       const ctx = canvas.getContext('2d');
+      const palette = this._chartPalette();
 
       const items = [this.siteStats.highestRated, this.siteStats.mostReviewed, this.siteStats.lowestRated].filter(Boolean);
       const labels = items.map(i => i.title || 'N/A');
 
       const gradGreen = ctx.createLinearGradient(0, 0, 0, 220);
-      gradGreen.addColorStop(0, 'rgba(112,233,116,0.45)');
-      gradGreen.addColorStop(1, 'rgba(112,233,116,0.0)');
+      gradGreen.addColorStop(0, palette.areaGreenStart);
+      gradGreen.addColorStop(1, palette.areaGreenEnd);
 
       const gradTeal = ctx.createLinearGradient(0, 0, 0, 220);
-      gradTeal.addColorStop(0, 'rgba(70,210,150,0.35)');
-      gradTeal.addColorStop(1, 'rgba(70,210,150,0.0)');
+      gradTeal.addColorStop(0, palette.areaTealStart);
+      gradTeal.addColorStop(1, palette.areaTealEnd);
 
       const userItems = (this.isLoggedIn && this.hasEnoughReviews) ? [this.userStats.highestRated, this.userStats.mostReviewed, this.userStats.lowestRated].filter(Boolean) : [];
 
       const datasets = [{
         label: this.t('site'),
         data: items.map(i => i.review_count || 0),
-        borderColor: 'rgba(112,233,116,1)',
+        borderColor: palette.green,
         backgroundColor: gradGreen,
         borderWidth: 2.5,
         tension: 0.45,
         fill: true,
-        pointBackgroundColor: 'rgba(112,233,116,1)',
+        pointBackgroundColor: palette.green,
         pointRadius: 5,
         pointHoverRadius: 8,
       }];
@@ -358,12 +360,12 @@ export default {
         datasets.push({
           label: this.t('you'),
           data: items.map((_, i) => userItems[i]?.review_count || 0),
-          borderColor: 'rgba(70,210,150,1)',
+          borderColor: palette.teal,
           backgroundColor: gradTeal,
           borderWidth: 2,
           tension: 0.45,
           fill: true,
-          pointBackgroundColor: 'rgba(70,210,150,1)',
+          pointBackgroundColor: palette.teal,
           pointRadius: 5,
           pointHoverRadius: 8,
         });
@@ -377,10 +379,7 @@ export default {
           maintainAspectRatio: false,
           animation: { duration: 1200, easing: 'easeOutQuart' },
           plugins: { legend: { display: false }, tooltip: this._tooltipStyle() },
-          scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,253,222,0.45)', font: { size: 11 } } },
-            x: { grid: { display: false }, ticks: { color: 'rgba(232,253,222,0.6)', font: { size: 11 } } }
-          }
+          scales: this._chartScales()
         }
       });
     },
@@ -390,15 +389,16 @@ export default {
       if (!canvas) return;
       if (this.profitChart) this.profitChart.destroy();
       const ctx = canvas.getContext('2d');
+      const palette = this._chartPalette();
 
       const items = [this.userStats.highestRated, this.userStats.mostReviewed, this.userStats.lowestRated].filter(Boolean);
       if (!items.length) return;
 
       const grad = ctx.createLinearGradient(0, 0, canvas.offsetWidth || 500, 0);
-      grad.addColorStop(0, 'rgba(34,59,75,0.9)');
-      grad.addColorStop(0.4, 'rgba(112,233,116,0.7)');
-      grad.addColorStop(0.75, 'rgba(70,210,150,0.65)');
-      grad.addColorStop(1, 'rgba(60,190,120,0.85)');
+      grad.addColorStop(0, palette.profitStart);
+      grad.addColorStop(0.4, palette.profitGreen);
+      grad.addColorStop(0.75, palette.profitTeal);
+      grad.addColorStop(1, palette.profitEnd);
 
       this.profitChart = new Chart(ctx, {
         type: 'line',
@@ -406,13 +406,13 @@ export default {
           labels: items.map(i => i.title || 'N/A'),
           datasets: [{
             data: items.map(i => i.review_count || 0),
-            borderColor: 'rgba(255,255,255,0.6)',
+            borderColor: palette.lineSoft,
             backgroundColor: grad,
             borderWidth: 2,
             tension: 0.5,
             fill: true,
             pointRadius: 4,
-            pointBackgroundColor: '#fff',
+            pointBackgroundColor: palette.point,
           }]
         },
         options: {
@@ -420,10 +420,7 @@ export default {
           maintainAspectRatio: false,
           animation: { duration: 1200, easing: 'easeOutQuart' },
           plugins: { legend: { display: false }, tooltip: this._tooltipStyle() },
-          scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,253,222,0.45)', font: { size: 11 } } },
-            x: { grid: { display: false }, ticks: { color: 'rgba(232,253,222,0.6)', font: { size: 11 } } }
-          }
+          scales: this._chartScales()
         }
       });
     },
@@ -433,17 +430,18 @@ export default {
       if (!canvas) return;
       if (this.userBarChart) this.userBarChart.destroy();
       const ctx = canvas.getContext('2d');
+      const palette = this._chartPalette();
 
       const items = [this.userStats.highestRated, this.userStats.mostReviewed, this.userStats.lowestRated].filter(Boolean);
       if (!items.length) return;
 
       const gradGreen = ctx.createLinearGradient(0, 0, 0, 160);
-      gradGreen.addColorStop(0, 'rgba(112,233,116,0.9)');
-      gradGreen.addColorStop(1, 'rgba(112,233,116,0.2)');
+      gradGreen.addColorStop(0, palette.barGreenStart);
+      gradGreen.addColorStop(1, palette.barGreenEnd);
 
       const gradTeal = ctx.createLinearGradient(0, 0, 0, 160);
-      gradTeal.addColorStop(0, 'rgba(70,210,150,0.9)');
-      gradTeal.addColorStop(1, 'rgba(70,210,150,0.2)');
+      gradTeal.addColorStop(0, palette.barTealStart);
+      gradTeal.addColorStop(1, palette.barTealEnd);
 
       this.userBarChart = new Chart(ctx, {
         type: 'bar',
@@ -454,7 +452,7 @@ export default {
               label: 'Avg Rating (/5)',
               data: items.map(i => Math.max(Number(i.avg_rating) || 0, 0)),
               backgroundColor: gradGreen,
-              borderColor: 'rgba(112,233,116,1)',
+              borderColor: palette.green,
               borderWidth: 1.5,
               borderRadius: 6,
               borderSkipped: false,
@@ -463,7 +461,7 @@ export default {
               label: 'Reviews',
               data: items.map(i => i.review_count || 0),
               backgroundColor: gradTeal,
-              borderColor: 'rgba(70,210,150,1)',
+              borderColor: palette.teal,
               borderWidth: 1.5,
               borderRadius: 6,
               borderSkipped: false,
@@ -475,18 +473,94 @@ export default {
           maintainAspectRatio: false,
           animation: { duration: 1000, easing: 'easeOutQuart' },
           plugins: {
-            legend: { display: true, labels: { color: 'rgba(232,253,222,0.6)', font: { size: 11 }, boxWidth: 12, boxHeight: 12 } },
+            legend: { display: true, labels: { color: palette.tick, font: { size: 11 }, boxWidth: 12, boxHeight: 12 } },
             tooltip: this._tooltipStyle()
           },
-          scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,253,222,0.45)', font: { size: 11 } } },
-            x: { grid: { display: false }, ticks: { color: 'rgba(232,253,222,0.6)', font: { size: 11 } } }
-          }
+          scales: this._chartScales()
         }
       });
     },
 
+    _isLightTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'light';
+    },
+
+    _chartPalette() {
+      if (this._isLightTheme()) {
+        return {
+          green: 'rgb(35,122,91)',
+          teal: 'rgb(45,139,166)',
+          orange: 'rgb(194,126,45)',
+          tick: 'rgba(82,97,111,0.88)',
+          grid: 'rgba(74,97,114,0.14)',
+          donutBackground: ['rgba(35,122,91,0.82)', 'rgba(45,139,166,0.78)', 'rgba(194,126,45,0.76)'],
+          donutBorder: ['rgba(35,122,91,1)', 'rgba(45,139,166,1)', 'rgba(194,126,45,1)'],
+          areaGreenStart: 'rgba(35,122,91,0.28)',
+          areaGreenEnd: 'rgba(35,122,91,0)',
+          areaTealStart: 'rgba(45,139,166,0.24)',
+          areaTealEnd: 'rgba(45,139,166,0)',
+          profitStart: 'rgba(45,139,166,0.34)',
+          profitGreen: 'rgba(35,122,91,0.3)',
+          profitTeal: 'rgba(45,139,166,0.24)',
+          profitEnd: 'rgba(194,126,45,0.22)',
+          lineSoft: 'rgba(35,122,91,0.54)',
+          point: 'rgb(255,255,255)',
+          barGreenStart: 'rgba(35,122,91,0.76)',
+          barGreenEnd: 'rgba(35,122,91,0.18)',
+          barTealStart: 'rgba(45,139,166,0.72)',
+          barTealEnd: 'rgba(45,139,166,0.16)',
+        };
+      }
+
+      return {
+        green: 'rgba(112,233,116,1)',
+        teal: 'rgba(70,210,150,1)',
+        orange: 'rgba(60,190,120,1)',
+        tick: 'rgba(232,253,222,0.6)',
+        grid: 'rgba(255,255,255,0.04)',
+        donutBackground: ['rgba(112,233,116,0.85)', 'rgba(70,210,150,0.85)', 'rgba(60,190,120,0.85)'],
+        donutBorder: ['rgba(112,233,116,1)', 'rgba(70,210,150,1)', 'rgba(60,190,120,1)'],
+        areaGreenStart: 'rgba(112,233,116,0.45)',
+        areaGreenEnd: 'rgba(112,233,116,0)',
+        areaTealStart: 'rgba(70,210,150,0.35)',
+        areaTealEnd: 'rgba(70,210,150,0)',
+        profitStart: 'rgba(34,59,75,0.9)',
+        profitGreen: 'rgba(112,233,116,0.7)',
+        profitTeal: 'rgba(70,210,150,0.65)',
+        profitEnd: 'rgba(60,190,120,0.85)',
+        lineSoft: 'rgba(255,255,255,0.6)',
+        point: '#fff',
+        barGreenStart: 'rgba(112,233,116,0.9)',
+        barGreenEnd: 'rgba(112,233,116,0.2)',
+        barTealStart: 'rgba(70,210,150,0.9)',
+        barTealEnd: 'rgba(70,210,150,0.2)',
+      };
+    },
+
+    _chartScales() {
+      const palette = this._chartPalette();
+      return {
+        y: { beginAtZero: true, grid: { color: palette.grid }, ticks: { color: palette.tick, font: { size: 11 } } },
+        x: { grid: { display: false }, ticks: { color: palette.tick, font: { size: 11 } } }
+      };
+    },
+
     _tooltipStyle() {
+      if (this._isLightTheme()) {
+        return {
+          backgroundColor: 'rgba(255,255,255,0.98)',
+          padding: 12,
+          titleColor: 'rgb(31,41,51)',
+          bodyColor: 'rgb(82,97,111)',
+          borderColor: 'rgba(35,122,91,0.24)',
+          borderWidth: 1,
+          borderRadius: 8,
+          displayColors: false,
+          titleFont: { size: 13, weight: '700' },
+          bodyFont: { size: 12 },
+        };
+      }
+
       return {
         backgroundColor: 'rgba(18,20,20,0.95)',
         padding: 12,
@@ -519,6 +593,15 @@ export default {
           }
         }
       };
+    },
+
+    rerenderCharts() {
+      this.renderDonut();
+      this.renderSiteChart();
+      if (this.isLoggedIn && this.hasEnoughReviews) {
+        this.renderProfitChart();
+        this.renderUserBarChart();
+      }
     },
 
     _wrapTooltipText(text) {
@@ -850,6 +933,11 @@ export default {
     };
     window.addEventListener('languageChanged', this._langHandler);
 
+    this._themeHandler = () => {
+      this.$nextTick(() => this.rerenderCharts());
+    };
+    window.addEventListener('themeChanged', this._themeHandler);
+
     this.$nextTick(() => {
         this.initParallax();
         this.initTilt();
@@ -858,6 +946,7 @@ export default {
 
   beforeUnmount() {
     window.removeEventListener('languageChanged', this._langHandler);
+    window.removeEventListener('themeChanged', this._themeHandler);
     if (this._observer) this._observer.disconnect();
     if (this._tiltHandlers) {
       this._tiltHandlers.forEach(({ card, onMove, onLeave }) => {

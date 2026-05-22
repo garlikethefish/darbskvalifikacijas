@@ -71,6 +71,7 @@ export default {
       const theme = this.isLightMode ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem('theme', theme);
+      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
     },
     getMediaPreference() {
       const savedTheme = localStorage.getItem('theme');
