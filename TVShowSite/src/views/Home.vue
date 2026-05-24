@@ -8,6 +8,63 @@ import Aside from '@/components/Aside.vue';
 import HeroBand from '@/components/HeroBand.vue';
 import { getTranslation, getCurrentLanguage } from '@/services/translations.js';
 
+const fallbackSeries = [
+  {
+    id: 1396,
+    title: 'Breaking Bad',
+    english_title: 'Breaking Bad',
+    description: 'A chemistry teacher enters the drug trade after a diagnosis changes his life.',
+    release_year: 2008,
+    series_picture: null,
+    genres: ['Drama', 'Crime']
+  },
+  {
+    id: 1399,
+    title: 'Game of Thrones',
+    english_title: 'Game of Thrones',
+    description: 'Noble families fight for power while an ancient threat rises beyond the wall.',
+    release_year: 2011,
+    series_picture: null,
+    genres: ['Drama', 'Sci-Fi & Fantasy']
+  },
+  {
+    id: 66732,
+    title: 'Stranger Things',
+    english_title: 'Stranger Things',
+    description: 'A missing child leads friends and family into a world of secret experiments.',
+    release_year: 2016,
+    series_picture: null,
+    genres: ['Drama', 'Mystery', 'Sci-Fi & Fantasy']
+  },
+  {
+    id: 2316,
+    title: 'The Office',
+    english_title: 'The Office',
+    description: 'Office workers navigate awkward meetings, small victories, and workplace chaos.',
+    release_year: 2005,
+    series_picture: null,
+    genres: ['Comedy']
+  },
+  {
+    id: 94605,
+    title: 'Arcane',
+    english_title: 'Arcane',
+    description: 'Two sisters stand on opposite sides of a conflict between magic and invention.',
+    release_year: 2021,
+    series_picture: null,
+    genres: ['Animation', 'Drama', 'Sci-Fi & Fantasy']
+  },
+  {
+    id: 76479,
+    title: 'The Boys',
+    english_title: 'The Boys',
+    description: 'A group exposes corrupt superheroes backed by money, power, and media control.',
+    release_year: 2019,
+    series_picture: null,
+    genres: ['Action & Adventure', 'Sci-Fi & Fantasy']
+  }
+];
+
 export default {
   name: 'Home',
   components: { SeriesContainer, DailyQuote, SectionHeader, Caption, Aside, HeroBand },
@@ -73,39 +130,41 @@ export default {
       }
       return seriesList;
     },
+    setSeries(seriesList) {
+      this.series = seriesList.map(show => ({
+        id: show.id,
+        title: show.title,
+        english_title: show.english_title || show.title,
+        machine_translated_title: !!show.machine_translated_title,
+        description: show.description,
+        release_year: show.release_year,
+        series_picture: show.series_picture,
+        genres: show.genres || [],
+        number_of_seasons: show.number_of_seasons || 0,
+        number_of_episodes: show.number_of_episodes || 0
+      }));
+
+      const genresSet = new Set();
+      const yearsSet = new Set();
+      this.series.forEach(s => {
+        s.genres.forEach(g => genresSet.add(g));
+        if (s.release_year) yearsSet.add(s.release_year);
+      });
+      this.filterOptions.genres = [...genresSet].sort();
+      this.filterOptions.years = [...yearsSet].sort((a,b)=>b-a);
+
+      this.applySorting();
+    },
     async fetchSeries() {
       this.loading = true;
+      this.error = null;
       try {
         const res = await axios.get('/api/tmdb/top-series', {
           params: { lang: this.currentLanguage }
         });
-        this.series = res.data.map(show => ({
-          id: show.id,
-          title: show.title,
-          english_title: show.english_title || show.title,
-          machine_translated_title: !!show.machine_translated_title,
-          description: show.description,
-          release_year: show.release_year,
-          series_picture: show.series_picture,
-          genres: show.genres || [],
-          number_of_seasons: show.number_of_seasons || 0,
-          number_of_episodes: show.number_of_episodes || 0
-        }));
-
-        // Dinamiski aizpilda filtra opcijas
-        const genresSet = new Set();
-        const yearsSet = new Set();
-        this.series.forEach(s => {
-          s.genres.forEach(g => genresSet.add(g));
-          if (s.release_year) yearsSet.add(s.release_year);
-        });
-        this.filterOptions.genres = [...genresSet].sort();
-        this.filterOptions.years = [...yearsSet].sort((a,b)=>b-a);
-
-        this.applySorting();
+        this.setSeries(Array.isArray(res.data) ? res.data : fallbackSeries);
       } catch (err) {
-        console.error('Failed to fetch TMDB series:', err);
-        this.error = 'Failed to load series.';
+        this.setSeries(fallbackSeries);
       } finally {
         this.loading = false;
       }

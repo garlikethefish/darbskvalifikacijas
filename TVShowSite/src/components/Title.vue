@@ -109,6 +109,12 @@ export default {
   border-radius: 50%;
   object-fit: cover;
   outline: 2px solid var(--accent-color);
+  box-shadow: none;
+}
+
+:global([data-theme="light"]) .profile-pic {
+  outline: 2px solid rgba(28, 166, 102, 0.7);
+  box-shadow: 0 0 0 3px rgba(28, 166, 102, 0.08);
 }
 
 .login-button,
@@ -127,16 +133,37 @@ export default {
     transition: opacity 0.2s ease;
 }
 
+:global([data-theme="light"]) .right-section :deep(:where(.add-review-button, .theme-toggle, .add-review-button:hover, .theme-toggle:hover)) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+:global([data-theme="light"]) .right-section :deep(:where(.add-review-button, .theme-toggle) :where(.svg-icon, svg)) {
+  border: none !important;
+  box-shadow: none !important;
+  color: rgb(24, 42, 54);
+  filter: none !important;
+  outline: none;
+}
+
+.right-section :deep(:where(.svg-icon, svg, svg *)) {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
 .login-button:hover,
 .profile-button:hover,
 .add-review-button:hover {
     opacity: 0.75;
 }
 .title-container {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   width: 100%;
-  justify-content: space-between;
+  table-layout: auto;
   position: relative;  
 }
 .title {
@@ -148,6 +175,10 @@ export default {
     transition: height 0.3s cubic-bezier(0.16,0.84,0.24,1), padding 0.3s cubic-bezier(0.16,0.84,0.24,1);
 }
 
+:global([data-theme="light"]) .title {
+    filter: saturate(1.75) contrast(1.28) brightness(0.94) drop-shadow(0 4px 8px rgba(31, 41, 51, 0.08));
+}
+
 :global(.header-compact) .title {
     height: 65px;
     padding-bottom: 6px;
@@ -155,15 +186,29 @@ export default {
 .logo-section{
     display: flex;
     justify-content: center;
-    flex: 1;
+    grid-column: 2;
+    justify-self: center;
+    width: auto;
+    table-layout: auto;
+}
+.left-section {
+    display: block;
+    grid-column: 1;
+    width: auto;
+    min-width: 0;
+    table-layout: auto;
 }
 .right-section{
     display: flex;
+    grid-column: 3;
     gap: 10px;
+    width: auto;
     justify-content: flex-end;
     align-items: center;
     margin-right: 20px;
-    margin-left: auto;
+    margin-left: 0;
+    justify-self: end;
+    table-layout: auto;
 }
 
 .theme-toggle {
@@ -188,6 +233,7 @@ export default {
 @media (max-width: 500px) {
   .title-container {
     gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .left-section {
@@ -195,8 +241,9 @@ export default {
   }
 
   .logo-section {
-    flex: 0 1 auto;
+    grid-column: 1;
     justify-content: flex-start;
+    justify-self: start;
   }
 
   .title {
@@ -221,6 +268,7 @@ export default {
   }
   .right-section{
     display: flex;
+    grid-column: 2;
     gap: 6px;
     margin-right: 4px;
     min-width: 0;

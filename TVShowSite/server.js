@@ -165,6 +165,72 @@ const DEFAULT_COSMETIC_UNLOCKS = [
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.VITE_TMDB_API_KEY;
 
+const FALLBACK_TOP_SERIES = [
+  {
+    id: 1396,
+    title: 'Breaking Bad',
+    english_title: 'Breaking Bad',
+    description: 'A chemistry teacher enters the drug trade after a diagnosis changes his life.',
+    release_year: 2008,
+    series_picture: null,
+    genres: ['Drama', 'Crime']
+  },
+  {
+    id: 1399,
+    title: 'Game of Thrones',
+    english_title: 'Game of Thrones',
+    description: 'Noble families fight for power while an ancient threat rises beyond the wall.',
+    release_year: 2011,
+    series_picture: null,
+    genres: ['Drama', 'Sci-Fi & Fantasy']
+  },
+  {
+    id: 66732,
+    title: 'Stranger Things',
+    english_title: 'Stranger Things',
+    description: 'A missing child leads friends and family into a world of secret experiments.',
+    release_year: 2016,
+    series_picture: null,
+    genres: ['Drama', 'Mystery', 'Sci-Fi & Fantasy']
+  },
+  {
+    id: 2316,
+    title: 'The Office',
+    english_title: 'The Office',
+    description: 'Office workers navigate awkward meetings, small victories, and workplace chaos.',
+    release_year: 2005,
+    series_picture: null,
+    genres: ['Comedy']
+  },
+  {
+    id: 94605,
+    title: 'Arcane',
+    english_title: 'Arcane',
+    description: 'Two sisters stand on opposite sides of a conflict between magic and invention.',
+    release_year: 2021,
+    series_picture: null,
+    genres: ['Animation', 'Drama', 'Sci-Fi & Fantasy']
+  },
+  {
+    id: 76479,
+    title: 'The Boys',
+    english_title: 'The Boys',
+    description: 'A group exposes corrupt superheroes backed by money, power, and media control.',
+    release_year: 2019,
+    series_picture: null,
+    genres: ['Action & Adventure', 'Sci-Fi & Fantasy']
+  }
+];
+
+function getFallbackTopSeries() {
+  return FALLBACK_TOP_SERIES.map(show => ({
+    ...show,
+    machine_translated_title: false,
+    number_of_seasons: 0,
+    number_of_episodes: 0
+  }));
+}
+
 function resolveTmdbLanguage(raw) {
   const value = String(raw || '').toLowerCase();
   if (value.startsWith('lv')) return 'lv-LV';
@@ -2571,8 +2637,12 @@ app.get('/api/tmdb/top-series', async (req, res) => {
     res.json(shows);
 
   } catch (err) {
-    console.error('TMDB fetch error:', err.message);
-    res.status(500).json({ message: 'Failed to fetch TMDB series' });
+    console.error('TMDB top series fallback:', {
+      message: err.message,
+      code: err.code,
+      status: err.response?.status
+    });
+    res.json(getFallbackTopSeries());
   }
 });
 

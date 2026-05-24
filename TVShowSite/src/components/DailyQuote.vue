@@ -30,18 +30,18 @@
   opacity: 0.95;
   font-style: italic;
   font-weight: 600;
-  color: var(--accent-color);
+  color: rgb(24, 220, 128);
   animation: heroIntro 880ms cubic-bezier(.2,.9,.25,1) 100ms both;
 }
 
 :global([data-theme="light"]) .quote-text {
   color: rgb(248, 255, 251) !important;
-  text-shadow: 0 3px 14px rgba(8, 24, 32, 0.72), 0 1px 2px rgba(8, 24, 32, 0.88) !important;
+  text-shadow: 0 1px 2px rgba(4, 18, 24, 0.22) !important;
 }
 
 :global([data-theme="light"]) .quote-series {
-  color: rgb(229, 255, 238) !important;
-  text-shadow: 0 2px 12px rgba(8, 24, 32, 0.64), 0 1px 2px rgba(8, 24, 32, 0.82) !important;
+  color: rgb(24, 220, 128) !important;
+  text-shadow: none !important;
 }
 
 @keyframes heroIntro {

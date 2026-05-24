@@ -207,16 +207,18 @@ export default {
 
         const raw = await res.text();
         if (!res.ok) {
-          console.error('Error loading notifications:', res.status, raw);
           this.notifications = [];
           this.unreadCount = 0;
           return;
         }
 
-        this.notifications = raw ? JSON.parse(raw) : [];
+        try {
+          this.notifications = raw ? JSON.parse(raw) : [];
+        } catch {
+          this.notifications = [];
+        }
         this.updateUnreadCount();
       } catch (error) {
-        console.error('Error loading notifications:', error);
         this.notifications = [];
         this.unreadCount = 0;
       }
@@ -454,6 +456,28 @@ export default {
   background: rgba(112, 233, 116, 0.15);
 }
 
+:global([data-theme="light"]) .notification-bell,
+:global([data-theme="light"]) .notification-bell:hover,
+:global([data-theme="light"]) .notification-bell.active {
+  border: none !important;
+  outline: none;
+}
+
+:global([data-theme="light"]) .notification-bell:hover {
+  background: rgba(28, 166, 102, 0.08) !important;
+}
+
+:global([data-theme="light"]) .notification-bell.active {
+  background: rgba(28, 166, 102, 0.12) !important;
+  box-shadow: 0 0 0 1px rgba(28, 166, 102, 0.12) !important;
+}
+
+:global([data-theme="light"]) .notification-bell :where(.svg-icon, svg) {
+  border: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
 .bell-icon {
   display: inline-block;
 }
@@ -486,6 +510,10 @@ export default {
   box-shadow: 0 2px 8px rgba(112, 233, 116, 0.4);
 }
 
+:global([data-theme="light"]) .badge {
+  box-shadow: 0 2px 8px rgba(28, 166, 102, 0.18) !important;
+}
+
 .notification-panel {
   position: fixed;
   width: 380px;
@@ -505,6 +533,18 @@ export default {
   overflow-y: scroll;
   overflow-x: hidden;
   animation: slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:global([data-theme="light"]) .notification-panel {
+  background:
+    linear-gradient(180deg, rgb(255, 255, 255), rgb(244, 248, 249)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(74, 97, 114, 0.2) !important;
+  box-shadow:
+    0 18px 44px rgba(31, 41, 51, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+  color: rgb(31, 41, 51);
 }
 
 @keyframes slideDown {
@@ -535,10 +575,31 @@ export default {
   flex: 1;
 }
 
+:global([data-theme="light"]) .panel-header {
+  background: linear-gradient(180deg, rgb(250, 252, 253), rgb(241, 246, 247)) !important;
+  border-bottom-color: rgba(74, 97, 114, 0.16) !important;
+}
+
+:global([data-theme="light"]) .panel-header h3 {
+  color: rgb(31, 41, 51) !important;
+}
+
 .header-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.header-actions button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  line-height: 1;
 }
 
 .mark-read-btn {
@@ -561,6 +622,15 @@ export default {
   transform: scale(1.1);
 }
 
+:global([data-theme="light"]) .mark-read-btn {
+  color: rgb(28, 166, 102) !important;
+}
+
+:global([data-theme="light"]) .mark-read-btn:hover {
+  background: transparent !important;
+  color: rgb(19, 120, 75) !important;
+}
+
 .delete-all-btn {
   background: none;
   border: none;
@@ -581,6 +651,18 @@ export default {
   transform: scale(1.1);
 }
 
+:global([data-theme="light"]) .delete-all-btn,
+:global([data-theme="light"]) .close-btn,
+:global([data-theme="light"]) .notif-remove-btn {
+  color: rgb(82, 97, 111) !important;
+}
+
+:global([data-theme="light"]) .delete-all-btn:hover,
+:global([data-theme="light"]) .notif-remove-btn:hover {
+  background: transparent !important;
+  color: rgb(196, 67, 67) !important;
+}
+
 .close-btn {
   background: none;
   border: none;
@@ -588,10 +670,32 @@ export default {
   font-size: 1.3rem;
   cursor: pointer;
   transition: color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .close-btn:hover {
   color: #fff;
+}
+
+:global([data-theme="light"]) .close-btn:hover {
+  color: rgb(31, 41, 51) !important;
+}
+
+.close-btn :deep(.svg-icon),
+.close-btn :deep(svg) {
+  display: block;
+}
+
+:global([data-theme="light"]) .notification-panel .header-actions button,
+:global([data-theme="light"]) .notification-panel .header-actions button:hover,
+:global([data-theme="light"]) .notification-panel .close-btn,
+:global([data-theme="light"]) .notification-panel .close-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .panel-content {
@@ -628,10 +732,28 @@ export default {
   width: auto;
 }
 
+:global([data-theme="light"]) .notification-item {
+  border-bottom-color: rgba(74, 97, 114, 0.12) !important;
+}
+
+:global([data-theme="light"]) .notification-item:hover {
+  background: rgba(28, 166, 102, 0.07) !important;
+}
+
+:global([data-theme="light"]) .notification-item.unread {
+  background:
+    linear-gradient(90deg, rgba(28, 166, 102, 0.12), transparent 48%),
+    rgb(248, 251, 250) !important;
+}
+
 .notif-icon {
   font-size: 1.5rem;
   flex-shrink: 0;
   width: auto;
+}
+
+:global([data-theme="light"]) .notif-icon {
+  color: rgb(28, 166, 102) !important;
 }
 
 .notif-content {
@@ -647,10 +769,18 @@ export default {
   word-break: break-word;
 }
 
+:global([data-theme="light"]) .notif-title {
+  color: rgb(31, 41, 51) !important;
+}
+
 .notif-time {
   margin: 0.3rem 0 0 0;
   color: #999;
   font-size: 0.85rem;
+}
+
+:global([data-theme="light"]) .notif-time {
+  color: rgb(82, 97, 111) !important;
 }
 
 .unread-dot {
@@ -700,6 +830,15 @@ export default {
   margin-top: 0.5rem;
 }
 
+:global([data-theme="light"]) .empty-state {
+  color: rgb(82, 97, 111) !important;
+}
+
+:global([data-theme="light"]) .empty-state p:first-child {
+  color: rgb(31, 41, 51) !important;
+  font-weight: 600;
+}
+
 .panel-overlay {
   position: fixed;
   top: 0;
@@ -725,6 +864,18 @@ export default {
 
 .panel-content::-webkit-scrollbar-thumb:hover {
   background: rgba(112, 233, 116, 0.4);
+}
+
+:global([data-theme="light"]) .panel-content::-webkit-scrollbar-track {
+  background: rgba(74, 97, 114, 0.08);
+}
+
+:global([data-theme="light"]) .panel-content::-webkit-scrollbar-thumb {
+  background: rgba(74, 97, 114, 0.22);
+}
+
+:global([data-theme="light"]) .panel-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 97, 114, 0.34);
 }
 
 /* Izstrādātāja rīku stili */

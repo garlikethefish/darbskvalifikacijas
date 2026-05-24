@@ -194,6 +194,17 @@ export default {
     text-align: center;
 }
 
+[data-theme="light"] .series-container {
+    background:
+      radial-gradient(circle 360px at 12% 18%, rgba(18, 220, 126, 0.42), transparent 66%),
+      radial-gradient(circle 380px at 88% 18%, rgba(36, 168, 255, 0.48), transparent 68%),
+      linear-gradient(135deg, rgb(154, 255, 204), rgb(142, 211, 255));
+    border: 1px solid rgba(28, 166, 102, 0.22);
+    box-shadow:
+      0 14px 28px rgba(31, 41, 51, 0.08),
+      0 6px 14px rgba(28, 166, 102, 0.06);
+}
+
 .series-container img {
     display: block;
     transition: filter 0.3s ease; 
@@ -225,13 +236,16 @@ export default {
 }
 
 [data-theme="light"] .series-container::before {
-  background: linear-gradient(
-    180deg,
-    rgba(8, 17, 24, 0.8) 0%,
-    rgba(8, 17, 24, 0.68) 26%,
-    rgba(8, 17, 24, 0.32) 60%,
-    rgba(8, 17, 24, 0.1) 100%
-  );
+  background:
+    linear-gradient(
+      180deg,
+      rgba(3, 14, 22, 0.62) 0%,
+      rgba(3, 14, 22, 0.44) 28%,
+      rgba(3, 14, 22, 0.16) 60%,
+      rgba(3, 14, 22, 0.08) 100%
+    ),
+    radial-gradient(circle 360px at 12% 22%, rgba(18, 220, 126, 0.28), transparent 68%),
+    radial-gradient(circle 380px at 88% 18%, rgba(36, 168, 255, 0.32), transparent 70%);
 }
 
 .series-container .caption-text {
@@ -241,7 +255,19 @@ export default {
   z-index: 3;
   background-color: rgba(255, 255, 255, 0.8);
   color: rgb(12, 20, 24);
+  font-weight: 400;
   text-shadow: none;
+}
+
+[data-theme="dark"] .series-container .caption-text {
+  background-color: rgba(18, 20, 20, 0.9);
+  color: var(--text-color);
+}
+
+[data-theme="light"] .series-container .caption-text {
+  background-color: rgba(255, 255, 255, 0.86);
+  color: rgb(12, 20, 24);
+  font-weight: 400;
 }
 
 .title-block {
@@ -303,7 +329,7 @@ export default {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(255, 255, 255, 0.95);
   color: var(--accent-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 4px 10px rgba(31, 41, 51, 0.08);
 }
 
 [data-theme="light"] .series-container .machine-translation-icon:hover {
@@ -312,7 +338,7 @@ export default {
 }
 
 [data-theme="light"] .series-container .series-card-title {
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.58), 0 0 14px rgba(255, 255, 255, 0.34);
+  text-shadow: 0 1px 2px rgba(4, 18, 24, 0.18);
 }
 
 /* Rīka padomu tagad apstrādā Tooltip.vue */
@@ -329,7 +355,7 @@ export default {
 
 [data-theme="light"] .series-container .card-subtitle {
   color: rgba(255, 255, 255, 0.9) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.52), 0 0 12px rgba(255, 255, 255, 0.3) !important;
+  text-shadow: 0 1px 2px rgba(4, 18, 24, 0.18) !important;
 }
 
 @media (max-width: 500px){

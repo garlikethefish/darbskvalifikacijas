@@ -124,7 +124,7 @@ export default {
     z-index: 1200;
   }
 
-  :global([data-theme="light"]) .nav-links {
+  :global([data-theme="light"] .nav-links) {
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58)),
       rgba(255, 255, 255, 0.94);

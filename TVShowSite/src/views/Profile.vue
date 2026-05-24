@@ -5,9 +5,9 @@
       <CursorTrail v-if="cursorTestActive && cursorTestCurrent" :effectKey="cursorTestCurrent" :config="cursorTestConfigs[cursorTestCurrent] || {}" />
       <!-- Profila fona efekts -->
       <ProfileBackground
-        v-if="bgTestActive ? bgTestCurrent : activeBackground"
+        v-if="visibleBackgroundEffect"
         :key="bgTestActive ? bgTestCurrent : activeBackground.effect_key"
-        :effectKey="bgTestActive ? bgTestCurrent : activeBackground.effect_key"
+        :effectKey="visibleBackgroundEffect"
         :config="bgTestActive ? (bgTestConfigs[bgTestCurrent] || {}) : parsedBgConfig"
         class="page-background-effect"
       />
@@ -625,11 +625,137 @@ export default {
         try { return JSON.parse(cfg); } catch { return {}; }
       }
       return cfg;
+    },
+    visibleBackgroundEffect() {
+      const effectKey = this.bgTestActive ? this.bgTestCurrent : this.activeBackground?.effect_key;
+      const linePatternEffects = new Set(['pattern_grid', 'pattern_waves', 'smooth_wavy', 'flowing_ribbons']);
+      if (linePatternEffects.has(effectKey)) return null;
+      return effectKey || null;
+    }
+  },
+  watch: {
+    '$route.params.userId': {
+      async handler(newUserId, oldUserId) {
+        if (!oldUserId || newUserId === oldUserId) return;
+        await this.loadProfile(newUserId);
+      }
     }
   },
   methods: {
     t(key) {
       return getTranslation(key, this.currentLanguage);
+    },
+    resetProfileState() {
+      this.user = null;
+      this.reviews = [];
+      this.reviewCount = 0;
+      this.userComments = [];
+      this.followedShows = [];
+      this.badges = [];
+      this.selectedBadge = null;
+      this.followerCount = 0;
+      this.followingCount = 0;
+      this.profileImageUrl = null;
+      this.activeBackground = null;
+      this.isOwnProfile = false;
+      this.newUsername = '';
+      this.isEditingUsername = false;
+      this.isUploading = false;
+      this.showProfilePictureModal = false;
+      this.pfpModalTab = 'defaults';
+      this.favorites = Array(5).fill().map(() => ({ tmdb_id: null, title: '', poster: '' }));
+      this.dragIndex = null;
+      this.isDragging = false;
+      this.showSelectModal = false;
+      this.selectingPosition = null;
+      this.searchQuery = '';
+      this.searchResults = [];
+      this.selectedDisplayBadgeId = null;
+      this.inspectBadge = null;
+      this.activeProfileTab = 'favorites';
+      this.isFollowing = false;
+      this.followLoading = false;
+      this.favoriteShows = [];
+      this.commonFollowedShows = [];
+      this.commonFavorites = [];
+      this.commonFollowedShowsData = [];
+      this.commonFavoritesData = [];
+      document.body.style.overflow = '';
+    },
+    bindCosmeticHandler(userId) {
+      if (this._cosmeticHandler) {
+        window.removeEventListener('cosmetic-changed', this._cosmeticHandler);
+        this._cosmeticHandler = null;
+      }
+      if (!this.isOwnProfile) return;
+      this._cosmeticHandler = () => this.fetchActiveCosmetics(userId);
+      window.addEventListener('cosmetic-changed', this._cosmeticHandler);
+    },
+    async loadProfile(userId = this.$route.params.userId) {
+      const authData = localStorage.getItem('auth');
+      this.auth = authData ? JSON.parse(authData) : null;
+      this.resetProfileState();
+      this.isOwnProfile = this.auth?.user?.id === parseInt(userId, 10);
+
+      if (this.isOwnProfile && this.auth?.user) {
+        this.user = this.auth.user;
+        this.profileImageUrl = this.user.profile_picture || null;
+        this.bindCosmeticHandler(this.user.id);
+
+        await Promise.all([
+          this.fetchUserReviews(this.user.id),
+          this.fetchUserBadges(this.user.id),
+          this.fetchUserComments(this.user.id),
+          this.fetchFollowedShows(this.user.id),
+          this.loadFollowCounts(this.user.id),
+          this.fetchActiveCosmetics(this.user.id)
+        ]);
+
+        await this.fetchFavorites();
+        if (!this.favorites.some(fav => fav.tmdb_id !== null)) {
+          await this.fetchTopShows();
+        }
+        return;
+      }
+
+      this.bindCosmeticHandler(userId);
+      try {
+        const profileRes = await fetch(`/api/users/${userId}/public-profile`);
+        if (!profileRes.ok) {
+          await this.$alert(this.t('userNotFound'));
+          this.$router.push('/');
+          return;
+        }
+        const profileData = await profileRes.json();
+        this.user = profileData.user;
+        this.badges = profileData.badges || [];
+        this.reviewCount = profileData.reviewCount || 0;
+        this.profileImageUrl = this.user.profile_picture || null;
+
+        if (this.user.selected_badge_id) {
+          this.selectedBadge = this.badges.find(b => b.id === this.user.selected_badge_id);
+        } else if (this.badges.length > 0) {
+          this.selectedBadge = this.badges[0];
+        }
+
+        const promises = [
+          this.fetchFollowedShows(userId),
+          this.fetchUserReviews(userId),
+          this.fetchUserComments(userId),
+          this.loadFollowCounts(userId),
+          this.loadFavoriteShows(userId)
+        ];
+
+        if (this.auth?.loggedIn) {
+          promises.push(this.loadFollowStatus(userId));
+          promises.push(this.loadCommonShows(userId));
+        }
+
+        await Promise.all(promises);
+        await this.fetchActiveCosmetics(userId);
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
     },
     formatDate(dateString) {
       const date = new Date(dateString);
@@ -1223,70 +1349,7 @@ export default {
     };
     document.addEventListener('keydown', this._badgeEscHandler);
     this.currentLanguage = getCurrentLanguage();
-    const userId = this.$route.params.userId;
-    const authData = localStorage.getItem('auth');
-    this.auth = authData ? JSON.parse(authData) : null;
-
-    this.isOwnProfile = this.auth?.user?.id === parseInt(userId);
-
-    if (this.isOwnProfile) {
-      // Īpašnieka režīms
-      this.user = this.auth.user;
-      this.profileImageUrl = this.user.profile_picture || null;
-
-      this.fetchUserReviews(this.user.id);
-      this.fetchUserBadges(this.user.id);
-      this.fetchUserComments(this.user.id);
-      this.fetchFollowedShows(this.user.id);
-      this.loadFollowCounts(this.user.id);
-      this.fetchActiveCosmetics(this.user.id);
-      this._cosmeticHandler = () => this.fetchActiveCosmetics(this.user.id);
-      window.addEventListener('cosmetic-changed', this._cosmeticHandler);
-      this.fetchFavorites().then(() => {
-        if (!this.favorites.some(fav => fav.tmdb_id !== null)) {
-          this.fetchTopShows();
-        }
-      });
-    } else {
-      // Apmeklētāja režīms
-      try {
-        const profileRes = await fetch(`/api/users/${userId}/public-profile`);
-        if (!profileRes.ok) {
-          await this.$alert(this.t('userNotFound'));
-          this.$router.push('/');
-          return;
-        }
-        const profileData = await profileRes.json();
-        this.user = profileData.user;
-        this.badges = profileData.badges || [];
-        this.reviewCount = profileData.reviewCount || 0;
-        this.profileImageUrl = this.user.profile_picture || null;
-
-        if (this.user.selected_badge_id) {
-          this.selectedBadge = this.badges.find(b => b.id === this.user.selected_badge_id);
-        } else if (this.badges.length > 0) {
-          this.selectedBadge = this.badges[0];
-        }
-
-        const promises = [
-          this.fetchFollowedShows(userId),
-          this.fetchUserReviews(userId),
-          this.fetchUserComments(userId),
-          this.loadFollowCounts(userId),
-          this.loadFavoriteShows(userId)
-        ];
-
-        if (this.auth?.loggedIn && !this.isOwnProfile) {
-          promises.push(this.loadFollowStatus(userId));
-          promises.push(this.loadCommonShows(userId));
-        }
-
-        await Promise.all(promises);
-        this.fetchActiveCosmetics(userId);
-      } catch (err) {
-        console.error('Error loading profile:', err);
-      }
-    }
+    await this.loadProfile();
 
     this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
@@ -1899,17 +1962,33 @@ export default {
 }
 
 .edit-btn {
-  background-color: var(--accent-color);
+  background: linear-gradient(135deg, rgb(112, 233, 116), rgb(70, 210, 150));
   color: rgb(30, 28, 39);
+  box-shadow: 0 10px 24px rgba(112, 233, 116, 0.18);
 }
 
 .edit-btn :deep(.svg-icon) {
   color: rgb(30, 28, 39);
 }
 
+:global([data-theme="light"]) .edit-btn {
+  background: linear-gradient(135deg, rgb(28, 166, 102), rgb(45, 151, 178)) !important;
+  color: rgb(248, 255, 251) !important;
+  box-shadow: 0 8px 18px rgba(28, 166, 102, 0.11) !important;
+}
+
+:global([data-theme="light"]) .edit-btn span,
+:global([data-theme="light"]) .edit-btn :deep(.svg-icon) {
+  color: rgb(248, 255, 251) !important;
+}
+
 .edit-btn:hover {
-  background-color: var(--medium-bg-color);
+  background: linear-gradient(135deg, rgb(132, 245, 136), rgb(84, 226, 166));
   transform: translateY(-2px);
+}
+
+:global([data-theme="light"]) .edit-btn:hover {
+  background: linear-gradient(135deg, rgb(28, 166, 102), rgb(45, 151, 178)) !important;
 }
 
 .logout-btn {
@@ -2196,6 +2275,18 @@ export default {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(112, 233, 116, 0.1);
 }
 
+:global(html[data-theme="light"] body) .badge-inspect-overlay .badge-inspect-card {
+  background-color: rgb(250, 253, 251) !important;
+  background-image:
+    radial-gradient(circle 260px at 50% 0%, rgba(28, 166, 102, 0.08), transparent 68%),
+    linear-gradient(180deg, rgb(255, 255, 255) 0%, rgb(250, 253, 251) 100%) !important;
+  background-blend-mode: normal !important;
+  border-color: rgba(28, 166, 102, 0.42) !important;
+  box-shadow: 0 18px 42px rgba(31, 41, 51, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+  opacity: 1;
+  filter: none;
+}
+
 .badge-inspect-image {
   display: flex;
   align-items: center;
@@ -2203,6 +2294,7 @@ export default {
   padding: 20px;
   cursor: grab;
 }
+
 
 .badge-inspect-image img {
   width: 220px;
@@ -2249,6 +2341,15 @@ export default {
   opacity: 0.7;
   position: relative;
   z-index: 2;
+}
+
+:global([data-theme="light"]) .badge-inspect-title {
+  color: rgb(31, 41, 51);
+}
+
+:global([data-theme="light"]) .badge-inspect-desc,
+:global([data-theme="light"]) .badge-inspect-date {
+  color: rgb(82, 97, 111);
 }
 
 .badge-inspect-actions {
@@ -2927,6 +3028,55 @@ export default {
   border-radius: 14px;
 }
 
+:global([data-theme="light"]) .profile-tab-content :where(
+  .badge-item,
+  .favorite-slot,
+  .common-card,
+  .review-card,
+  .comment-card,
+  .followed-card
+) {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 249, 0.9)),
+    linear-gradient(180deg, rgb(255, 255, 255), rgb(248, 252, 251)) !important;
+  border: 1px solid rgba(82, 97, 111, 0.36) !important;
+  box-shadow:
+    0 8px 20px rgba(31, 41, 51, 0.09),
+    0 0 0 1px rgba(82, 97, 111, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.75) inset,
+    0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+:global([data-theme="light"]) .profile-tab-content :where(
+  .badge-item,
+  .favorite-slot,
+  .common-card,
+  .review-card,
+  .comment-card,
+  .followed-card
+):hover {
+  border-color: rgba(28, 166, 102, 0.42) !important;
+  box-shadow:
+    0 14px 30px rgba(31, 41, 51, 0.13),
+    0 0 0 1px rgba(28, 166, 102, 0.13) inset,
+    0 1px 0 rgba(255, 255, 255, 0.86) inset !important;
+}
+
+:global([data-theme="light"]) .profile-tab-content .comment-card {
+  background:
+    linear-gradient(90deg, rgba(28, 166, 102, 0.09), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 249, 0.92)),
+    linear-gradient(180deg, rgb(255, 255, 255), rgb(248, 252, 251)) !important;
+  border: 1px solid rgba(82, 97, 111, 0.4) !important;
+  border-left: 4px solid rgba(28, 166, 102, 0.62) !important;
+}
+
+:global([data-theme="light"]) .profile-tab-content .comment-card:hover {
+  background:
+    linear-gradient(90deg, rgba(28, 166, 102, 0.12), transparent 42%),
+    linear-gradient(180deg, rgb(255, 255, 255), rgb(246, 251, 250)) !important;
+}
+
 .comment-header {
   gap: 0.75rem;
 }
@@ -3292,6 +3442,7 @@ export default {
 .profile-tab-content {
   min-height: 400px;
   padding: clamp(1rem, 2.5vw, 1.875rem);
+  overflow: visible;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
     rgba(6, 10, 6, 0.42);

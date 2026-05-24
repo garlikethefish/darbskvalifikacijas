@@ -1,6 +1,13 @@
 <template>
   <span class="svg-icon" aria-hidden="true">
-    <component v-if="iconComponent" :is="iconComponent" :size="size" color="currentColor" :weight="weight || undefined" />
+    <component
+      v-if="iconComponent"
+      :is="iconComponent"
+      :size="size"
+      color="currentColor"
+      :weight="weight || undefined"
+      :transform="null"
+    />
   </span>
 </template>
 

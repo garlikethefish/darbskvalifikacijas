@@ -58,6 +58,12 @@ export default {
   width: auto;
 }
 
+:global([data-theme="light"]) .language-toggle {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(31, 41, 51, 0.12);
+  box-shadow: 0 6px 14px rgba(31, 41, 51, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
 .lang-btn {
   background: none;
   border: none;
@@ -80,8 +86,16 @@ export default {
   background: rgba(112, 233, 116, 0.2);
 }
 
+:global([data-theme="light"]) .lang-btn.active {
+  background: rgba(28, 166, 102, 0.14);
+}
+
 .separator {
   color: rgba(112, 233, 116, 0.3);
+}
+
+:global([data-theme="light"]) .separator {
+  color: rgba(31, 41, 51, 0.28);
 }
 
 @media (max-width: 768px) {

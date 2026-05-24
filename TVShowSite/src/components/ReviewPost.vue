@@ -942,6 +942,7 @@ export default {
   display: flex;
   flex-direction: column;
   flex: 1;
+  position: relative;
   padding: 20px;
   max-height: 600px;
   gap: 15px;
@@ -953,7 +954,8 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
-  position: relative;
+  position: static;
+  padding-right: 56px;
 }
 
 .user-rating-section {
@@ -1099,10 +1101,12 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
+  width: 48px;
+  height: 48px;
   background: rgba(255, 100, 100, 0.9);
   border: none;
-  border-radius: 0 16px 0 8px;
-  padding: 8px 12px;
+  border-radius: 0 16px 0 12px;
+  padding: 0;
   cursor: pointer;
   opacity: 0;
   transform: translateY(-8px) scale(0.9);
@@ -1111,6 +1115,16 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #fff;
+  z-index: 8;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.review-delete-button :deep(.svg-icon),
+.review-delete-button :deep(svg) {
+  color: #fff;
+  width: 24px;
+  height: 24px;
 }
 
 .review-container:hover .review-delete-button,
@@ -1132,6 +1146,12 @@ export default {
   gap: 12px;
   flex: 1;
   overflow: hidden;
+}
+
+:global([data-theme="light"]) .review-container .content-section {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 .episode-title {

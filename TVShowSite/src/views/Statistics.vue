@@ -203,7 +203,20 @@ import SvgIcon from '@/components/SvgIcon.vue';
 import HeroBand from '@/components/HeroBand.vue';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-Chart.register(...registerables);
+
+const safeCanvasPlugin = {
+  id: 'safeCanvasPlugin',
+  beforeDraw(chart) {
+    if (!chart?.ctx || !chart?.canvas || !chart.canvas.isConnected) return false;
+    return undefined;
+  }
+};
+
+Chart.register(...registerables, safeCanvasPlugin);
+Chart.defaults.animation = false;
+Chart.defaults.animations = {};
+Chart.defaults.transitions.active.animation.duration = 0;
+Chart.defaults.transitions.resize.animation.duration = 0;
 
 export default {
   components: { SvgIcon, HeroBand },
@@ -221,6 +234,7 @@ export default {
       tmdbCache: {},
       currentLanguage: 'en',
       _observer: null,
+      _isUnmounted: false,
     };
   },
   computed: {
@@ -249,6 +263,7 @@ export default {
         const headers = {};
         if (userId) headers['Authorization'] = userId.toString();
         const res = await axios.get('/api/statistics', { headers });
+        if (this._isUnmounted) return;
         const data = res.data;
 
         const allSeries = [
@@ -267,17 +282,22 @@ export default {
           }
           s.title = this.tmdbCache[s.tmdb_series_id] || 'Unknown';
         }));
+        if (this._isUnmounted) return;
 
         this.siteStats = data.globalStats || {};
         this.userStats = (userId && data.userStats) ? data.userStats : {};
         this.hasEnoughReviews = !!(userId && data.userStats);
 
         this.$nextTick(() => {
+          if (this._isUnmounted) return;
           this.renderDonut();
           this.renderSiteChart();
           if (this.isLoggedIn && this.hasEnoughReviews) {
             this.renderProfitChart();
             this.renderUserBarChart();
+          } else {
+            this._destroyChart('profitChart');
+            this._destroyChart('userBarChart');
           }
         });
       } catch (err) {
@@ -285,11 +305,51 @@ export default {
       }
     },
 
-    renderDonut() {
-      const canvas = document.getElementById('donutChart');
-      if (!canvas) return;
-      if (this.donutChart) this.donutChart.destroy();
+    _chartContext(id, chartKey) {
+      if (this._isUnmounted || !this.$el) return null;
+      const canvas = this.$el.querySelector(`#${id}`);
+      if (!canvas) {
+        this._destroyChart(chartKey);
+        return null;
+      }
       const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        this._destroyChart(chartKey);
+        return null;
+      }
+      const existingChart = Chart.getChart(canvas);
+      if (existingChart && existingChart !== this[chartKey]) {
+        existingChart.stop?.();
+        existingChart.destroy();
+      }
+      return { canvas, ctx };
+    },
+
+    _destroyChart(chartKey) {
+      const chart = this[chartKey];
+      if (!chart) {
+        this[chartKey] = null;
+        return;
+      }
+      try {
+        chart.options.animation = false;
+        chart.stop?.();
+        chart.destroy();
+      } catch {
+        // Chart.js can throw if the canvas context was already released.
+      }
+      this[chartKey] = null;
+    },
+
+    _destroyCharts() {
+      ['donutChart', 'siteChart', 'profitChart', 'userBarChart'].forEach(key => this._destroyChart(key));
+    },
+
+    renderDonut() {
+      this._destroyChart('donutChart');
+      const chartContext = this._chartContext('donutChart', 'donutChart');
+      if (!chartContext) return;
+      const { ctx } = chartContext;
       const palette = this._chartPalette();
 
       const hr = Number(this.siteStats.highestRated?.avg_rating) || 0;
@@ -317,17 +377,17 @@ export default {
           maintainAspectRatio: false,
           cutout: '72%',
           layout: { padding: 18 },
-          animation: { duration: 1200, easing: 'easeOutQuart' },
+          animation: false,
           plugins: { legend: { display: false }, tooltip: this._donutTooltipStyle() },
         }
       });
     },
 
     renderSiteChart() {
-      const canvas = document.getElementById('siteChart');
-      if (!canvas) return;
-      if (this.siteChart) this.siteChart.destroy();
-      const ctx = canvas.getContext('2d');
+      this._destroyChart('siteChart');
+      const chartContext = this._chartContext('siteChart', 'siteChart');
+      if (!chartContext) return;
+      const { ctx } = chartContext;
       const palette = this._chartPalette();
 
       const items = [this.siteStats.highestRated, this.siteStats.mostReviewed, this.siteStats.lowestRated].filter(Boolean);
@@ -377,7 +437,7 @@ export default {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: { duration: 1200, easing: 'easeOutQuart' },
+          animation: false,
           plugins: { legend: { display: false }, tooltip: this._tooltipStyle() },
           scales: this._chartScales()
         }
@@ -385,10 +445,10 @@ export default {
     },
 
     renderProfitChart() {
-      const canvas = document.getElementById('profitChart');
-      if (!canvas) return;
-      if (this.profitChart) this.profitChart.destroy();
-      const ctx = canvas.getContext('2d');
+      this._destroyChart('profitChart');
+      const chartContext = this._chartContext('profitChart', 'profitChart');
+      if (!chartContext) return;
+      const { canvas, ctx } = chartContext;
       const palette = this._chartPalette();
 
       const items = [this.userStats.highestRated, this.userStats.mostReviewed, this.userStats.lowestRated].filter(Boolean);
@@ -418,7 +478,7 @@ export default {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: { duration: 1200, easing: 'easeOutQuart' },
+          animation: false,
           plugins: { legend: { display: false }, tooltip: this._tooltipStyle() },
           scales: this._chartScales()
         }
@@ -426,10 +486,10 @@ export default {
     },
 
     renderUserBarChart() {
-      const canvas = document.getElementById('userBarChart');
-      if (!canvas) return;
-      if (this.userBarChart) this.userBarChart.destroy();
-      const ctx = canvas.getContext('2d');
+      this._destroyChart('userBarChart');
+      const chartContext = this._chartContext('userBarChart', 'userBarChart');
+      if (!chartContext) return;
+      const { ctx } = chartContext;
       const palette = this._chartPalette();
 
       const items = [this.userStats.highestRated, this.userStats.mostReviewed, this.userStats.lowestRated].filter(Boolean);
@@ -471,7 +531,7 @@ export default {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: { duration: 1000, easing: 'easeOutQuart' },
+          animation: false,
           plugins: {
             legend: { display: true, labels: { color: palette.tick, font: { size: 11 }, boxWidth: 12, boxHeight: 12 } },
             tooltip: this._tooltipStyle()
@@ -601,6 +661,9 @@ export default {
       if (this.isLoggedIn && this.hasEnoughReviews) {
         this.renderProfitChart();
         this.renderUserBarChart();
+      } else {
+        this._destroyChart('profitChart');
+        this._destroyChart('userBarChart');
       }
     },
 
@@ -934,7 +997,11 @@ export default {
     window.addEventListener('languageChanged', this._langHandler);
 
     this._themeHandler = () => {
-      this.$nextTick(() => this.rerenderCharts());
+      if (this._isUnmounted) return;
+      this.$nextTick(() => {
+        if (this._isUnmounted) return;
+        this.rerenderCharts();
+      });
     };
     window.addEventListener('themeChanged', this._themeHandler);
 
@@ -945,6 +1012,7 @@ export default {
   },
 
   beforeUnmount() {
+    this._isUnmounted = true;
     window.removeEventListener('languageChanged', this._langHandler);
     window.removeEventListener('themeChanged', this._themeHandler);
     if (this._observer) this._observer.disconnect();
@@ -954,7 +1022,7 @@ export default {
         card.removeEventListener('mouseleave', onLeave);
       });
     }
-    [this.donutChart, this.siteChart, this.profitChart, this.userBarChart].forEach(c => c?.destroy());
+    this._destroyCharts();
   }
 };
 </script>

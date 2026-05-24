@@ -35,7 +35,7 @@
             <img v-else :src="`/assets/badges/${item.preview_image}`" :alt="getCosmeticName(item)" class="preview-img" />
           </div>
           <div v-if="!isOwned(item.id)" class="lock-overlay">
-            <SvgIcon name="lock" :size="20" />
+            <SvgIcon name="lock" :size="20" class="lock-overlay-icon" />
           </div>
           <div v-if="isEquipped(item.id)" class="equipped-badge"><SvgIcon name="check" :size="14" /></div>
         </div>
@@ -415,9 +415,10 @@ export default {
   gap: 18px;
   width: 100%;
   max-width: 100%;
+  padding: 8px 2px 2px;
   box-sizing: border-box;
   align-items: stretch;
-  overflow: hidden;
+  overflow: visible;
 }
 .cosmetic-card {
   background:
@@ -444,12 +445,47 @@ export default {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+:global([data-theme="light"]) .cosmetic-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 249, 0.9)),
+    linear-gradient(180deg, rgb(255, 255, 255), rgb(248, 252, 251)) !important;
+  border: 1px solid rgba(82, 97, 111, 0.36) !important;
+  box-shadow:
+    0 8px 20px rgba(31, 41, 51, 0.09),
+    0 0 0 1px rgba(82, 97, 111, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.75) inset,
+    0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+:global([data-theme="light"]) .cosmetic-card:hover {
+  border-color: rgba(28, 166, 102, 0.42) !important;
+  box-shadow:
+    0 14px 30px rgba(31, 41, 51, 0.13),
+    0 0 0 1px rgba(28, 166, 102, 0.13) inset,
+    0 1px 0 rgba(255, 255, 255, 0.86) inset !important;
+}
+
 .cosmetic-card.equipped {
   border-color: var(--accent-color);
   box-shadow: 0 0 20px rgba(112, 233, 116, 0.15);
 }
 
+:global([data-theme="light"]) .cosmetic-card.equipped {
+  border-color: rgba(28, 166, 102, 0.72) !important;
+  box-shadow:
+    0 14px 30px rgba(31, 41, 51, 0.12),
+    0 0 0 1px rgba(28, 166, 102, 0.18) inset,
+    0 0 0 3px rgba(28, 166, 102, 0.08) !important;
+}
+
 .cosmetic-card.locked {
+  opacity: 1;
+}
+
+.cosmetic-card.locked .preview-circle,
+.cosmetic-card.locked .card-info,
+.cosmetic-card.locked .cosmetic-desc,
+.cosmetic-card.locked .source-hint {
   opacity: 0.55;
 }
 
@@ -486,15 +522,38 @@ export default {
 .lock-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 50%;
+  color: rgb(255, 255, 255);
+}
+
+.lock-overlay :deep(.svg-icon) {
+  color: currentColor;
+  overflow: visible;
+}
+
+.lock-overlay :deep(svg) {
+  overflow: visible;
 }
 
 .lock-icon {
   font-size: 1.3rem;
+}
+
+:global([data-theme="light"]) .lock-overlay :deep(.lock-overlay-icon),
+:global([data-theme="light"]) .lock-overlay :deep(.lock-overlay-icon svg) {
+  color: rgb(10, 15, 20) !important;
+  filter: none !important;
+}
+
+
+:global([data-theme="light"]) .lock-overlay {
+  background: rgba(145, 154, 164, 0.72) !important;
+  color: rgb(8, 13, 18) !important;
 }
 
 .equipped-badge {
