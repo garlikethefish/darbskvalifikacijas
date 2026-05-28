@@ -1,9 +1,15 @@
 <template>
   <div class="review-wrapper">
     <div class="review-box">
-      <div class="review-container" :class="{ 'no-bottom-padding': showComments }" @mouseenter="isHoveringReview = true" 
+      <div class="review-container" :class="{ 'no-bottom-padding': showComments, 'review-container-lv': isLatvian }" @mouseenter="isHoveringReview = true" 
      @mouseleave="isHoveringReview = false">
-        
+        <button 
+              v-show="canDeleteReview || showDeleteModal"
+              class="review-delete-button"
+              @click.stop="showDeleteModal = true"
+              title="Delete review">
+              <SvgIcon name="trash" :size="24" />
+            </button>
         <div class="series-section">
           <div class="series-image-wrapper">
             <img class="square-img" :src="getEpisodePictureUrl(review.episode_picture)" alt="Episode image" />
@@ -92,13 +98,7 @@
                 </div>
               </div>
             </div>
-            <button 
-              v-show="canDeleteReview || showDeleteModal"
-              class="review-delete-button"
-              @click.stop="showDeleteModal = true"
-              title="Delete review">
-              <SvgIcon name="trash" :size="24" />
-            </button>
+            
             <div v-if="showDeleteModal" class="delete-modal">
               <div class="delete-modal-content">
                 <div>
@@ -734,6 +734,7 @@ export default {
 .review-box {
   max-width: 100%;
   table-layout: auto;
+  display: flow-root;
 }
 
 .review-container {
@@ -762,6 +763,25 @@ export default {
 
 .review-container.no-bottom-padding {
   margin-bottom: 0;
+}
+
+.review-container.review-container-lv {
+  max-height: none;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.review-container.review-container-lv .right-container {
+  max-height: none;
+  overflow: visible;
+}
+
+.review-container.review-container-lv .content-section {
+  overflow: visible;
+}
+
+.review-container-lv .right-container {
+  max-height: unset !important;
 }
 
 /* Seriāla sadaļa */
@@ -943,6 +963,7 @@ export default {
   flex-direction: column;
   flex: 1;
   position: relative;
+  overflow: visible;
   padding: 20px;
   max-height: 600px;
   gap: 15px;
@@ -954,7 +975,7 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
-  position: static;
+  position: relative;
   padding-right: 56px;
 }
 
@@ -1101,8 +1122,8 @@ export default {
   position: absolute;
   top: 0;
   right: 0;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   background: rgba(255, 100, 100, 0.9);
   border: none;
   border-radius: 0 16px 0 12px;
@@ -1190,6 +1211,7 @@ export default {
   justify-content: space-between;
   gap: 20px;
   padding-top: 15px;
+  padding-right: 20px;
   border-top: 1px solid rgba(112, 233, 116, 0.1);
 }
 

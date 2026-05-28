@@ -571,6 +571,67 @@ async function maybeSeedDatabaseFromEnv() {
   }
 }
 
+const NOTIFICATIONS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS notifications (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  tmdb_series_id INT NOT NULL DEFAULT 0,
+  notification_type VARCHAR(50) NOT NULL,
+  message TEXT,
+  is_read INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)`;
+
+let notificationsSchemaPromise = null;
+
+function ignoreDuplicateColumn(err) {
+  if (!err || err.code === 'ER_DUP_FIELDNAME') return;
+  throw err;
+}
+
+function ignoreDuplicateKey(err) {
+  if (!err || err.code === 'ER_DUP_KEYNAME') return;
+  throw err;
+}
+
+async function ensureNotificationsSchema() {
+  await db.promise().query(NOTIFICATIONS_TABLE_SQL);
+
+  const columnMigrations = [
+    "ALTER TABLE notifications ADD COLUMN user_id INT NULL",
+    "ALTER TABLE notifications ADD COLUMN tmdb_series_id INT NOT NULL DEFAULT 0",
+    "ALTER TABLE notifications ADD COLUMN notification_type VARCHAR(50) NOT NULL DEFAULT 'general'",
+    "ALTER TABLE notifications ADD COLUMN message TEXT",
+    "ALTER TABLE notifications ADD COLUMN is_read INT DEFAULT 0",
+    "ALTER TABLE notifications ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+  ];
+
+  for (const sql of columnMigrations) {
+    try {
+      await db.promise().query(sql);
+    } catch (err) {
+      ignoreDuplicateColumn(err);
+    }
+  }
+
+  try {
+    await db.promise().query('ALTER TABLE notifications ADD INDEX idx_notifications_user_created (user_id, created_at)');
+  } catch (err) {
+    ignoreDuplicateKey(err);
+  }
+}
+
+function ensureNotificationsSchemaReady() {
+  if (!notificationsSchemaPromise) {
+    notificationsSchemaPromise = ensureNotificationsSchema().catch((err) => {
+      notificationsSchemaPromise = null;
+      throw err;
+    });
+  }
+
+  return notificationsSchemaPromise;
+}
+
 async function ensureHardcodedContentData() {
   const seedConnection = mysql.createConnection({
     ...dbConfig,
@@ -3224,6 +3285,8 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
+    await ensureNotificationsSchemaReady();
+
     const [notifications] = await db.promise().query(
       `SELECT n.* FROM notifications n
        WHERE n.user_id = ?
@@ -3244,6 +3307,8 @@ app.post('/api/notifications/mark-all-read', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
+    await ensureNotificationsSchemaReady();
+
     await db.promise().query(
       'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
       [userId]
@@ -3262,6 +3327,8 @@ app.post('/api/notifications/:id/read', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
+    await ensureNotificationsSchemaReady();
+
     await db.promise().query(
       'UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?',
       [id, userId]
@@ -3279,6 +3346,8 @@ app.delete('/api/notifications', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
+    await ensureNotificationsSchemaReady();
+
     await db.promise().query(
       'DELETE FROM notifications WHERE user_id = ?',
       [userId]
@@ -3297,6 +3366,8 @@ app.delete('/api/notifications/:id', requireAuth, async (req, res) => {
   const userId = req.userId;
 
   try {
+    await ensureNotificationsSchemaReady();
+
     await db.promise().query(
       'DELETE FROM notifications WHERE id = ? AND user_id = ?',
       [id, userId]
@@ -3916,20 +3987,9 @@ db.connect(err => {
     else console.log('user_follows table ready');
   });
 
-  // Izveido notifications tabulu
-  db.query(`CREATE TABLE IF NOT EXISTS notifications (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    tmdb_series_id INT NOT NULL,
-    notification_type VARCHAR(50) NOT NULL,
-    message TEXT,
-    is_read INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  )`, (err) => {
-    if (err) console.error('Error creating notifications table:', err);
-    else console.log('notifications table ready');
-  });
+  ensureNotificationsSchemaReady()
+    .then(() => console.log('notifications table ready'))
+    .catch((err) => console.error('Error creating notifications table:', err));
 
   // Pievieno selected_badge_id kolonnu users tabulai, ja tā neeksistē
   db.query(`ALTER TABLE users ADD COLUMN selected_badge_id INT`, (err) => {
