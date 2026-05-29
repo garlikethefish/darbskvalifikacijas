@@ -16,7 +16,11 @@
       <!-- Seriālu režģis -->
       <div class="form-section series-section">
         <h2>{{ t('tvSeries') }}</h2>
-        <div class="series-grid">
+        <div v-if="loadingSeries" class="load">
+          <div class="spinner"></div>
+          <h2>{{ t('loading') }}</h2>
+        </div>
+        <div v-else class="series-grid">
           <div
             class="series-item"
             v-for="series in filteredSeries"
@@ -111,6 +115,7 @@ export default {
       review: { title: "", description: "", rating: 5 },
       searchQuery: "",
       loadingEpisodes: false,
+      loadingSeries: true,
       hoverRating: 0,
       isReviewModalOpen: false,
       currentLanguage: 'en',
@@ -122,6 +127,7 @@ export default {
       return getTranslation(key, this.currentLanguage);
     },
     async fetchTopSeries() {
+      this.loadingSeries = true;
       try {
         const res = await fetch(`/api/tmdb/top-series?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
@@ -129,6 +135,8 @@ export default {
         this.filteredSeries = [...this.seriesList];
       } catch (err) {
         console.error("Failed to fetch top series:", err);
+      } finally {
+        this.loadingSeries = false;
       }
     },
     async searchSeries() {
@@ -156,7 +164,7 @@ export default {
       try {
         const res = await fetch(`/api/tmdb/series-details/${series.id}?lang=${encodeURIComponent(this.currentLanguage)}`);
         const data = await res.json();
-        this.episodesBySeason = data.seasons || [];
+        this.episodesBySeason = (data.seasons || []).filter(s => s.season_number >= 1);
       } catch (err) {
         console.error("Failed to fetch episodes:", err);
         this.episodesBySeason = [];
@@ -199,7 +207,7 @@ export default {
           this.filteredSeries = [...this.seriesList];
         }
         this.selectedSeries = seriesObj;
-        this.episodesBySeason = data.seasons || [];
+        this.episodesBySeason = (data.seasons || []).filter(s => s.season_number >= 1);
         // Ritina uz sēriju sadaļu labākai lietojamībai
         this.$nextTick(() => {
           const el = document.querySelector('.episode-section');
@@ -530,6 +538,30 @@ export default {
   font-style: italic;
   text-align: center;
   margin: 15px 0;
+}
+
+/* Gaišā režīma pielāgojumi vērtējuma apļiem */
+[data-theme="light"] .circle {
+  background-color: #e0e4e8;
+  color: #2d3748;
+  border: 2px solid #cbd5e0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .circle:hover {
+  background-color: #d0d5dc;
+  border-color: #a0aec0;
+}
+
+[data-theme="light"] .circle.selected:nth-child(1) { background-color: #ff4c4c; border-color: #e53e3e; box-shadow: 0 0 8px rgba(255, 76, 76, 0.4); }
+[data-theme="light"] .circle.selected:nth-child(2) { background-color: #ff944c; border-color: #dd6b20; box-shadow: 0 0 8px rgba(255, 148, 76, 0.4); }
+[data-theme="light"] .circle.selected:nth-child(3) { background-color: #ffd54c; border-color: #d69e2e; box-shadow: 0 0 8px rgba(255, 213, 76, 0.4); }
+[data-theme="light"] .circle.selected:nth-child(4) { background-color: #81c944; border-color: #68a832; box-shadow: 0 0 8px rgba(129, 201, 68, 0.4); }
+[data-theme="light"] .circle.selected:nth-child(5) { background-color: #38c95a; border-color: #2a9d45; box-shadow: 0 0 8px rgba(56, 201, 90, 0.4); }
+
+[data-theme="light"] .circle.selected {
+  color: #fff;
+  font-weight: 800;
 }
 
 @media (max-width: 700px) {
