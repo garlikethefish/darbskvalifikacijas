@@ -3,21 +3,25 @@
     <div v-if="user">
       <!-- IZSTR.: Kursora testa pārklājums -->
       <CursorTrail v-if="cursorTestActive && cursorTestCurrent" :effectKey="cursorTestCurrent" :config="cursorTestConfigs[cursorTestCurrent] || {}" />
-      <!-- Profila fona efekts -->
-      <ProfileBackground
-        v-if="visibleBackgroundEffect"
-        :key="bgTestActive ? bgTestCurrent : activeBackground.effect_key"
-        :effectKey="visibleBackgroundEffect"
-        :config="bgTestActive ? (bgTestConfigs[bgTestCurrent] || {}) : parsedBgConfig"
-        class="page-background-effect"
-      />
-      <!-- Galvenes sadaļa -->
-      <HeroBand variant="profile">
+      <!-- Galvenes sadaļa (fona efekts to neietekmē) -->
+      <HeroBand variant="profile" class="profile-hero-surface">
         <h1>{{ user.username }}'s {{ t('profile') }}</h1>
         <p class="subtitle"><SvgIcon name="edit" :size="16" /> {{ reviewCount }} {{ t('reviews') }} • <SvgIcon name="tv" :size="16" /> {{ followedShows.length }} {{ t('followedShows') }} • <SvgIcon name="users" :size="16" /> {{ followerCount }} {{ t('followers') }} • <SvgIcon name="heart" :size="16" /> {{ followingCount }} {{ t('following') }}</p>
       </HeroBand>
 
-      <div class="profile-container">
+      <div
+        class="profile-main-with-bg"
+        :class="{ 'profile-main-with-bg--cosmetic': isOwnProfile && visibleBackgroundEffect }"
+      >
+        <ProfileBackground
+          v-if="isOwnProfile && visibleBackgroundEffect"
+          :key="bgTestActive ? bgTestCurrent : activeBackground.effect_key"
+          :effectKey="visibleBackgroundEffect"
+          :config="bgTestActive ? (bgTestConfigs[bgTestCurrent] || {}) : parsedBgConfig"
+          class="profile-cosmetic-background"
+        />
+
+      <div class="profile-container profile-content-surface">
         <!-- Profila kartīte -->
         <div class="profile-card">
           <div class="profile-header">
@@ -448,6 +452,7 @@
 
         <!-- Tukšais stāvoklis (apmeklētājs) -->
       </div>
+      </div>
     </div>
 
     <div v-else class="loading">
@@ -627,10 +632,8 @@ export default {
       return cfg;
     },
     visibleBackgroundEffect() {
-      const effectKey = this.bgTestActive ? this.bgTestCurrent : this.activeBackground?.effect_key;
-      const linePatternEffects = new Set(['pattern_grid', 'pattern_waves', 'smooth_wavy', 'flowing_ribbons']);
-      if (linePatternEffects.has(effectKey)) return null;
-      return effectKey || null;
+      if (this.bgTestActive) return this.bgTestCurrent || null;
+      return this.activeBackground?.effect_key || null;
     }
   },
   watch: {
@@ -1382,15 +1385,6 @@ export default {
   table-layout: auto;
 }
 
-/* Lapas līmeņa fona efekts */
-.page-background-effect {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
 /* Galvenes sadaļa */
 .hero {
   color: var(--text-color);
@@ -1470,6 +1464,55 @@ export default {
   0%   { opacity: 0; transform: translateY(8px) scale(0.992); filter: blur(4px); }
   60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0); }
   100% { opacity: 1; transform: translateY(0) scale(1);       filter: blur(0); }
+}
+
+/* Fona kosmētika — tikai zem profila satura (ne hero, ne citas lapas) */
+.profile-main-with-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.profile-cosmetic-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.profile-main-with-bg--cosmetic .profile-content-surface,
+.profile-main-with-bg--cosmetic .profile-content-surface :where(
+  .profile-card,
+  .profile-activity-shell,
+  .profile-tab-content,
+  .cosmetics-section,
+  .badges-section,
+  .reviews-section,
+  .comments-section,
+  .followed-shows-section,
+  .bg-test-section,
+  .profile-tab-empty
+) {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-hero-surface {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+
+.profile-main-with-bg--cosmetic .profile-card,
+.profile-main-with-bg--cosmetic .profile-activity-shell {
+  background-color: var(--dark-bg-color);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .profile-main-with-bg--cosmetic .profile-card,
+[data-theme="light"] .profile-main-with-bg--cosmetic .profile-activity-shell {
+  background-color: rgb(255, 255, 255);
 }
 
 /* Profila konteiners */

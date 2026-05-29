@@ -13,6 +13,11 @@ import AdminPanel from '@/views/AdminPanel.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return { top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' };
+  },
   routes: [
     {
       path: '/',
@@ -92,6 +97,19 @@ const router = createRouter({
       component: AdminPanel,
     }
   ],
+});
+
+router.beforeEach((to, from, next) => {
+  document.documentElement.classList.add('page-layout-shifting');
+  next();
+});
+
+router.afterEach(() => {
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.documentElement.classList.remove('page-layout-shifting');
+    }, 320);
+  });
 });
 
 export default router;

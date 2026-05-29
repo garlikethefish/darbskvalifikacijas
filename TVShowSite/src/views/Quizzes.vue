@@ -1000,6 +1000,12 @@ export default {
           });
         }
         this.showResults = true;
+        if (
+          (this.quizResult.badgesAwarded && this.quizResult.badgesAwarded.length > 0) ||
+          (this.quizResult.cosmeticsAwarded && this.quizResult.cosmeticsAwarded.length > 0)
+        ) {
+          window.dispatchEvent(new Event('notifications-changed'));
+        }
       } catch (err) {
         console.error('Error submitting quiz:', err);
         this.$alert(err.message || this.t('failedToSubmitQuiz'));

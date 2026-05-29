@@ -62,7 +62,7 @@
             v-for="notif in notifications" 
             :key="notif.id"
             class="notification-item"
-            :class="{ unread: !notif.is_read }"
+            :class="{ unread: isNotificationUnread(notif) }"
             @click="markAsRead(notif.id)"
           >
             <div class="notif-icon">
@@ -74,6 +74,7 @@
               <SvgIcon v-else-if="notif.notification_type === 'new_review'" name="note" :size="20" />
               <SvgIcon v-else-if="notif.notification_type === 'follow'" name="heart-fill" :size="20" />
               <SvgIcon v-else-if="notif.notification_type === 'cosmetic_unlock'" name="sparkle" :size="20" />
+              <SvgIcon v-else-if="notif.notification_type === 'badge_earned'" name="badge" :size="20" />
               <SvgIcon v-else name="bell" :size="20" />
             </div>
             
@@ -82,7 +83,7 @@
               <p class="notif-time">{{ formatTime(notif.created_at) }}</p>
             </div>
 
-            <div v-if="!notif.is_read" class="unread-dot"></div>
+            <div v-if="isNotificationUnread(notif)" class="unread-dot"></div>
 
             <button 
               class="notif-remove-btn"
@@ -168,6 +169,11 @@ export default {
       notifications: [],
       unreadCount: 0,
       pollInterval: null,
+      pollMs: 5000,
+      onNotificationsChanged: null,
+      onVisibilityChange: null,
+      onAuthChanged: null,
+      onWindowFocus: null,
       showDevTools: false,
       isDev: import.meta.env.DEV || window.location.hostname === 'localhost',
       isTestingNotifications: false,
@@ -176,13 +182,13 @@ export default {
     };
   },
   methods: {
+    isNotificationUnread(notif) {
+      return Number(notif?.is_read) === 0;
+    },
     togglePanel() {
       this.showPanel = !this.showPanel;
       if (this.showPanel) {
         this.updatePanelPosition();
-        if (!this.isTestingNotifications) {
-          this.loadNotifications();
-        }
       }
     },
     closePanel() {
@@ -213,7 +219,10 @@ export default {
         }
 
         try {
-          this.notifications = raw ? JSON.parse(raw) : [];
+          const list = raw ? JSON.parse(raw) : [];
+          this.notifications = Array.isArray(list)
+            ? list.map(n => ({ ...n, is_read: Number(n.is_read) || 0 }))
+            : [];
         } catch {
           this.notifications = [];
         }
@@ -266,7 +275,7 @@ export default {
       });
     },
     updateUnreadCount() {
-      this.unreadCount = this.notifications.filter(n => !n.is_read).length;
+      this.unreadCount = this.notifications.filter(n => this.isNotificationUnread(n)).length;
     },
     formatTime(dateString) {
       const date = new Date(dateString);
@@ -284,16 +293,59 @@ export default {
       return date.toLocaleDateString();
     },
     startPolling() {
-      // Ik pēc 30 sekundēm pārbauda jaunus paziņojumus (izlaiž testēšanas laikā)
+      this.stopPolling();
       this.pollInterval = setInterval(() => {
         if (!this.isTestingNotifications) {
           this.loadNotifications();
         }
-      }, 30000);
+      }, this.pollMs);
     },
     stopPolling() {
       if (this.pollInterval) {
         clearInterval(this.pollInterval);
+        this.pollInterval = null;
+      }
+    },
+    refreshNotifications() {
+      if (!this.isTestingNotifications) {
+        this.loadNotifications();
+      }
+    },
+    bindGlobalListeners() {
+      this.onNotificationsChanged = () => this.refreshNotifications();
+      this.onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          this.refreshNotifications();
+        }
+      };
+      this.onWindowFocus = () => this.refreshNotifications();
+      this.onAuthChanged = () => {
+        if (localStorage.getItem('auth')) {
+          this.refreshNotifications();
+          if (!this.pollInterval) this.startPolling();
+        } else {
+          this.notifications = [];
+          this.unreadCount = 0;
+          this.stopPolling();
+        }
+      };
+      window.addEventListener('notifications-changed', this.onNotificationsChanged);
+      document.addEventListener('visibilitychange', this.onVisibilityChange);
+      window.addEventListener('focus', this.onWindowFocus);
+      window.addEventListener('auth-changed', this.onAuthChanged);
+    },
+    unbindGlobalListeners() {
+      if (this.onNotificationsChanged) {
+        window.removeEventListener('notifications-changed', this.onNotificationsChanged);
+      }
+      if (this.onVisibilityChange) {
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+      }
+      if (this.onWindowFocus) {
+        window.removeEventListener('focus', this.onWindowFocus);
+      }
+      if (this.onAuthChanged) {
+        window.removeEventListener('auth-changed', this.onAuthChanged);
       }
     },
     setSolarWeight(w) {
@@ -418,14 +470,17 @@ export default {
     }
   },
   mounted() {
-    const auth = localStorage.getItem('auth');
-    if (auth) {
-      this.loadNotifications();
-      this.startPolling();
-    }
+    const authRaw = localStorage.getItem('auth');
+    if (!authRaw) return;
+    const auth = JSON.parse(authRaw);
+    if (!auth?.loggedIn) return;
+    this.loadNotifications();
+    this.startPolling();
+    this.bindGlobalListeners();
   },
   beforeUnmount() {
     this.stopPolling();
+    this.unbindGlobalListeners();
   }
 };
 </script>

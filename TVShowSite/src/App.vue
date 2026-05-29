@@ -49,13 +49,7 @@ export default {
       return solarConfig.weight;
     },
     parsedTrailConfig() {
-      if (!this.activeCursorTrail) return {};
-      const cfg = this.activeCursorTrail.config;
-      if (!cfg) return {};
-      if (typeof cfg === 'string') {
-        try { return JSON.parse(cfg); } catch { return {}; }
-      }
-      return cfg;
+      return this.parseCosmeticConfig(this.activeCursorTrail);
     }
   },
   data() {
@@ -79,7 +73,16 @@ export default {
       this.language = lang;
       this.$forceUpdate();
     },
-    async loadCursorTrail() {
+    parseCosmeticConfig(cosmetic) {
+      if (!cosmetic) return {};
+      const cfg = cosmetic.config;
+      if (!cfg) return {};
+      if (typeof cfg === 'string') {
+        try { return JSON.parse(cfg); } catch { return {}; }
+      }
+      return cfg;
+    },
+    async loadActiveCosmetics() {
       try {
         const auth = JSON.parse(localStorage.getItem('auth') || 'null');
         if (!auth?.loggedIn || !auth?.user?.id) {
@@ -108,12 +111,57 @@ export default {
       header.addEventListener('mouseleave', this._headerLeaveHandler);
     },
     initScroll() {
-      this._scrollHandler = () => {
-        const scrolled = window.scrollY > 10;
-        this.isScrolled = scrolled;
-        document.documentElement.classList.toggle('header-compact', scrolled);
+      const doc = document.documentElement;
+      const COMPACT_ON = 96;
+      const COMPACT_OFF = 12;
+
+      const applyScrollState = () => {
+        this._scrollRafPending = false;
+
+        const scrollY = window.scrollY;
+        const shouldCompact = this.isScrolled
+          ? scrollY > COMPACT_OFF
+          : scrollY > COMPACT_ON;
+
+        if (shouldCompact === this.isScrolled) return;
+
+        this.isScrolled = shouldCompact;
+        doc.classList.toggle('header-compact', shouldCompact);
       };
+
+      this._scrollHandler = () => {
+        if (this._scrollRafPending) return;
+        this._scrollRafPending = true;
+        requestAnimationFrame(applyScrollState);
+      };
+
       window.addEventListener('scroll', this._scrollHandler, { passive: true });
+    },
+    initLayoutStabilityWatcher() {
+      const doc = document.documentElement;
+      let settleTimer = null;
+      let lastBodyHeight = 0;
+
+      const markLayoutShifting = () => {
+        const nextHeight = document.body.offsetHeight;
+        // Ignorē nelielas izmaiņas (piem. kompakta galvene), lai saglabātu gludu ritināšanu
+        if (lastBodyHeight > 0 && Math.abs(nextHeight - lastBodyHeight) < 64) {
+          return;
+        }
+        lastBodyHeight = nextHeight;
+
+        doc.classList.add('page-layout-shifting');
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(() => {
+          doc.classList.remove('page-layout-shifting');
+          lastBodyHeight = document.body.offsetHeight;
+        }, 280);
+      };
+
+      lastBodyHeight = document.body.offsetHeight;
+      this._layoutSettleTimer = settleTimer;
+      this._layoutObserver = new ResizeObserver(markLayoutShifting);
+      this._layoutObserver.observe(document.body);
     },
   },
   mounted() {
@@ -121,9 +169,10 @@ export default {
     this.$nextTick(() => {
       this.initHeaderSpotlight();
       this.initScroll();
+      this.initLayoutStabilityWatcher();
     });
-    this.loadCursorTrail();
-    this._cosmeticHandler = () => this.loadCursorTrail();
+    this.loadActiveCosmetics();
+    this._cosmeticHandler = () => this.loadActiveCosmetics();
     window.addEventListener('cosmetic-changed', this._cosmeticHandler);
   },
   beforeUnmount() {
@@ -133,6 +182,8 @@ export default {
       header.removeEventListener('mouseleave', this._headerLeaveHandler);
     }
     if (this._scrollHandler) window.removeEventListener('scroll', this._scrollHandler);
+    if (this._layoutObserver) this._layoutObserver.disconnect();
+    if (this._layoutSettleTimer) clearTimeout(this._layoutSettleTimer);
     if (this._cosmeticHandler) window.removeEventListener('cosmetic-changed', this._cosmeticHandler);
   }
 };
@@ -150,8 +201,8 @@ header {
     linear-gradient(to bottom, transparent 0%, var(--dark-bg-color) 75%),
     linear-gradient(to right, var(--dark-bg-color) 0%, var(--dark-bg-color) 45%, transparent 65%),
     rgba(0, 0, 255, 0.05);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: padding 0.3s cubic-bezier(0.16,0.84,0.24,1);
 }
@@ -201,11 +252,14 @@ header > * {
 .layout-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 50vh;
+  min-height: 0;
+  overflow: visible;
 }
 
 .page-content {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 @media (max-width: 500px) {
@@ -223,5 +277,10 @@ header > * {
   header {
     overflow: visible;
   }
+}
+
+:global([data-theme="light"]) header {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 </style>

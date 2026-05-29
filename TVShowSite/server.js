@@ -632,6 +632,14 @@ function ensureNotificationsSchemaReady() {
   return notificationsSchemaPromise;
 }
 
+async function insertUserNotification(userId, notificationType, message, tmdbSeriesId = 0) {
+  await ensureNotificationsSchemaReady();
+  await db.promise().query(
+    'INSERT INTO notifications (user_id, tmdb_series_id, notification_type, message) VALUES (?, ?, ?, ?)',
+    [userId, tmdbSeriesId, notificationType, message]
+  );
+}
+
 async function ensureHardcodedContentData() {
   const seedConnection = mysql.createConnection({
     ...dbConfig,
@@ -2359,12 +2367,20 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
 
     const awardBadge = async (badgeType, badgeName, badgeImage = null) => {
       try {
-        await db.promise().query(
+        const [result] = await db.promise().query(
           'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, badge_image, badge_name_override) VALUES (?, "quiz", ?, ?, ?, ?)',
           [userId, id, badgeType, badgeImage || null, badgeName || null]
         );
         badgesAwarded.push({ type: badgeType, name: badgeName, image: badgeImage });
         if (badgeType === 'default' || badgeType === 'pass') badgeAwarded = true;
+        if (result.affectedRows > 0) {
+          const displayName = badgeName || 'Badge';
+          await insertUserNotification(
+            userId,
+            'badge_earned',
+            `You earned the badge: ${displayName}! 🏅`
+          ).catch(() => {});
+        }
       } catch (err) {
         if (err.code !== 'ER_DUP_ENTRY') throw err;
       }
@@ -2379,12 +2395,19 @@ app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
         const matchedTier = sorted.find(t => score >= (t.minScore ?? 0));
         if (matchedTier) {
           // Izmanto ON DUPLICATE KEY UPDATE, lai atkārtoti mēģinājumi varētu paaugstināt līmeni
-          await db.promise().query(
+          const [perfResult] = await db.promise().query(
             'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, badge_image, badge_name_override) VALUES (?, "quiz", ?, ?, ?, ?) ON DUPLICATE KEY UPDATE earned_at = NOW(), badge_image = VALUES(badge_image), badge_name_override = VALUES(badge_name_override)',
             [userId, id, 'perf', matchedTier.badgeImage || null, matchedTier.badgeName || null]
           );
           badgesAwarded.push({ type: 'perf', name: matchedTier.badgeName, image: matchedTier.badgeImage || null });
           badgeAwarded = true;
+          if (perfResult.affectedRows === 1 && matchedTier.badgeName) {
+            await insertUserNotification(
+              userId,
+              'badge_earned',
+              `You earned the badge: ${matchedTier.badgeName}! 🏅`
+            ).catch(() => {});
+          }
         }
       } else {
         // Mantotais viena sliekšņa formāts
@@ -2613,10 +2636,19 @@ app.post('/api/admin/standalone-badges/:id/award', requireAuth, requireAdmin, as
   try {
     const [users] = await db.promise().query('SELECT id FROM users WHERE id = ?', [targetUserId]);
     if (users.length === 0) return res.status(404).json({ message: 'User not found' });
-    await db.promise().query(
+    const [badges] = await db.promise().query('SELECT name FROM standalone_badges WHERE id = ?', [id]);
+    if (badges.length === 0) return res.status(404).json({ message: 'Badge not found' });
+    const [awardResult] = await db.promise().query(
       'INSERT INTO user_badges (user_id, badge_source, source_id, badge_type, awarded_by) VALUES (?, "standalone", ?, "standalone", ?)',
       [targetUserId, id, req.userId]
     );
+    if (awardResult.affectedRows > 0) {
+      await insertUserNotification(
+        targetUserId,
+        'badge_earned',
+        `You earned the badge: ${badges[0].name}! 🏅`
+      ).catch(() => {});
+    }
     res.json({ message: 'Badge awarded' });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'User already has this badge' });

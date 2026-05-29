@@ -11,6 +11,11 @@ export default {
     effectKey: { type: String, required: true },
     config: { type: Object, default: () => ({}) }
   },
+  watch: {
+    effectKey() {
+      this.$nextTick(() => this.initCanvas());
+    }
+  },
   data() {
     return {
       animFrameId: null,
@@ -44,6 +49,17 @@ export default {
     if (this._onResize) window.removeEventListener('resize', this._onResize);
   },
   methods: {
+    themeVisuals() {
+      const isLight = typeof document !== 'undefined'
+        && document.documentElement?.getAttribute('data-theme') === 'light';
+      return {
+        isLight,
+        opacity: isLight ? 1 : 1,
+        line: isLight ? 1.4 : 1,
+        grid: isLight ? 2.25 : 1
+      };
+    },
+
     initCanvas() {
       this.resizeCanvas();
       if (this.effectKey === 'pattern_dots') this.initDots();
@@ -131,7 +147,9 @@ export default {
 
     // --- ZVAIGZNES ---
     renderStars(ctx, w, h) {
-      const color = this.config.color || '255, 255, 200';
+      const cfg = this.config || {};
+      const { isLight, opacity: lightMultiplier } = this.themeVisuals();
+      const color = cfg.color || (isLight ? '28, 166, 102' : '255, 255, 200');
       for (const p of this.particles) {
         p.x += p.vx;
         p.y += p.vy;
@@ -144,14 +162,16 @@ export default {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color}, ${p.opacity * twinkle})`;
+        ctx.fillStyle = `rgba(${color}, ${p.opacity * twinkle * lightMultiplier})`;
         ctx.fill();
       }
     },
 
     // --- BURBUĻI ---
     renderBubbles(ctx, w, h) {
-      const color = this.config.color || '150, 220, 255';
+      const cfg = this.config || {};
+      const { isLight, opacity: lightMultiplier } = this.themeVisuals();
+      const color = cfg.color || (isLight ? '61, 160, 218' : '150, 220, 255');
       for (const p of this.particles) {
         p.x += Math.sin(this.time + p.phase) * 0.3;
         p.y += p.vy;
@@ -161,17 +181,19 @@ export default {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${color}, ${p.opacity * 0.6})`;
+        ctx.strokeStyle = `rgba(${color}, ${p.opacity * 0.6 * lightMultiplier})`;
         ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.fillStyle = `rgba(${color}, ${p.opacity * 0.15})`;
+        ctx.fillStyle = `rgba(${color}, ${p.opacity * 0.15 * lightMultiplier})`;
         ctx.fill();
       }
     },
 
     // --- JĀŅTĀRPIŅI ---
     renderFireflies(ctx, w, h) {
-      const color = this.config.color || '200, 255, 100';
+      const cfg = this.config || {};
+      const { isLight, opacity: lightMultiplier } = this.themeVisuals();
+      const color = cfg.color || (isLight ? '28, 166, 102' : '200, 255, 100');
       for (const p of this.particles) {
         p.phase += 0.02;
         p.x += Math.sin(this.time * 0.5 + p.phase) * 0.8;
@@ -182,7 +204,7 @@ export default {
         if (p.y < 0) p.y = h;
         if (p.y > h) p.y = 0;
 
-        const glow = 0.4 + Math.sin(p.phase * 3) * 0.4;
+        const glow = (0.4 + Math.sin(p.phase * 3) * 0.4) * lightMultiplier;
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
         gradient.addColorStop(0, `rgba(${color}, ${glow})`);
         gradient.addColorStop(1, `rgba(${color}, 0)`);
@@ -195,12 +217,13 @@ export default {
 
     // --- INTERAKTĪVIE PUNKTI ---
     renderDots(ctx, w, h) {
-      const dotColor = this.config.dotColor || '#70e974';
-      const animSpeed = this.config.animationSpeed || 0.005;
-
+      const cfg = this.config || {};
+      const animSpeed = cfg.animationSpeed || 0.005;
+      const dotColor = cfg.dotColor || (this.themeVisuals().isLight ? '#1ca666' : '#70e974');
       const r = parseInt(dotColor.slice(1, 3), 16) || 112;
       const g = parseInt(dotColor.slice(3, 5), 16) || 233;
       const b = parseInt(dotColor.slice(5, 7), 16) || 116;
+      const { opacity: lightMultiplier } = this.themeVisuals();
 
       for (const dot of this.dots) {
         const dx = dot.originalX - this.mouse.x;
@@ -211,7 +234,7 @@ export default {
 
         const baseDotSize = 1.5;
         const dotSize = baseDotSize + influence * 5 + Math.sin(this.time / animSpeed * 0.001 + dot.phase) * 0.4;
-        const opacity = Math.max(0.25, 0.4 + influence * 0.5);
+        const opacity = Math.max(0.25, (0.4 + influence * 0.5) * lightMultiplier);
 
         ctx.beginPath();
         ctx.arc(dot.originalX, dot.originalY, dotSize, 0, Math.PI * 2);
@@ -224,8 +247,10 @@ export default {
 
     // --- VIĻŅI ---
     renderWaves(ctx, w, h) {
-      const color = this.config.color || '112, 233, 116';
-      const waves = this.config.waveCount || 4;
+      const cfg = this.config || {};
+      const { isLight, line: lightMultiplier } = this.themeVisuals();
+      const color = cfg.color || (isLight ? '28, 166, 102' : '112, 233, 116');
+      const waves = cfg.waveCount || 4;
 
       for (let i = 0; i < waves; i++) {
         ctx.beginPath();
@@ -235,7 +260,7 @@ export default {
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = `rgba(${color}, ${0.1 + i * 0.03})`;
+        ctx.strokeStyle = `rgba(${color}, ${(0.1 + i * 0.03) * lightMultiplier})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -243,10 +268,12 @@ export default {
 
     // --- REŽĢIS ---
     renderGrid(ctx, w, h) {
-      const color = this.config.color || '80, 200, 200';
-      const spacing = this.config.gridSpacing || 40;
+      const cfg = this.config || {};
+      const { isLight, grid: lightMultiplier } = this.themeVisuals();
+      const color = cfg.color || (isLight ? '47, 111, 159' : '80, 200, 200');
+      const spacing = cfg.gridSpacing || 40;
 
-      ctx.strokeStyle = `rgba(${color}, 0.08)`;
+      ctx.strokeStyle = `rgba(${color}, ${0.08 * lightMultiplier})`;
       ctx.lineWidth = 0.5;
 
       for (let x = 0; x < w; x += spacing) {
@@ -269,7 +296,7 @@ export default {
           const dy = y - this.mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < 150) {
-            const intensity = 1 - dist / 150;
+            const intensity = (1 - dist / 150) * lightMultiplier;
             ctx.beginPath();
             ctx.arc(x, y, 3 + intensity * 4, 0, Math.PI * 2);
             ctx.fillStyle = `rgba(${color}, ${intensity * 0.5})`;
@@ -288,11 +315,13 @@ export default {
     },
 
     renderSmoothWavy(ctx, w, h) {
-      const cfg = this.config;
-      const primaryColor = cfg.primaryColor || '112, 233, 116';
-      const secondaryColor = cfg.secondaryColor || '80, 200, 200';
-      const accentColor = cfg.accentColor || '120, 80, 255';
-      const lineOpacity = cfg.lineOpacity || 0.8;
+      const cfg = this.config || {};
+      const { isLight, line: lineScale } = this.themeVisuals();
+      const primaryColor = cfg.primaryColor || (isLight ? '28, 166, 102' : '112, 233, 116');
+      const secondaryColor = cfg.secondaryColor || (isLight ? '61, 160, 218' : '80, 200, 200');
+      const accentColor = cfg.accentColor || (isLight ? '120, 80, 255' : '120, 80, 255');
+      const baseLineOpacity = (cfg.lineOpacity !== undefined) ? cfg.lineOpacity : 0.8;
+      const lineOpacity = baseLineOpacity * lineScale;
       const t = this.time * 0.25;
 
       // Primārās horizontālās līnijas (samazinātas no 30 uz 16, solis 6 nevis 3)
@@ -380,14 +409,25 @@ export default {
     },
 
     renderFlowingRibbons(ctx, w, h) {
-      const cfg = this.config;
-      const lineColor = cfg.lineColor || 'rgba(112, 233, 116, 0.35)';
+      const cfg = this.config || {};
+      const { isLight, line: lightMultiplier } = this.themeVisuals();
       const t = this.time * 18;
       const gridDensity = 30;
       const ribbonWidth = w * 0.9;
       const ribbonOffset = (w - ribbonWidth) / 2;
 
-      ctx.strokeStyle = lineColor;
+      // Atbalsta gan rgba() string, gan r,g,b vērtības
+      let lineColorVal = cfg.lineColor || (isLight ? '28, 166, 102' : '112, 233, 116');
+      let strokeStyle = '';
+      if (typeof lineColorVal === 'string' && lineColorVal.trim().startsWith('rgba')) {
+        // ja konfigurācijā ir pilna rgba, lieto to tieši
+        strokeStyle = lineColorVal;
+      } else {
+        // pieņem 'r, g, b' vai noklusējuma vērtību
+        strokeStyle = `rgba(${lineColorVal}, ${((cfg.lineAlpha !== undefined) ? cfg.lineAlpha : 0.35) * lightMultiplier})`;
+      }
+
+      ctx.strokeStyle = strokeStyle;
       ctx.lineWidth = 0.5;
 
       // Vertikālās līnijas

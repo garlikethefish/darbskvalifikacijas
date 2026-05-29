@@ -265,14 +265,14 @@ export default {
 }
 
 .watched-section {
-  background: rgba(147, 112, 219, 0.1);
-  border: 2px solid rgba(147, 112, 219, 0.3);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--surface-border);
   border-radius: 12px;
   padding: 1.5rem;
 }
 
 .watched-section h3 {
-  color: #9370db;
+  color: var(--accent-color);
   margin-top: 0;
   font-size: 1.2rem;
   margin-bottom: 1rem;
@@ -281,7 +281,7 @@ export default {
 .watch-show-container {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface-bg);
   border-radius: 8px;
 }
 
@@ -300,7 +300,7 @@ export default {
 }
 
 .watch-text {
-  color: #ddd;
+  color: var(--text-color);
   font-weight: 500;
 }
 
@@ -316,15 +316,15 @@ export default {
 }
 
 .season-selector label {
-  color: #ddd;
+  color: var(--text-color);
   font-weight: 500;
 }
 
 .season-select {
   padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(147, 112, 219, 0.3);
-  color: #ddd;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-color);
   border-radius: 6px;
   cursor: pointer;
 }
@@ -338,14 +338,14 @@ export default {
 .episodes-list {
   max-height: 400px;
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface-bg);
   border-radius: 8px;
   padding: 1rem;
 }
 
 .episode-item {
   padding: 0.6rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--surface-border);
   display: flex;
   align-items: center;
   gap: 0.8rem;
@@ -361,7 +361,7 @@ export default {
   object-fit: cover;
   border-radius: 6px;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--surface-bg-soft);
 }
 
 .episode-label {
@@ -380,23 +380,23 @@ export default {
 }
 
 .episode-info {
-  color: #ccc;
+  color: var(--subtitle-color);
   font-size: 0.95rem;
 }
 
 .episode-item:hover .episode-info {
-  color: #9370db;
+  color: var(--accent-color);
 }
 
 .watched-stats {
   margin-top: 1.5rem;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface-bg);
   border-radius: 8px;
 }
 
 .watched-stats p {
-  color: #ddd;
+  color: var(--text-color);
   margin-bottom: 0.8rem;
   font-weight: 500;
 }
@@ -404,18 +404,18 @@ export default {
 .progress-bar {
   width: 100%;
   height: 10px;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--surface-bg-soft);
   border-radius: 5px;
   overflow: hidden;
-  border: 1px solid rgba(147, 112, 219, 0.2);
+  border: 1px solid var(--surface-border);
 }
 
 .progress {
   height: 100%;
-  background: linear-gradient(90deg, #9370db, #fff);
+  background: linear-gradient(90deg, var(--accent-color), rgba(255,255,255,0.9));
   width: 0%;
   transition: width 0.3s ease;
-  box-shadow: 0 0 10px rgba(147, 112, 219, 0.5);
+  box-shadow: 0 0 8px rgba(28,166,102,0.08);
 }
 
 /* Pielāgota ritjosla */

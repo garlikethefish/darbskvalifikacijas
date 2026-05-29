@@ -290,8 +290,9 @@ export default {
   async mounted() {
     this.currentLanguage = getCurrentLanguage();
     await this.loadRecommendations();
-    // Palaiž intersection observer automātiskai ielādei
-    this.setupObserver();
+    if (this.isLoggedIn) {
+      this.setupObserver();
+    }
 
     this._languageChangedHandler = async (e) => {
       this.currentLanguage = e.detail.language;
@@ -311,8 +312,10 @@ export default {
 
 <style scoped>
 .discover-page {
-  overflow-x: hidden; /* Novērš horizontālo ritināšanu */
+  /* Neuzstādīt overflow-x — clip/hidden liek overflow-y kļūt par auto un bloķē lapas ritināšanu */
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Galvenes sadaļa */
@@ -339,19 +342,22 @@ export default {
   right: 0;
   top: 0;
   bottom: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.02) 28%,
-    rgba(255, 255, 255, 0.1) 48%,
-    rgba(255, 255, 255, 0.02) 72%,
-    rgba(255, 255, 255, 0) 100%
+  background: var(
+    --hero-floating-overlay,
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.02) 28%,
+      rgba(255, 255, 255, 0.1) 48%,
+      rgba(255, 255, 255, 0.02) 72%,
+      rgba(255, 255, 255, 0) 100%
+    )
   );
-  mix-blend-mode: overlay;
+  mix-blend-mode: var(--hero-floating-overlay-blend, overlay);
   pointer-events: none;
   transform: translateX(-80%);
   animation: shimmerSlide 3200ms cubic-bezier(0.22, 0.1, 0.25, 1) infinite;
-  opacity: 0.95;
+  opacity: var(--hero-floating-overlay-opacity, 0.95);
 }
 
 @keyframes shimmerSlide {
@@ -728,13 +734,19 @@ export default {
 .login-prompt-section {
   text-align: center;
   padding: 4rem 1.5rem;
-  background: linear-gradient(135deg, rgba(30, 28, 39, 0.8) 0%, rgba(18, 20, 20, 0.8) 100%);
-  border: 1.5px dashed rgba(112, 233, 116, 0.2);
+  background: var(--glass-bg-strong);
+  border: 1.5px dashed var(--surface-border);
   border-radius: 14px;
   margin: 2rem auto;
   max-width: 500px;
-  animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
-  opacity: 0;
+  color: var(--text-color);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-prompt-section {
+    animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+    opacity: 0;
+  }
 }
 
 @keyframes fadeInSection {
@@ -752,8 +764,13 @@ export default {
   font-size: 4rem;
   margin-bottom: 1.25rem;
   display: inline-block;
-  animation: lockBounce 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms forwards;
-  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lock-icon {
+    animation: lockBounce 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms forwards;
+    opacity: 0;
+  }
 }
 
 @keyframes lockBounce {
@@ -775,18 +792,14 @@ export default {
   font-size: 1.5rem;
   color: var(--text-color);
   font-weight: 700;
-  animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) 200ms forwards;
-  opacity: 0;
 }
 
 .login-prompt-section p {
   margin: 0 0 1.5rem 0;
   color: var(--subtitle-color);
-  opacity: 0.85;
   font-size: 1rem;
   line-height: 1.5;
-  animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) 300ms forwards;
-  opacity: 0;
+  opacity: 0.85;
 }
 
 .login-btn {
@@ -798,13 +811,28 @@ export default {
   border-radius: 10px;
   font-weight: 700;
   font-size: 1.05rem;
-  transition: all 300ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: transform 300ms cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 300ms cubic-bezier(0.2, 0.9, 0.2, 1), border-color 300ms cubic-bezier(0.2, 0.9, 0.2, 1);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(112, 233, 116, 0.2);
   pointer-events: auto;
   cursor: pointer;
-  animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) 400ms forwards;
-  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-prompt-section h2 {
+    animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) 200ms forwards;
+    opacity: 0;
+  }
+
+  .login-prompt-section p {
+    animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) 300ms forwards;
+    opacity: 0;
+  }
+
+  .login-btn {
+    animation: fadeInSection 600ms cubic-bezier(0.16, 0.84, 0.24, 1) 400ms forwards;
+    opacity: 0;
+  }
 }
 
 .login-btn:hover {

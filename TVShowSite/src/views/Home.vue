@@ -262,6 +262,7 @@ export default {
     <div class="flex-container">
       <div class="break"></div>
       <div v-if="loading" class="load">
+        <div class="spinner"></div>
         <h2>{{ t('loading') }}</h2>
       </div>
       <div v-else-if="error">{{ error }}</div>

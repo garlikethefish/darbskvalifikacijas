@@ -635,6 +635,26 @@ export default {
   box-shadow: 0 12px 28px rgba(31, 41, 51, 0.07);
 }
 
+:global([data-theme="light"]) .site-hero-loop--discover span,
+:global([data-theme="light"]) .site-hero-loop--series span,
+:global([data-theme="light"]) .site-hero-loop--admin span,
+:global([data-theme="light"]) .site-hero-loop--auth span,
+:global([data-theme="light"]) .site-hero-loop--review-detail span {
+  opacity: 0.3;
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 12px rgba(28, 166, 102, 0.08);
+}
+
+:global([data-theme="light"]) .site-hero-loop--reviews span {
+  opacity: 0.3;
+}
+
+:global([data-theme="light"]) .site-hero-loop--reviews span::before,
+:global([data-theme="light"]) .site-hero-loop--reviews span::after {
+  opacity: 0.3;
+}
+
 :global([data-theme="light"]) .home-tv-icon {
   color: rgba(28, 166, 102, 0.24);
 }
@@ -724,13 +744,13 @@ export default {
 }
 
 @keyframes heroTextFloat {
-  0%, 100% { transform: translateY(0) scale(1); filter: saturate(1); }
-  50% { transform: translateY(-6px) scale(1.012); filter: saturate(1.08); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.012); }
 }
 
 @keyframes heroCardsDrift {
-  0%, 100% { transform: translate3d(-28px, 10px, 0) rotate(-7deg) scale(0.94); opacity: 0.52; }
-  50% { transform: translate3d(30px, -16px, 0) rotate(7deg) scale(1.08); opacity: 0.92; }
+  0%, 100% { transform: translate3d(-28px, 10px, 0) rotate(-7deg) scale(0.94); opacity: 0.2; }
+  50% { transform: translate3d(30px, -16px, 0) rotate(7deg) scale(1.08); opacity: 0.3; }
 }
 
 @keyframes heroLogoSquaresDrift {
@@ -739,18 +759,18 @@ export default {
 }
 
 @keyframes heroRadarDrift {
-  0%, 100% { transform: translate3d(-24px, 8px, 0) scale(0.78); opacity: 0.28; }
-  50% { transform: translate3d(26px, -18px, 0) scale(1.38); opacity: 0.86; }
+  0%, 100% { transform: translate3d(-24px, 8px, 0) scale(0.78); opacity: 0.18; }
+  50% { transform: translate3d(26px, -18px, 0) scale(1.38); opacity: 0.3; }
 }
 
 @keyframes heroLinesDrift {
-  0%, 100% { transform: translate3d(-32px, 10px, 0) rotate(-14deg) scaleX(0.88); opacity: 0.48; }
-  50% { transform: translate3d(34px, -12px, 0) rotate(14deg) scaleX(1.14); opacity: 0.92; }
+  0%, 100% { transform: translate3d(-32px, 10px, 0) rotate(-14deg) scaleX(0.88); opacity: 0.2; }
+  50% { transform: translate3d(34px, -12px, 0) rotate(14deg) scaleX(1.14); opacity: 0.3; }
 }
 
 @keyframes heroJaggedLinesDrift {
-  0%, 100% { transform: translate3d(-34px, 12px, 0) rotate(-10deg) scaleX(0.88); opacity: 0.42; }
-  50% { transform: translate3d(36px, -14px, 0) rotate(10deg) scaleX(1.08); opacity: 0.88; }
+  0%, 100% { transform: translate3d(-34px, 12px, 0) rotate(-10deg) scaleX(0.88); opacity: 0.2; }
+  50% { transform: translate3d(36px, -14px, 0) rotate(10deg) scaleX(1.08); opacity: 0.3; }
 }
 
 @keyframes heroTilesDrift {
@@ -779,13 +799,13 @@ export default {
 }
 
 @keyframes heroAccessDrift {
-  0%, 100% { transform: translate3d(-32px, 8px, 0) scaleX(0.68); opacity: 0.28; }
-  50% { transform: translate3d(34px, -12px, 0) scaleX(1.34); opacity: 0.86; }
+  0%, 100% { transform: translate3d(-32px, 8px, 0) scaleX(0.68); opacity: 0.2; }
+  50% { transform: translate3d(34px, -12px, 0) scaleX(1.34); opacity: 0.3; }
 }
 
 @keyframes heroGridDrift {
-  0%, 100% { transform: translate3d(-28px, -14px, 0) rotate(-3deg); opacity: 0.5; }
-  50% { transform: translate3d(30px, 16px, 0) rotate(3deg); opacity: 0.9; }
+  0%, 100% { transform: translate3d(-28px, -14px, 0) rotate(-3deg); opacity: 0.2; }
+  50% { transform: translate3d(30px, 16px, 0) rotate(3deg); opacity: 0.3; }
 }
 
 @media (max-width: 700px) {
