@@ -188,10 +188,10 @@
 
         <!-- Žetona apskates modālais logs -->
         <teleport to="body">
-        <div v-if="inspectBadge" class="badge-inspect-overlay" @click.self="closeBadgeInspect">
+        <div v-if="inspectBadge" :class="['badge-inspect-overlay', { 'light-mode': inspectThemeIsLight }]" @click.self="closeBadgeInspect">
           <div class="badge-inspect-modal">
-            <button class="badge-inspect-close" @click="closeBadgeInspect"><SvgIcon name="close" :size="18" /></button>
             <div class="badge-inspect-card">
+              <button class="badge-inspect-close" @click="closeBadgeInspect" aria-label="Close" title="Close"><SvgIcon name="close" :size="18" /></button>
               <div 
                 class="badge-inspect-image"
                 ref="badgeInspectCard"
@@ -551,6 +551,7 @@ export default {
       searchResults: [],
       selectedDisplayBadgeId: null,
       inspectBadge: null,
+      inspectThemeIsLight: false,
       activeProfileTab: 'favorites',
 
       // Tikai apmeklētājam
@@ -1013,10 +1014,12 @@ export default {
     },
     openBadgeInspect(badge) {
       this.inspectBadge = badge;
+      this.inspectThemeIsLight = (document.documentElement && document.documentElement.getAttribute('data-theme') === 'light') || false;
       document.body.style.overflow = 'hidden';
     },
     closeBadgeInspect() {
       this.inspectBadge = null;
+      this.inspectThemeIsLight = false;
       document.body.style.overflow = '';
     },
     handleBadgeTilt(e) {
@@ -2252,8 +2255,8 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, rgba(6,8,10,0.72), rgba(3,6,10,0.86));
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2282,10 +2285,11 @@ export default {
 
 .badge-inspect-close {
   position: absolute;
-  top: -40px;
-  right: -40px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  background: transparent;
+  border: none;
   color: var(--text-color);
   width: 36px;
   height: 36px;
@@ -2294,17 +2298,18 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 0;
+  transition: color 0.12s ease, transform 0.12s ease;
 }
 
 .badge-inspect-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
+  color: var(--accent-color);
+  transform: scale(1.06);
 }
 
 .badge-inspect-card {
-  background: linear-gradient(145deg, var(--dark-bg-color), rgba(30, 30, 30, 0.95));
-  border: 2px solid rgba(112, 233, 116, 0.3);
+  background: linear-gradient(145deg, rgba(14,16,18,0.96), rgba(28,26,34,0.96));
+  border: 1px solid rgba(112, 233, 116, 0.14);
   border-radius: 20px;
   padding: 40px 48px;
   display: flex;
@@ -2312,20 +2317,17 @@ export default {
   align-items: center;
   gap: 16px;
   min-width: 280px;
-  max-width: 340px;
+  max-width: 360px;
   position: relative;
   overflow: visible;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(112, 233, 116, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(112, 233, 116, 0.06);
 }
 
-:global(html[data-theme="light"] body) .badge-inspect-overlay .badge-inspect-card {
-  background-color: rgb(250, 253, 251) !important;
-  background-image:
-    radial-gradient(circle 260px at 50% 0%, rgba(28, 166, 102, 0.08), transparent 68%),
-    linear-gradient(180deg, rgb(255, 255, 255) 0%, rgb(250, 253, 251) 100%) !important;
-  background-blend-mode: normal !important;
-  border-color: rgba(28, 166, 102, 0.42) !important;
-  box-shadow: 0 18px 42px rgba(31, 41, 51, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+.badge-inspect-overlay.light-mode .badge-inspect-card {
+  background: var(--glass-bg-strong) !important;
+  background-image: none !important;
+  border-color: rgba(28, 166, 102, 0.16) !important;
+  box-shadow: 0 18px 42px rgba(31, 41, 51, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
   opacity: 1;
   filter: none;
 }
@@ -2336,6 +2338,16 @@ export default {
   justify-content: center;
   padding: 20px;
   cursor: grab;
+}
+
+/* Center action buttons directly under the modal card */
+.badge-inspect-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+  z-index: 2;
 }
 
 
@@ -2386,37 +2398,55 @@ export default {
   z-index: 2;
 }
 
-:global([data-theme="light"]) .badge-inspect-title {
+.badge-inspect-overlay.light-mode {
+  background: rgba(246, 250, 252, 0.86) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.badge-inspect-overlay.light-mode .badge-inspect-title {
   color: rgb(31, 41, 51);
 }
 
-:global([data-theme="light"]) .badge-inspect-desc,
-:global([data-theme="light"]) .badge-inspect-date {
+.badge-inspect-overlay.light-mode .badge-inspect-desc {
   color: rgb(82, 97, 111);
 }
 
-.badge-inspect-actions {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  justify-content: center;
+.badge-inspect-overlay.light-mode .badge-inspect-close {
+  background: transparent !important;
+  border: none !important;
+  color: rgb(31, 41, 51) !important;
+  width: 36px;
+  height: 36px;
+  box-shadow: none !important;
 }
 
+.badge-inspect-overlay.light-mode .badge-inspect-close:hover {
+  color: var(--accent-color) !important;
+  transform: scale(1.06) !important;
+}
+
+.badge-inspect-overlay.light-mode .badge-inspect-image img,
+.badge-inspect-overlay.light-mode .badge-inspect-emoji {
+  filter: drop-shadow(0 10px 28px rgba(31,41,51,0.06)) !important;
+}
 .badge-inspect-select-btn {
-  background: var(--accent-color);
-  color: var(--dark-bg-color);
-  border: none;
+  background: transparent;
+  color: var(--accent-color);
+  border: 1px solid var(--accent-color);
   padding: 10px 24px;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
 }
 
 .badge-inspect-select-btn:hover {
+  background: var(--accent-color);
+  color: var(--on-accent-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(112, 233, 116, 0.3);
+  box-shadow: 0 4px 16px rgba(28, 166, 102, 0.24);
+  border-color: var(--accent-color);
 }
 
 .badge-inspect-remove-btn {
